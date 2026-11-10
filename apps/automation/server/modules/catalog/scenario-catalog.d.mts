@@ -1,0 +1,38 @@
+export interface CatalogScenario {
+  key: string;
+  id: string;
+  hasId: boolean;
+  title: string;
+  feature: string;
+  module: string;
+  file: string;
+  line: number;
+  tags: Array<string>;
+  background: Array<string>;
+  steps: Array<string>;
+  outline: boolean;
+  availability: "unknown" | "unavailable";
+  availabilityReasons: Array<string>;
+}
+export interface DocumentScenario extends CatalogScenario {
+  docFile: string;
+  category: string;
+  type: string;
+  method: string;
+  catalogTags: Array<string>;
+  expect: string;
+  status: string;
+  lastRun: string;
+  duration: string;
+  evidenceLabel: string;
+  evidenceUrl: string;
+}
+export function parseFeature(content: string, file: string): Array<CatalogScenario>;
+export function scenarioCatalog(root: string): Array<CatalogScenario>;
+export function automationCatalog(root: string): Array<DocumentScenario>;
+export function parseScenarioMarkdown(
+  content: string,
+  file: string,
+  featureScenarios?: Array<CatalogScenario>,
+): Array<DocumentScenario>;
+export function scenarioCatalogFromDocs(featureRoot: string, docsRoot: string): Array<DocumentScenario>;

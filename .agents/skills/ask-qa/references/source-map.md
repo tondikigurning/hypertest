@@ -1,0 +1,74 @@
+# Project testing sources
+
+Paths below are relative to the repo root. Read only the sources relevant to the request, then follow their imports or invoked scripts as needed. Check that paths still exist. This map is an entry point, not a frozen inventory or substitute for reading the implementation.
+
+## Policy, rationale and authoring
+
+| Topic                                                                                 | Start here                                                                                                                                          |
+| ------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Strategy, goals, glossary, tier selection, milestones, decisions and their rationale  | `docs/workspace/testing/automated-testing-strategy.md` (including decision history and Appendix B)                                                  |
+| Repository instructions and testing rules                                             | Applicable `AGENTS.md`, `CLAUDE.md`, `.github/instructions/testing.instructions.md`                                                                 |
+| Characterization before a refactor and mocking pitfalls                               | `docs/workspace/patterns/characterization-testing.md`                                                                                               |
+| Unit/integration authoring, `scenario()`, metadata, IDs, commands and troubleshooting | `.agents/skills/write-unit-tests/SKILL.md`, then its `references/id-scheme.md` and `references/commands-and-troubleshooting.md` as needed           |
+| Business-flow discovery, scope, review gates, registries and maintenance              | `.agents/skills/write-e2e-scenarios/SKILL.md`, `references/flow-discovery.md` under that skill, scoped `.feature` and `.flows.md` files             |
+| E2E IDs, tags, reusable component contracts and quarantine/fixme policy               | `.agents/skills/write-e2e-scenarios/references/e2e-conventions.md`, `apps/tenants/tests/bdd/features/_components/`                                  |
+| E2E-owned data, naming, mutation exceptions and cleanup                               | `.agents/skills/write-e2e-scenarios/references/data-safety.md`, `apps/tenants/tests/bdd/utils/e2e-test-data.ts`, selected setup/steps/POMs          |
+| Steps, POMs, COMs, fixtures, implementation and troubleshooting                       | `.agents/skills/write-e2e-code/SKILL.md`, its `references/msw-mocking.md` and `references/troubleshooting.md`                                       |
+| Live browser, snapshots, sessions, attributes, traffic and traces                     | `.agents/skills/playwright-cli/SKILL.md`, its relevant `references/`, `.agents/skills/write-e2e-scenarios/references/playwright-cli-exploration.md` |
+
+Use the maintained files under `.agents/skills/` for this workflow. If an older reference points elsewhere, locate the maintained replacement and identify the stale link when relevant.
+
+## Execution and implementation
+
+### Automation app
+
+For app requests start with `apps/automation/README.md`, `SPEC.md`, `package.json` and `vite.config.ts`, then trace the affected implementation and its consumers. Paths in this table without another prefix are relative to `apps/automation/`. The specification is an interview draft and describes intended hosted behavior; the README and live code describe the current early local implementation. Verify both before claiming a capability exists.
+
+| Topic                                          | Start here                                                                                                                                                                                                                                   |
+| ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Explorer, details, filters and catalog loading | `src/app/app.tsx`, `src/features/scenarios/`, `src/styles/global.css`, `server/modules/catalog/scenario-catalog.mjs` and its tests; generated `testing-docs/e2e/tenants/**/*.md` and matching `apps/tenants/tests/bdd/features/**/*.feature` |
+| Local run selection, execution and progress    | `src/features/runs/`, `server/modules/runs/` and adjacent tests; `apps/tenants/playwright.bdd.config.ts` and selected BDD sources                                                                                                            |
+| Evidence viewing and Drive integration         | `src/features/evidence/`, `server/modules/evidence/evidence-controller.mjs`, local runner artifact handling, `docs/workspace/testing/e2e-evidence.md` and the evidence uploader in `packages/internal/test-utils/src/export/`                |
+| Commands and validation                        | `apps/automation/package.json`, `vite.config.ts`, `server/**/*.test.mjs`, and repo instructions; verify commands and dependencies before running                                                                                             |
+
+Development serves a live catalog API and local middleware; a build emits a catalog snapshot. Check the current code for production capabilities rather than assuming the development APIs exist in a hosted build.
+
+| Topic                                                                          | Start here                                                                                                                                                                                                              |
+| ------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Root scripts, package manager, installed runner versions                       | `package.json`, `pnpm-workspace.yaml`, `pnpm-lock.yaml`                                                                                                                                                                 |
+| Package/app test commands and active configuration                             | Target `package.json`, `vitest*.config.*`, workspace/project config and setup files; root `vitest.config.*` where present                                                                                               |
+| Tenant unit/regression/legacy E2E scripts                                      | `apps/tenants/package.json`, the scripts/configs each command invokes                                                                                                                                                   |
+| BDD generation, included features/projects, auth, timeouts, traces and outputs | `apps/tenants/package.json` (`test:bdd`), `apps/tenants/playwright.bdd.config.ts`, `apps/tenants/tests/bdd/setup/`                                                                                                      |
+| Fixtures, page context, runtime skip/quarantine/fixme behavior and mocks       | `apps/tenants/tests/bdd/fixtures/base.fixture.ts`, `fixtures/page-context.ts`, `steps/`, `utils/` and their imports                                                                                                     |
+| Existing executable BDD behavior                                               | `apps/tenants/tests/bdd/features/`, `steps/`, `pages/`, `components/`, `utils/`; reconcile feature globs with the config                                                                                                |
+| `scenario()` execution, tag filtering and metadata validation                  | `packages/internal/test-utils/src/vitest/scenario.ts`, `src/schema/validate.ts`, `src/schema/types.ts`                                                                                                                  |
+| Vitest reporting, rendering and catalog generation                             | `packages/internal/test-utils/src/vitest/reporter.ts`, `writer.ts`, `renderers.ts`, adjacent tests and package `vitest.config.ts`                                                                                       |
+| Gherkin metadata parsing and Playwright reporting                              | `packages/internal/test-utils/src/playwright/bdd-scenario-meta.ts`, `reporter.ts`, `feature-catalog.ts`, adjacent tests                                                                                                 |
+| BDD catalog paths, source rows, filtered results and writes                    | `packages/internal/test-utils/src/playwright/catalog-routes.ts`, `catalog-writer.ts`, `feature-catalog.ts`, `reporter.ts`                                                                                               |
+| Shared test-utils exports/consumers                                            | `packages/internal/test-utils/package.json`, `src/index.ts`, subpath exports, `rg` for consumers                                                                                                                        |
+| Storybook interaction/accessibility tests and runner                           | `apps/docs/package.json`, `apps/docs/.storybook/`, `apps/docs/vitest.workspace.ts`, `apps/docs/test-runner-jest.config.js`, nearby `*.test.stories.tsx` and `*.stories.tsx`, `.github/workflows/job-test-storybook.yml` |
+| Environment/setup prerequisites                                                | `docs/workspace/dev-setup.md`, target config and env-variable names; for BDD, presence of `apps/tenants/.env.local` supplying `BASE_URL`, `E2E_USERNAME`, `E2E_PASSWORD` (do not print secrets)                         |
+
+## Coverage, artifacts, CI and exports
+
+| Topic                                                                                       | Start here                                                                                                                                                                       |
+| ------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Existing tests and the next ID                                                              | Source tests/features plus `testing-docs/components/<pkg>/` or `testing-docs/e2e/<app>/`; inspect the actual prefix and existing/retired IDs                                     |
+| Generated unit catalogs                                                                     | `testing-docs/components/<pkg>/*.md` and the Vitest writer                                                                                                                       |
+| Generated E2E catalogs                                                                      | `testing-docs/e2e/<app>/**/*.md` and `bddCatalogTargetFromFile` in `catalog-routes.ts`; paths may be nested                                                                      |
+| Historical run totals, failures, coverage and results                                       | `testing-docs/reports/<timestamp>/` (`overview.md`, `report.md`, `failures.md`, `aggregate.json`, `unit/`, `e2e/`); use the recorded run time and selection                      |
+| Local results and browser evidence                                                          | `temp/test-results/`, configured Vitest coverage directories, `apps/tenants/playwright-report/bdd/`, `apps/tenants/test-results/bdd/`; verify timestamps and actual output paths |
+| Aggregate orchestration, no-run/rerender modes, failure propagation, mixed result freshness | `scripts/aggregate-report.mjs`, `packages/internal/test-utils/src/aggregate/` and invoked renderers                                                                              |
+| Result contract / generated JSON Schema                                                     | `packages/internal/test-utils/src/schema/`, `testing-docs/schema/scenario-result.schema.json`; locate its generator before updating the schema                                   |
+| QA-owned targets, exclusions and coverage gaps                                              | `testing-docs/coverage-targets.yaml`, strategy coverage definitions, actual coverage output and uncovered source branches                                                        |
+| Google Sheets/Drive export and local preview                                                | Root `test:export`, `packages/internal/test-utils/src/export/cli.ts`, `report-paths.ts`, `payload.ts`, `resolve-credentials.ts`, `push-sheets.ts`, `push-drive.ts`               |
+| CI triggers, job selection, strictness, catalog freshness and artifacts                     | `.github/workflows/ci.yml`, `regression.yml`, `job-catalog-check.yml`, relevant `job-test-*.yml` and their callers                                                               |
+| Recent changes, working tree and historical context                                         | `git status`, scoped `git diff`, `git log -- <paths>`, `git show`; preserve existing user changes                                                                                |
+
+## Reading sources accurately
+
+- Start with `rg --files` and scoped `rg` searches when locating files. Check dot-directories explicitly for Storybook and agent configuration. If a listed source moved, find its replacement and callers.
+- Resolve implementation questions through code, config and observed behavior; resolve policy questions through the current strategy and applicable instructions. Surface discrepancies instead of choosing silently.
+- Treat milestone checkboxes, comments, example counts and old reports as dated claims. Verify the relevant implementation or result before asserting current completion or health.
+- Follow legacy script targets before recommending them. A script existing in `package.json` does not make it the preferred BDD workflow, but an explicit request to investigate a legacy suite remains in scope.
+- For third-party API details absent from local sources, consult authoritative documentation matching the installed version. External docs explain the tool; they do not establish this project's policy.

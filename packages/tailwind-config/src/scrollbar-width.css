@@ -1,0 +1,33 @@
+@layer utilities {
+  /* Custom scrollbar width for Firefox */
+  .scrollbar-none {
+    scrollbar-width: none; /* No scrollbar (Firefox) */
+  }
+  .scrollbar-thin {
+    scrollbar-width: thin; /* Thin scrollbar (Firefox) */
+  }
+  .scrollbar-auto {
+    scrollbar-width: auto; /* Default scrollbar width (Firefox) */
+  }
+
+  /* Custom WebKit scrollbars (Chrome, Safari, Edge) */
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 8px; /* Thin scrollbar width */
+    height: 8px; /* Thin scrollbar height */
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: #b1b1b1; /* Thumb color */
+    border-radius: 6px; /* Rounded corners for the thumb */
+    box-shadow: 0 0 1px rgba(255, 255, 255, 0.5);
+  }
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent; /* Transparent track */
+  }
+  .scrollbar-thin::-webkit-scrollbar-button {
+    display: none; /* Hide the native up/down arrow buttons — a thin scrollbar shouldn't have them */
+  }
+
+  .scrollbar-none::-webkit-scrollbar {
+    display: none; /* Hide scrollbar entirely */
+  }
+}

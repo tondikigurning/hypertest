@@ -1,0 +1,19 @@
+{
+  "name": "tenants",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test:bdd": "node scripts/test-bdd-with-evidence.mjs",
+    "bddgen": "bddgen --config=playwright.bdd.config.ts"
+  },
+  "devDependencies": {
+    "@hyperscal/test-utils": "workspace:*",
+    "@msw/playwright": "^0.6.7",
+    "@playwright/test": "1.55.1",
+    "dotenv": "^17.2.3",
+    "msw": "^2.14.6",
+    "playwright": "1.55.1",
+    "playwright-bdd": "^8.4.1",
+    "tsx": "^4.20.3"
+  }
+}

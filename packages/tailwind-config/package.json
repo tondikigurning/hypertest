@@ -1,0 +1,8 @@
+{
+  "name": "@hyperscal/tailwind-config",
+  "version": "0.0.0",
+  "dependencies": {
+    "tailwindcss": "^4.1.11",
+    "tailwindcss-animate": "^1.0.7"
+  }
+}

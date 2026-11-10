@@ -1,0 +1,22 @@
+tr.active-row {
+  @apply bg-primary-40;
+}
+
+tr.active-row > td:first-child {
+  position: relative;
+}
+
+tr.active-row > td:first-child:before {
+  content: "";
+  position: absolute;
+  height: 100%;
+  width: 5px;
+  @apply rounded-r-xs;
+  top: 0;
+  left: 0;
+  @apply bg-primary-500;
+}
+
+tr.active-row > td.pinned {
+  @apply bg-primary-40;
+}

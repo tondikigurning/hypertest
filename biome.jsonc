@@ -1,0 +1,155 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.4.15/schema.json",
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true
+  },
+  "files": {
+    "ignoreUnknown": false,
+    "includes": [
+      "apps/automation/**",
+      "apps/tenants/app/**",
+      "apps/admin/app/**",
+      "apps/sso/**",
+      "packages/internal/**",
+      "packages/crm-shared/**",
+      "packages/dataview/**",
+      "packages/filters/**",
+      "packages/websocket/**",
+      "packages/command/**",
+      "!apps/docs",
+      "!apps/tenants/tests",
+      "!**/*.test.ts",
+      "!**/*.test.tsx",
+      "!**/*.spec.ts",
+      "!!**/node_modules",
+      "!!**/dist",
+      "!!**/.turbo",
+      "!!**/build",
+      "!!packages/internal/api/gen",
+      "!!packages/internal/icons/src/gen"
+    ]
+  },
+  "formatter": {
+    "enabled": true,
+    "formatWithErrors": false,
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineEnding": "auto",
+    "lineWidth": 120,
+    "attributePosition": "auto",
+    "bracketSameLine": false,
+    "bracketSpacing": true
+  },
+  "linter": {
+    "enabled": true,
+    "domains": {
+      "react": "all"
+    },
+    "rules": {
+      "recommended": true,
+      // recommended includes lint/style/useComponentExportOnlyModules. Please do not remove it.
+      // lint/style/useComponentExportOnlyModules will ensure that components are only imported from their module entrypoints.
+      // This is useful for tree-shaking, reducing bundle sizes and helps easier testing. Also helps with HMR in development.
+      // Let's do our best to reduce violations over time instead of disabling this rule.
+      "correctness": {
+        "useUniqueElementIds": "off",
+        "noUnusedImports": "error"
+      },
+      "suspicious": {
+        "noConsole": "error",
+        "noEmptyInterface": "off"
+      },
+      "nursery": {
+        "useSortedClasses": "warn"
+      },
+      "style": {
+        "useConsistentCurlyBraces": "error",
+        "useConsistentArrayType": {
+          "level": "error",
+          "options": {
+            "syntax": "generic"
+          }
+        },
+        "useFilenamingConvention": {
+          "level": "error",
+          "options": {
+            "filenameCases": ["kebab-case"]
+          }
+        },
+        "useConsistentTypeDefinitions": {
+          "level": "error",
+          "options": {
+            "style": "interface"
+          }
+        }
+      }
+    }
+  },
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "double",
+      "trailingCommas": "all",
+      "semicolons": "always",
+      "attributePosition": "auto"
+    }
+  },
+  "assist": {
+    "enabled": true,
+    "actions": {
+      "source": {
+        "recommended": true
+      }
+    }
+  },
+  "overrides": [
+    {
+      "includes": ["apps/**/app/routes/**/*", "apps/docs/src/**/*", "apps/recruiterpal/**/*"],
+      "linter": {
+        "rules": {
+          "style": {
+            "useFilenamingConvention": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["**/*.json", "**/*.jsonc"],
+      "assist": { "enabled": false }
+    },
+    {
+      "includes": ["apps/tenants/app/routes/**"],
+      "linter": {
+        "rules": {
+          "style": { "useComponentExportOnlyModules": "off" }
+        }
+      }
+    },
+    // Enforce @/ alias imports for apps/sso/src.
+    // Bans all relative parent imports (../) using gitignore-style patterns (Biome v2.2+).
+    {
+      "includes": ["apps/sso/src/**/*.ts"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                // patterns uses gitignore-style globs (available since Biome v2.2.0).
+                // "../*"  — catches single-segment parents: ../types, ../logger, …
+                // "../**/*" — catches nested parents: ../adapters/saml-adapter, …
+                "patterns": [
+                  {
+                    "group": ["../*", "../**/*"],
+                    "message": "Use @/ alias instead — relative parent imports are banned in apps/sso/src/"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

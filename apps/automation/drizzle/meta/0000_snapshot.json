@@ -1,0 +1,98 @@
+{
+  "id": "893b3875-a466-42ed-afd8-510e50ea8322",
+  "prevId": "00000000-0000-0000-0000-000000000000",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.automation_latest_results": {
+      "name": "automation_latest_results",
+      "schema": "",
+      "columns": {
+        "environment_id": {
+          "name": "environment_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "scenario_id": {
+          "name": "scenario_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "run_id": {
+          "name": "run_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "executed_at": {
+          "name": "executed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "duration_ms": {
+          "name": "duration_ms",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "evidence_url": {
+          "name": "evidence_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "upload_status": {
+          "name": "upload_status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "automation_latest_results_environment_id_scenario_id_pk": {
+          "name": "automation_latest_results_environment_id_scenario_id_pk",
+          "columns": ["environment_id", "scenario_id"]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "automation_result_status_check": {
+          "name": "automation_result_status_check",
+          "value": "\"automation_latest_results\".\"status\" in ('passed', 'failed', 'skipped')"
+        },
+        "automation_result_duration_check": {
+          "name": "automation_result_duration_check",
+          "value": "\"automation_latest_results\".\"duration_ms\" >= 0"
+        },
+        "automation_result_upload_check": {
+          "name": "automation_result_upload_check",
+          "value": "\"automation_latest_results\".\"upload_status\" in ('uploaded', 'unavailable', 'failed')"
+        }
+      },
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {},
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

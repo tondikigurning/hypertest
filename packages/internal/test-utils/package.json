@@ -1,0 +1,17 @@
+{
+  "name": "@hyperscal/test-utils",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Testing utilities: scenario contract, adapters, and reporters",
+  "type": "module",
+  "exports": {
+    "./playwright": "./src/playwright/reporter.ts",
+    "./package.json": "./package.json"
+  },
+  "peerDependencies": {
+    "@playwright/test": "1.55.1"
+  },
+  "dependencies": {
+    "google-auth-library": "^10.9.1"
+  }
+}

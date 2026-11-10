@@ -1,0 +1,5 @@
+{
+  "extends": "@hyperscal/app-config/tsconfig/react-packages.json",
+  "include": ["."],
+  "exclude": ["dist", "build", "node_modules", "postcss.config.js"]
+}

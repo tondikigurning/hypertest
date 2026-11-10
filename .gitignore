@@ -1,0 +1,13 @@
+node_modules/
+dist/
+.cache/
+temp/
+.env
+.env.*
+!.env.example
+apps/tenants/.features-gen/
+apps/tenants/playwright/.auth/
+apps/tenants/playwright-report/
+apps/tenants/test-results/
+apps/automation/test-results/
+apps/automation/playwright-report/

@@ -1,0 +1,1 @@
+ALTER TABLE "automation_latest_results" ADD COLUMN "examples" jsonb DEFAULT '[]'::jsonb NOT NULL;

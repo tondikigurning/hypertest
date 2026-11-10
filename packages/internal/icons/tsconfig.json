@@ -1,0 +1,31 @@
+{
+  "compilerOptions": {
+    /* Base Options: */
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "target": "es2022",
+    "allowJs": true,
+    "resolveJsonModule": true,
+    "moduleDetection": "force",
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+    /* Strictness */
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    /* Declaration emit (tsc owns .d.ts; tsdown bundles JS only).
+       No `composite` — tsdown cleans dist first, so incremental tsc would skip re-emitting
+       the just-deleted .d.ts. Reintroduce only when wiring TS Project References. */
+    "module": "preserve",
+    "declaration": true,
+    "declarationMap": true,
+    "emitDeclarationOnly": true,
+    "rootDir": "./src",
+    "outDir": "./dist",
+    /* If your code runs in the DOM: */
+    "lib": ["es2022", "dom", "dom.iterable"],
+    /* Support for JSX */
+    "jsx": "react-jsx"
+  },
+  "include": ["src/**/*"]
+}

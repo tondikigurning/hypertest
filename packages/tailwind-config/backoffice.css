@@ -1,0 +1,600 @@
+/*@import url('https://fonts.googleapis.com/css2?family=Rubik:ital,wght@0,300..900;1,300..900&display=swap');*/
+@import "tailwindcss";
+@import "./src/control.css";
+@import "./src/scrollbar-width.css";
+@import "./src/table.css";
+@import "./src/filter.css";
+
+@source "../../apps/**/*.{ts,tsx}";
+@source "../core/**/*.{ts,tsx}";
+@source "../command/**/*.{ts,tsx}";
+@source "../internal/ui/src/**/*.{ts,tsx}";
+@source "../internal/icons/src/icon.tsx";
+@source "../internal/form/src/**/*.{ts,tsx}";
+@source "../internal/file-uploader/src/**/*.{ts,tsx}";
+@source "../dataview/src/**/*.{ts,tsx}";
+@source "../filters/src/**/*.{ts,tsx}";
+/*@source "safelist.text";*/
+@source inline("line-clamp-{2..6}");
+@source inline("row-start-{1..100}");
+@source inline("min-w-{xs,sm,md,lg,xl}");
+
+@theme {
+  --color-*: initial;
+  --color-primary-20: #faf9fd;
+  --color-primary-30: #f5f3fa;
+  --color-primary-40: #f2eff9;
+  --color-primary-50: #ede9f7;
+  --color-primary-60: #dcd3ef;
+  --color-primary-70: #c9bee7;
+  --color-primary-80: #b8a8df;
+  --color-primary-90: #a792d7;
+  --color-primary-100: #957ccf;
+  --color-primary-200: #8366c7;
+  --color-primary-300: #7151bf;
+  --color-primary-400: #603bb7;
+  --color-primary-500: #4e25af;
+  --color-primary-600: #46219e;
+  --color-primary-700: #3e1e8c;
+  --color-primary-800: #371a7a;
+  --color-primary-900: #2f1669;
+  --color-primary-1000: #271358;
+  --color-primary: #4e25af;
+  --color-secondary-20: #f0f9ff;
+  --color-secondary-30: #e1f3fe;
+  --color-secondary-40: #d1ecfe;
+  --color-secondary-50: #c2e6fd;
+  --color-secondary-60: #b3e0fd;
+  --color-secondary-70: #a4dafc;
+  --color-secondary-80: #85cdfb;
+  --color-secondary-90: #76c7fb;
+  --color-secondary-100: #67c1fa;
+  --color-secondary-200: #4db6f9;
+  --color-secondary-300: #34acf8;
+  --color-secondary-400: #1aa1f7;
+  --color-secondary-500: #0197f6;
+  --color-secondary-600: #0188dd;
+  --color-secondary-700: #0179c5;
+  --color-secondary-800: #016aac;
+  --color-secondary-900: #015b94;
+  --color-secondary-1000: #014c7b;
+  --color-secondary: #0197f6;
+  --color-success-20: #f8fdfc;
+  --color-success-30: #f2faf9;
+  --color-success-40: #ecf9f8;
+  --color-success-50: #e6f7f5;
+  --color-success-60: #ccefeb;
+  --color-success-70: #b3e7e1;
+  --color-success-80: #99dfd7;
+  --color-success-90: #80d7cd;
+  --color-success-100: #66cec2;
+  --color-success-200: #4dc6b8;
+  --color-success-300: #33beae;
+  --color-success-400: #1ab6a4;
+  --color-success-500: #00ae9a;
+  --color-success-600: #009d8b;
+  --color-success-700: #008b7b;
+  --color-success-800: #007a6c;
+  --color-success-900: #00685c;
+  --color-success-1000: #00574d;
+  --color-success: #00ae9a;
+  /* ===================================================================
+   * NEUTRAL PALETTE — pick ONE block below (uncomment it, comment the others)
+   * 1) Gray               — true neutral gray (R=G=B), no tint
+   * 2) Slate              — original slate, subtle blue tint
+   * 3) Purple-tinted slate — slate shifted toward primary purple  [ACTIVE]
+   * =================================================================== */
+
+  /* --- 1) Gray (true neutral) ---
+  --color-neutral-20: #fbfbfb;
+  --color-neutral-30: #f8f8f8;
+  --color-neutral-40: #f5f5f5;
+  --color-neutral-50: #f2f2f2;
+  --color-neutral-60: #e6e6e6;
+  --color-neutral-70: #d9d9d9;
+  --color-neutral-80: #cccccc;
+  --color-neutral-90: #c0c0c0;
+  --color-neutral-100: #b3b3b3;
+  --color-neutral-200: #a6a6a6;
+  --color-neutral-300: #999999;
+  --color-neutral-400: #8d8d8d;
+  --color-neutral-500: #808080;
+  --color-neutral-600: #737373;
+  --color-neutral-700: #666666;
+  --color-neutral-800: #5a5a5a;
+  --color-neutral-900: #4d4d4d;
+  --color-neutral-1000: #404040;
+  --color-neutral: #808080;
+  */
+
+  /* --- 2) Slate (blue-tinted) --- */
+  --color-neutral-20: #f9fbfd;
+  --color-neutral-30: #f5f8fb;
+  --color-neutral-40: #f1f5f9;
+  --color-neutral-50: #eef2f7;
+  --color-neutral-60: #e1e6ed;
+  --color-neutral-70: #d2d9e2;
+  --color-neutral-80: #c3ccd8;
+  --color-neutral-90: #b6c0cd;
+  --color-neutral-100: #a8b3c1;
+  --color-neutral-200: #9aa6b6;
+  --color-neutral-300: #8c99aa;
+  --color-neutral-400: #7f8d9f;
+  --color-neutral-500: #728093;
+  --color-neutral-600: #657387;
+  --color-neutral-700: #58667a;
+  --color-neutral-800: #4d5a6d;
+  --color-neutral-900: #414d5f;
+  --color-neutral-1000: #354051;
+  --color-neutral: #728093;
+
+  /* --- 3) Purple-tinted slate --- [ACTIVE] */
+  /* --color-neutral-20: #faf9fd;
+  --color-neutral-30: #f7f5fb;
+  --color-neutral-40: #f4f2fa;
+  --color-neutral-50: #f1eef7;
+  --color-neutral-60: #e4e1ed;
+  --color-neutral-70: #d7d2e2;
+  --color-neutral-80: #c9c3d8;
+  --color-neutral-90: #bdb6cd;
+  --color-neutral-100: #b0a8c1;
+  --color-neutral-200: #a29ab6;
+  --color-neutral-300: #958caa;
+  --color-neutral-400: #897f9f;
+  --color-neutral-500: #7c7293;
+  --color-neutral-600: #6e6486;
+  --color-neutral-700: #615779;
+  --color-neutral-800: #564c6c;
+  --color-neutral-900: #49405e;
+  --color-neutral-1000: #3c3450;
+  --color-neutral: #7c7293; */
+
+  --color-black-20: #d6d6d6;
+  --color-black-30: #c2c2c2;
+  --color-black-40: #adadad;
+  --color-black-50: #999999;
+  --color-black-60: #707070;
+  --color-black-70: #5c5c5c;
+  --color-black-80: #474747;
+  --color-black-90: #333333;
+  --color-black-100: #2e2e2e;
+  --color-black-200: #292929;
+  --color-black-300: #242424;
+  --color-black-400: #1f1f1f;
+  --color-black-500: #1a1a1a;
+  --color-black-600: #141414;
+  --color-black-700: #0f0f0f;
+  --color-black-800: #0a0a0a;
+  --color-black-900: #050505;
+  --color-black-1000: #000000;
+  --color-black: #1a1a1a;
+  --color-negative-20: #fffafa;
+  --color-negative-30: #fff5f5;
+  --color-negative-40: #fff2f2;
+  --color-negative-50: #ffeded;
+  --color-negative-60: #ffdbdc;
+  --color-negative-70: #ffc9ca;
+  --color-negative-80: #ffb7b9;
+  --color-negative-90: #ffa6a7;
+  --color-negative-100: #ff9495;
+  --color-negative-200: #ff8284;
+  --color-negative-300: #ff7072;
+  --color-negative-400: #ff5e61;
+  --color-negative-500: #ff4c4f;
+  --color-negative-600: #e64447;
+  --color-negative-700: #cc3d3f;
+  --color-negative-800: #b33537;
+  --color-negative-900: #992e2f;
+  --color-negative-1000: #802628;
+  --color-negative: #ff4c4f;
+  --color-warning-20: #fffffe;
+  --color-warning-30: #fefefa;
+  --color-warning-40: #fefdf5;
+  --color-warning-50: #fefef2;
+  --color-warning-60: #fefded;
+  --color-warning-70: #fdfadc;
+  --color-warning-80: #fcf8ca;
+  --color-warning-90: #fbf5b9;
+  --color-warning-100: #f9f095;
+  --color-warning-200: #f8ee84;
+  --color-warning-300: #f7eb72;
+  --color-warning-400: #f6e961;
+  --color-warning-500: #f5e64f;
+  --color-warning-600: #ddcf47;
+  --color-warning-700: #c4b83f;
+  --color-warning-800: #aca137;
+  --color-warning-900: #938a2f;
+  --color-warning-1000: #7b7328;
+  --color-warning: #f5e64f;
+  --color-orange-20: #fcf2e0;
+  --color-orange-30: #faecd1;
+  --color-orange-40: #f9e5c2;
+  --color-orange-50: #f7dfb3;
+  --color-orange-60: #f5d9a3;
+  --color-orange-70: #f4d294;
+  --color-orange-80: #f2cc85;
+  --color-orange-90: #f1c575;
+  --color-orange-100: #efbf66;
+  --color-orange-200: #edb54d;
+  --color-orange-300: #eaaa33;
+  --color-orange-400: #e8a01a;
+  --color-orange-500: #e59500;
+  --color-orange-600: #ce8600;
+  --color-orange-700: #b77700;
+  --color-orange-800: #a06800;
+  --color-orange-900: #895900;
+  --color-orange-1000: #734b00;
+  --color-orange: #e59500;
+  --color-background: #fff;
+  --color-foreground: var(--color-neutral-1000);
+  --color-accent: var(--color-primary-500);
+  --color-accent-foreground: var(--color-primary-20);
+  --color-white: #fff;
+  --color-popover: #fff;
+  --color-popover-foreground: #2e2e2e;
+  --font-family: "Rubik";
+
+  --padding-ratio: 1.618;
+  --color-blue: #0197f6;
+  --color-blue-500: #0197f6;
+
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --color-border: var(--color-neutral-70);
+
+  /* ===================================================================
+   * HYPCRE-6427 — IAM user form quality (schema-driven field row)
+   * Named tokens for the FieldControl opt-in density variant. Decision 9:
+   * named tokens, not literals — every name below is listed in the PR
+   * description. #4e25af is NOT duplicated here — it already resolves to
+   * --color-primary-500 (see field-control.tsx), used directly.
+   * =================================================================== */
+  --color-field-label: #667085;
+  --color-field-value: #1b2434;
+  --color-field-placeholder: #a0a7b4;
+  --color-field-border: #d0d5dd;
+  --color-field-border-hover: #b9c0cb;
+  --color-field-error: #d92d20;
+  --color-field-success: #12a37a;
+  --color-field-neutral: #98a2b3;
+  --color-field-disabled-bg: #f4f5f7;
+  --color-field-disabled-border: #e4e7ec;
+  /* Checkbox restyle (spec §5, added on team-lead hand-back) — checked ground reuses
+   * --color-primary-500 directly, not duplicated here. */
+  --color-field-checkbox-border: #c8ced8;
+  --color-field-checkbox-bg: #eceef1;
+
+  /* Decision 4 — base-4 spacing scale for the field row (1u=4 .. 8u=32). Decision 3 — the message
+   * slot height is DERIVED from this scale (message line − row gap), not a constant: retuning
+   * --spacing-field-2 or --spacing-field-4 recomputes --spacing-field-slot with no other edit. */
+  --spacing-field-1: 4px;
+  --spacing-field-2: 8px;
+  --spacing-field-4: 16px;
+  --spacing-field-6: 24px;
+  --spacing-field-8: 32px;
+  --spacing-field-slot: calc(var(--spacing-field-4) - var(--spacing-field-2));
+
+  /* ===================================================================
+   * user-wizard-frame — the product's FIRST elevation tokens. Nothing in this
+   * package declared a shadow before this ticket, so these establish that the
+   * design system has a depth dimension at all. Named per layer, so the second
+   * consumer inherits a decision instead of copying two magic numbers:
+   * `contact` is the tight shadow that lifts the edge, `ambient` is the wide
+   * soft one that gives the panel its distance from the canvas.
+   * `--shadow-elevation-panel` composes both and is what consumers apply
+   * (`shadow-elevation-panel`).
+   * Owner of the depth SCALE is still unassigned — a scale with one consumer
+   * is a fork with better manners. Before adding a second elevation step,
+   * settle whether the wizard panel is deliberately the only elevated object.
+   * =================================================================== */
+  --shadow-elevation-contact: 0 1px 3px rgba(16, 24, 40, 0.07);
+  --shadow-elevation-ambient: 0 10px 28px rgba(16, 24, 40, 0.05);
+  --shadow-elevation-panel: var(--shadow-elevation-contact), var(--shadow-elevation-ambient);
+
+  /* user-wizard-frame — measure for the wizard's measure-left / measure-centre width models.
+   * PLACEHOLDER, not ruled: it sits between the Figma's 456px and the dead 768px default in
+   * layout-utils.ts. Declared as a token (not interpolated into a class name) so Tailwind can
+   * actually generate the utility — see the widthModel comment in wizard.tsx. */
+  --spacing-wizard-content-measure: 560px;
+
+  /* user-wizard-frame — the content panel's height FLOOR, and it is VIEWPORT-CONDITIONAL.
+   *
+   * Why it exists (Ryan, 2026-08-14, with a screenshot of a squashed panel): the panel is capped by
+   * max-h-full, so on a short window a tall step was crushed to ~252px — about two visible field
+   * rows — which he called unusable. min-height beats max-height in CSS, so a floor makes the
+   * CANVAS scroll instead of the panel collapsing.
+   *
+   * Why it is conditional: a single unconditional floor serves two opposite situations badly. It
+   * protects the short-window case, but on a normal window it pads every SHORT step — permission
+   * sets showed 157px of empty white above its action bar. The floor is only ever needed when the
+   * window cannot give the panel a workable height on its own, so that is the only time it applies.
+   *
+   * The 600px trigger is derived, not picked. Measured: at a 1004px viewport the panel had 843px
+   * available, so chrome + canvas padding costs ~161px. The floor starts mattering when available
+   * height falls below it: 400 + 161 = 561, rounded up to 600 for margin.
+   *
+   * Both numbers live here. Do not reintroduce an unconditional floor at the call site. */
+  --spacing-wizard-panel-min: 0px;
+}
+
+/* user-wizard-frame — the short-window branch of the panel floor. See --spacing-wizard-panel-min
+ * in @theme above for why this is conditional rather than always on. */
+@media (max-height: 600px) {
+  :root {
+    --spacing-wizard-panel-min: 400px;
+  }
+}
+
+@layer base {
+  :root {
+    --spacing-sm-ratio: calc(1 / pow(var(--padding-ratio), 4) * 0.75);
+    --spacing-md-ratio: calc(1 / pow(var(--padding-ratio), 2));
+    --spacing-lg-ratio: calc(1 / var(--padding-ratio) * 0.75);
+
+    --control-sm-spacing: calc(var(--spacing-sm-ratio) * 1rem);
+    --button-sm-spacing: calc(var(--spacing-sm-ratio) * 1rem) calc(var(--spacing-sm-ratio) * 2 * 1rem);
+    --button-sm-spacing-relaxed: calc(var(--spacing-sm-ratio) * 1rem) calc(var(--spacing-sm-ratio) * 2 * 2rem);
+    --control-sm-line-height: 1.125; /* 10px, 12px line-height: ; */
+
+    --control-md-spacing: calc(var(--spacing-md-ratio) * 1rem);
+    --button-md-spacing: calc(var(--spacing-md-ratio) * 1rem) calc(var(--spacing-md-ratio) * 2 * 1rem);
+    --button-md-spacing-relaxed: calc(var(--spacing-md-ratio) * 1rem) calc(var(--spacing-md-ratio) * 2 * 2rem);
+    --control-md-line-height: 1.5; /* 10px, 15px line-height: ; */
+
+    --control-lg-spacing: calc(var(--spacing-lg-ratio) * 1rem);
+    --button-lg-spacing: calc(var(--spacing-lg-ratio) * 1rem) calc(var(--spacing-lg-ratio) * 2 * 1rem);
+    --button-lg-spacing-relaxed: calc(var(--spacing-lg-ratio) * 1rem) calc(var(--spacing-lg-ratio) * 2 * 2rem);
+    --control-lg-line-height: 1.75;
+
+    --text-xs: 11px;
+    --text-sm: 12px;
+    --text-base: 13px; /* Base font size - maintains current readability */
+    --text-lg: 14px;
+    --text-xl: 16px;
+
+    --sidebar: var(--color-white);
+    --sidebar-foreground: var(--color-neutral-1000);
+    --sidebar-primary: var(--color-primary);
+    --sidebar-primary-foreground: var(--color-primary-30);
+    --sidebar-accent: var(--color-neutral-50);
+    --sidebar-accent-foreground: var(--color-neutral-900);
+    --sidebar-border: var(--color-neutral-70);
+    --sidebar-ring: var(--color-neutral-100);
+    --sidebar-width: 14rem;
+
+    --topbar-height: 3.75rem;
+    --breadcrumb-height: 3rem;
+    --tabbar-height: 2.75rem;
+    --content-with-tab: calc(100vh - var(--topbar-height) - var(--breadcrumb-height) - var(--tabbar-height));
+    --content-standard: calc(100vh - var(--topbar-height) - var(--breadcrumb-height));
+    --content-bare: calc(100vh - var(--topbar-height));
+  }
+
+  @media (max-width: 640px) {
+    html {
+      font-size: 14px;
+    }
+    :root {
+      --text-base: 12px; /* Mobile: slightly smaller for space efficiency */
+    }
+  }
+
+  @media (min-width: 1440px) {
+    :root {
+      --sidebar-width: 16rem;
+      --text-base: 14px; /* Large screens: slightly larger for comfort */
+    }
+  }
+  html {
+    font-size: 16px; /* 1rem = 16px for spacing calculations */
+    font-family: var(--font-family), sans-serif;
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-size: var(--text-base); /* Body text = 13px */
+    -webkit-font-smoothing: antialiased !important;
+    -moz-osx-font-smoothing: grayscale !important;
+    height: 100vh;
+    width: 100vw;
+    min-height: 100svh;
+    /* overflow: hidden; */
+  }
+
+  /* a {
+    @apply text-primary-500 cursor-pointer underline decoration-transparent underline-offset-4 transition-all duration-100 ease-in-out;
+  }
+
+  a:hover {
+    @apply text-primary-700 decoration-primary-700;
+  }
+
+  a:focus {
+    @apply outline-hidden ring-primary-300 rounded-xs ring-2;
+  }
+
+  a:visited {
+    @apply text-primary-900;
+  } */
+}
+
+@layer components {
+  @keyframes member-row-in {
+    from {
+      opacity: 0;
+      transform: translateY(-4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-member-row-in {
+    animation: member-row-in 0.18s ease-out;
+  }
+
+  @keyframes member-row-out {
+    from {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    to {
+      opacity: 0;
+      transform: translateY(-4px);
+    }
+  }
+
+  .animate-member-row-out {
+    animation: member-row-out 0.18s ease-in forwards;
+  }
+
+  @keyframes wave {
+    0%,
+    100% {
+      transform: translateY(0) rotate(0deg);
+    }
+    25% {
+      transform: translateY(-5px) rotate(5deg);
+    }
+    50% {
+      transform: translateY(0) rotate(0deg);
+    }
+  }
+
+  .animate-wave {
+    animation: wave 1.5s infinite ease-in-out;
+  }
+
+  .animate-wave-2 {
+    animation: wave 1.5s infinite ease-in-out;
+    animation-delay: 0.2s;
+  }
+
+  .animate-wave-3 {
+    animation: wave 1.5s infinite ease-in-out;
+    animation-delay: 0.4s;
+  }
+
+  .codemirror-readonly {
+    @apply cursor-not-allowed bg-neutral-50 caret-transparent;
+  }
+
+  .selected-h-sm {
+    @apply !h-[18px] pt-1 text-sm leading-[22px];
+  }
+  .selected-h-md {
+    @apply !h-[26px] pt-2 text-base leading-[28px];
+  }
+  .selected-h-lg {
+    @apply !h-[34px] pt-3 text-lg leading-[36px];
+  }
+  .selected-h-fill {
+    @apply !h-[42px] pt-4 text-xl leading-[44px];
+  }
+
+  .border {
+    @apply border-neutral-70;
+  }
+
+  .hide-scroll {
+    scrollbar-width: none;
+  }
+
+  .merge-tag {
+    @apply bg-primary-500;
+    @apply whitespace-normal;
+    @apply text-white;
+    @apply px-2 py-0.5;
+    @apply rounded-sm;
+    @apply my-0.25;
+  }
+
+  /* Quill Toolbar Buttons Styling */
+  .ql-toolbar button {
+    @apply inline-flex items-center justify-center;
+    @apply h-8 px-3;
+    @apply text-sm font-medium;
+    @apply rounded-md;
+    @apply border-neutral-70 border;
+    @apply bg-white text-neutral-800;
+    @apply transition-colors duration-200;
+    @apply cursor-pointer;
+    @apply hover:bg-neutral-50;
+  }
+
+  .ql-toolbar button:focus-visible {
+    @apply ring-primary-500 ring-2 ring-offset-2 outline-none;
+  }
+
+  .ql-toolbar button:disabled {
+    @apply cursor-not-allowed opacity-50;
+  }
+
+  .ql-toolbar button svg {
+    @apply h-4 w-4;
+  }
+
+  .ql-active {
+    background-color: #e2e8f0 !important;
+    color: #1e293b !important;
+  }
+  .ql-active:hover {
+    background-color: #cbd5e1 !important;
+  }
+
+  /* Quill Editor Theming - RichText Component */
+  .ql-toolbar button {
+    @apply inline-flex items-center justify-center;
+    @apply h-8 px-3;
+    @apply text-sm font-medium;
+    @apply rounded-md;
+    @apply border-neutral-70 border;
+    @apply bg-white text-neutral-800;
+    @apply transition-colors duration-200;
+    @apply cursor-pointer;
+    @apply hover:bg-neutral-50;
+  }
+
+  .ql-toolbar button:focus-visible {
+    @apply ring-primary-500 ring-2 ring-offset-2 outline-none;
+  }
+
+  .ql-toolbar button:disabled {
+    @apply cursor-not-allowed opacity-50;
+  }
+
+  .ql-toolbar button svg {
+    @apply h-4 w-4;
+  }
+
+  .ql-active {
+    background-color: #e2e8f0 !important;
+    color: #1e293b !important;
+  }
+  .ql-active:hover {
+    background-color: #cbd5e1 !important;
+  }
+
+  /* Quill Toolbar Select/Dropdown Styling */
+  .ql-toolbar select {
+    @apply h-8 px-2;
+    @apply text-sm;
+    @apply rounded-md;
+    @apply border-neutral-70 border;
+    @apply bg-white text-neutral-800;
+    @apply cursor-pointer;
+  }
+
+  .ql-toolbar select:focus-visible {
+    @apply ring-primary-500 ring-2 ring-offset-2 outline-none;
+  }
+}

@@ -1,0 +1,13 @@
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: automation
+      POSTGRES_PASSWORD: automation
+      POSTGRES_DB: automation
+    ports:
+      - "127.0.0.1:55432:5432"
+    volumes:
+      - automation_postgres:/var/lib/postgresql/data
+volumes:
+  automation_postgres:

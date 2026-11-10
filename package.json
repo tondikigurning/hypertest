@@ -1,0 +1,15 @@
+{
+  "name": "hypertest-automation",
+  "private": true,
+  "packageManager": "pnpm@11.1.3",
+  "scripts": {
+    "dev": "pnpm --filter automation dev",
+    "build": "pnpm --filter automation build",
+    "typecheck": "pnpm --filter automation typecheck",
+    "test:evidence": "tsx packages/internal/test-utils/src/export/evidence-cli.ts"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.4.15",
+    "tsx": "^4.20.3"
+  }
+}
