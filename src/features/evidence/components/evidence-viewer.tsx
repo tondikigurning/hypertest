@@ -1,8 +1,9 @@
 import { Icon } from "@hyperscal/icons";
-import { useEffect, useRef, useState } from "react";
-import { CloseButton, Modal, RetryButton, Spinner } from "../../../components";
+import { type ReactNode, useEffect, useRef, useState } from "react";
+import { CloseButton, Modal, RetryButton, SectionEyebrow, Spinner } from "../../../components";
 import type { Run } from "../../runs/types";
 import { useRunEnvironment } from "../../runs/use-run-environment";
+import { EvidenceNavigationButton } from "./evidence-navigation-button";
 
 interface EvidenceFile {
   id: string;
@@ -13,8 +14,22 @@ interface EvidenceFile {
 }
 type LoadState = "loading" | "ready" | "empty" | "error";
 
-function FileIcon({ video }: { video: boolean }) {
-  return <Icon name={video ? "video" : "photo-video"} aria-hidden="true" />;
+function FileIcon({ mimeType }: { mimeType: string }) {
+  if (mimeType.startsWith("video/")) return <Icon name="video" aria-hidden="true" />;
+  if (mimeType.startsWith("image/")) return <Icon name="photo-video" aria-hidden="true" />;
+  return (
+    <span aria-hidden="true" className="evidence-generic-icon">
+      FILE
+    </span>
+  );
+}
+
+function EvidenceMediaMessage({ children, role }: { children: ReactNode; role?: "alert" | "status" }) {
+  return (
+    <div className="evidence-media-message" role={role}>
+      {children}
+    </div>
+  );
 }
 
 export function EvidenceViewer({
@@ -47,7 +62,7 @@ export function EvidenceViewer({
     const load = async () => {
       let current: Run | null = null;
       try {
-        const response = await fetch("/automation/api/local/run", { signal: controller.signal, cache: "no-store" });
+        const response = await fetch("/api/local/run", { signal: controller.signal, cache: "no-store" });
         if (response.ok && response.headers.get("content-type")?.includes("application/json"))
           current = await response.json();
       } catch (error) {
@@ -65,16 +80,22 @@ export function EvidenceViewer({
         const localFiles = tests.flatMap((test, testIndex) =>
           test.attachments.map((attachment) => ({
             id: `${test.testId}-${attachment.index}`,
-            name: `${tests.length > 1 ? `Example ${testIndex + 1} - ` : ""}${attachment.contentType.startsWith("image/") ? "Screenshot" : "Video"} ${attachment.index + 1}`,
+            name: `${tests.length > 1 ? `Example ${testIndex + 1} - ` : ""}${
+              attachment.contentType.startsWith("image/")
+                ? "Screenshot"
+                : attachment.contentType.startsWith("video/")
+                  ? "Video"
+                  : "File"
+            } ${attachment.index + 1}`,
             mimeType: attachment.contentType,
-            url: `/automation/api/local/evidence?${new URLSearchParams({ run: runId, test: test.testId, index: String(attachment.index) })}`,
+            url: `/api/local/evidence?${new URLSearchParams({ run: runId, test: test.testId, index: String(attachment.index) })}`,
           })),
         );
         if (localFiles.length) return localFiles;
         return [];
       }
       if (!environment) return [];
-      const response = await fetch(`/automation/api/evidence?${new URLSearchParams({ scenario, environment })}`, {
+      const response = await fetch(`/api/evidence?${new URLSearchParams({ scenario, environment })}`, {
         signal: controller.signal,
         cache: "no-store",
       });
@@ -100,8 +121,7 @@ export function EvidenceViewer({
 
   const selected = files[selectedIndex];
   const mediaUrl =
-    selected &&
-    (selected.url || `/automation/api/evidence?${new URLSearchParams({ scenario, environment, file: selected.id })}`);
+    selected && (selected.url || `/api/evidence?${new URLSearchParams({ scenario, environment, file: selected.id })}`);
   const close = () => {
     setOpen(false);
   };
@@ -109,7 +129,7 @@ export function EvidenceViewer({
   return (
     <>
       <button type="button" ref={trigger} className="evidence-link" onClick={() => setOpen(true)}>
-        <FileIcon video={false} />
+        <FileIcon mimeType="image/png" />
         {label || "View evidence"}
         <Icon name="arrow-right" aria-hidden="true" className="evidence-link-arrow" />
       </button>
@@ -117,7 +137,7 @@ export function EvidenceViewer({
         <Modal className="evidence-dialog" labelledBy="evidence-title" onClose={close} returnFocus={trigger}>
           <div className="evidence-header">
             <div className="evidence-heading">
-              <span className="evidence-eyebrow">SCENARIO EVIDENCE</span>
+              <SectionEyebrow>SCENARIO EVIDENCE</SectionEyebrow>
               <h2 id="evidence-title">{title}</h2>
               <span className="evidence-scenario-id">{scenarioId}</span>
             </div>
@@ -126,7 +146,7 @@ export function EvidenceViewer({
           {state !== "ready" ? (
             <div className="evidence-state" role={state === "error" ? "alert" : "status"}>
               <div className={`evidence-state-icon ${state === "loading" ? "spinning" : ""}`}>
-                {state === "loading" ? "◌" : state === "error" ? "!" : <FileIcon video={false} />}
+                {state === "loading" ? "◌" : state === "error" ? "!" : <FileIcon mimeType="image/png" />}
               </div>
               <strong>
                 {state === "loading"
@@ -139,8 +159,8 @@ export function EvidenceViewer({
                 {state === "loading"
                   ? "Getting the files for this scenario…"
                   : state === "empty"
-                    ? "There are no photos or videos available for this scenario yet."
-                    : "Check your connection and Drive access, then try again."}
+                    ? "There are no evidence files available for this scenario yet."
+                    : "Check your connection and storage access, then try again."}
               </p>
               {state === "error" && <RetryButton onRetry={() => setAttempt((value) => value + 1)} />}
             </div>
@@ -148,31 +168,38 @@ export function EvidenceViewer({
             <div className="evidence-body">
               <div className="evidence-stage">
                 <div className="evidence-stage-header">
-                  <span>{selected?.mimeType.startsWith("video/") ? "VIDEO" : "SCREENSHOT"}</span>
+                  <span>
+                    {selected?.mimeType.startsWith("video/")
+                      ? "VIDEO"
+                      : selected?.mimeType.startsWith("image/")
+                        ? "SCREENSHOT"
+                        : "FILE"}
+                  </span>
                   <span>
                     {selectedIndex + 1} / {files.length}
                   </span>
                 </div>
-                {selected && mediaUrl && <EvidenceMedia key={selected.id} file={selected} url={mediaUrl} />}
+                {selected && mediaUrl && (
+                  <EvidenceMedia
+                    key={selected.id}
+                    file={selected}
+                    url={mediaUrl}
+                    onRefresh={() => setAttempt((value) => value + 1)}
+                  />
+                )}
                 <div className="evidence-stage-footer">
                   <span title={selected?.name}>{selected?.name}</span>
                   <div className="evidence-navigation">
-                    <button
-                      type="button"
-                      onClick={() => move(-1)}
+                    <EvidenceNavigationButton
+                      direction="previous"
+                      onSelect={() => move(-1)}
                       disabled={selectedIndex === 0}
-                      aria-label="Previous file"
-                    >
-                      ←
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => move(1)}
+                    />
+                    <EvidenceNavigationButton
+                      direction="next"
+                      onSelect={() => move(1)}
                       disabled={selectedIndex === files.length - 1}
-                      aria-label="Next file"
-                    >
-                      →
-                    </button>
+                    />
                   </div>
                 </div>
               </div>
@@ -194,13 +221,17 @@ export function EvidenceViewer({
                       onClick={() => setSelectedIndex(index)}
                     >
                       <span className="evidence-file-icon">
-                        <FileIcon video={file.mimeType.startsWith("video/")} />
+                        <FileIcon mimeType={file.mimeType} />
                       </span>
                       <span className="evidence-file-text">
                         <strong title={file.name}>{file.name}</strong>
                         <small>
                           {file.exampleTitle ? `${file.exampleTitle} · ` : ""}
-                          {file.mimeType.startsWith("video/") ? "Video" : "Screenshot"}
+                          {file.mimeType.startsWith("video/")
+                            ? "Video"
+                            : file.mimeType.startsWith("image/")
+                              ? "Screenshot"
+                              : "File"}
                         </small>
                       </span>
                       <span className="evidence-file-arrow" aria-hidden="true">
@@ -218,29 +249,31 @@ export function EvidenceViewer({
   );
 }
 
-function EvidenceMedia({ file, url }: { file: EvidenceFile; url: string }) {
-  const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+function EvidenceMedia({ file, url, onRefresh }: { file: EvidenceFile; url: string; onRefresh: () => void }) {
+  const previewable = file.mimeType.startsWith("image/") || file.mimeType.startsWith("video/");
+  const [status, setStatus] = useState<"loading" | "ready" | "error">(previewable ? "loading" : "ready");
   const [attempt, setAttempt] = useState(0);
   const source = attempt ? `${url}&retry=${attempt}` : url;
   return (
     <div className="evidence-media" data-status={status}>
       {status === "loading" && (
-        <div className="evidence-media-message" role="status">
+        <EvidenceMediaMessage role="status">
           <Spinner />
           Loading {file.mimeType.startsWith("image/") ? "image" : "video"}…
-        </div>
+        </EvidenceMediaMessage>
       )}
       {status === "error" && (
-        <div className="evidence-media-message" role="alert">
+        <EvidenceMediaMessage role="alert">
           <strong>Preview unavailable</strong>
           <span>This file couldn't be displayed.</span>
           <RetryButton
             onRetry={() => {
               setStatus("loading");
-              setAttempt((value) => value + 1);
+              if (url.startsWith("http")) onRefresh();
+              else setAttempt((value) => value + 1);
             }}
           />
-        </div>
+        </EvidenceMediaMessage>
       )}
       {file.mimeType.startsWith("image/") ? (
         <img
@@ -251,7 +284,7 @@ function EvidenceMedia({ file, url }: { file: EvidenceFile; url: string }) {
           onError={() => setStatus("error")}
           hidden={status !== "ready"}
         />
-      ) : (
+      ) : file.mimeType.startsWith("video/") ? (
         // biome-ignore lint/a11y/useMediaCaption: Playwright evidence recordings do not include audio or captions.
         <video
           key={attempt}
@@ -264,6 +297,11 @@ function EvidenceMedia({ file, url }: { file: EvidenceFile; url: string }) {
         >
           Video is unavailable.
         </video>
+      ) : (
+        <EvidenceMediaMessage>
+          <strong>This file cannot be previewed here</strong>
+          <a href={source}>Download {file.name}</a>
+        </EvidenceMediaMessage>
       )}
     </div>
   );

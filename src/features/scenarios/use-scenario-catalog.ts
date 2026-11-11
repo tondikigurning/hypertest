@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import type { Scenario } from "./scenario";
 
-const catalogApi = "/automation/api/scenarios";
-const catalogSnapshot = "/automation/scenario-catalog.json";
+const catalogApi = "/api/scenarios";
+const catalogSnapshot = "/scenario-catalog.json";
 
 async function readCatalog(response: Response | null): Promise<Array<Scenario> | null> {
   if (!response?.ok || !response.headers.get("content-type")?.includes("application/json")) return null;

@@ -10,7 +10,7 @@ export function RunEnvironmentProvider({ children }: { children: ReactNode }) {
     let timer: number;
     const refresh = async () => {
       try {
-        const response = await fetch("/automation/api/local/config", { signal: controller.signal });
+        const response = await fetch("/api/local/config", { signal: controller.signal });
         if (response.ok && response.headers.get("content-type")?.includes("application/json")) {
           const data: RunConfig = await response.json();
           if (!controller.signal.aborted) {

@@ -8,10 +8,6 @@ import { DraftRunsProvider } from "./features/runs/draft-runs-context";
 import { RunEnvironmentProvider } from "./features/runs/run-environment-context";
 import { RunMonitorProvider } from "./features/runs/run-monitor-context";
 
-if (window.location.pathname === "/automation/") {
-  window.history.replaceState(window.history.state, "", `/automation${window.location.search}${window.location.hash}`);
-}
-
 const rootContainer = document.getElementById("root");
 if (!rootContainer) throw new Error("Automation root element was not found.");
 const rootCache = window as Window & { __automationReactRoot?: Root };

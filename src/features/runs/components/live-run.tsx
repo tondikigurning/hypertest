@@ -1,6 +1,6 @@
 import { Icon } from "@hyperscal/icons";
-import { useEffect, useState } from "react";
-import { CloseButton, Modal, Spinner } from "../../../components";
+import { type ReactNode, useEffect, useState } from "react";
+import { CloseButton, Modal, SectionEyebrow, Spinner } from "../../../components";
 import type { Run } from "../types";
 
 const stageLabels: Record<string, string> = {
@@ -13,6 +13,22 @@ const stageLabels: Record<string, string> = {
   cancelling: "Stopping run",
 };
 
+function LiveRunMessage({
+  tone,
+  role,
+  children,
+}: {
+  tone: "empty" | "error";
+  role?: "alert" | "status";
+  children: ReactNode;
+}) {
+  return (
+    <p className={`live-${tone}`} role={role}>
+      {children}
+    </p>
+  );
+}
+
 export function LiveRun({ run, onClose }: { run: Run; onClose: () => void }) {
   const [expanded, setExpanded] = useState(false);
   const [cancelError, setCancelError] = useState("");
@@ -21,7 +37,7 @@ export function LiveRun({ run, onClose }: { run: Run; onClose: () => void }) {
     setCancelling(true);
     setCancelError("");
     try {
-      const response = await fetch(`/automation/api/local/cancel?${new URLSearchParams({ run: run.id })}`, {
+      const response = await fetch(`/api/local/cancel?${new URLSearchParams({ run: run.id })}`, {
         method: "POST",
       });
       if (!response.ok) throw new Error((await response.json()).error || "Unable to stop the run.");
@@ -35,7 +51,7 @@ export function LiveRun({ run, onClose }: { run: Run; onClose: () => void }) {
     <Modal className={expanded ? "live-dialog expanded" : "live-dialog"} labelledBy="live-title" onClose={onClose}>
       <header className="live-header">
         <div>
-          <span className="evidence-eyebrow">{run.selection?.kind === "scenario" ? "SCENARIO RUN" : "GROUP RUN"}</span>
+          <SectionEyebrow>{run.selection?.kind === "scenario" ? "SCENARIO RUN" : "GROUP RUN"}</SectionEyebrow>
           <h2 id="live-title">
             {run.scenarioId ||
               (run.selection?.kind === "category"
@@ -100,38 +116,40 @@ export function LiveRun({ run, onClose }: { run: Run; onClose: () => void }) {
             {!run.done && <Spinner />}
           </div>
           {run.error && (
-            <p className="live-error" role="alert">
+            <LiveRunMessage tone="error" role="alert">
               {run.error}
-            </p>
+            </LiveRunMessage>
           )}
           {cancelError && (
-            <p className="live-error" role="alert">
+            <LiveRunMessage tone="error" role="alert">
               {cancelError}
-            </p>
+            </LiveRunMessage>
           )}
           {run.cancelRequested && (
-            <p className="live-error" role="status">
+            <LiveRunMessage tone="error" role="status">
               The runner was stopped. The current scenario may have been interrupted before cleanup completed.
-            </p>
+            </LiveRunMessage>
           )}
           {run.done && run.evidenceUpload?.status === "uploaded" && (
-            <p className="live-empty" role="status">
-              Drive evidence uploaded for {run.evidenceUpload.scenarioIds.length}{" "}
+            <LiveRunMessage tone="empty" role="status">
+              Evidence uploaded for {run.evidenceUpload.scenarioIds.length}{" "}
               {run.evidenceUpload.scenarioIds.length === 1 ? "scenario" : "scenarios"}.
-            </p>
+            </LiveRunMessage>
           )}
           {run.done && run.evidenceUpload?.status === "unavailable" && (
-            <p className="live-empty" role="status">
-              Evidence was not uploaded. Check the configured Drive credentials and whether this run produced
+            <LiveRunMessage tone="empty" role="status">
+              Evidence was not uploaded. Check the configured storage credentials and whether this run produced
               screenshots or video.
-            </p>
+            </LiveRunMessage>
           )}
           {run.done && run.evidenceUpload?.status === "failed" && (
-            <p className="live-error" role="alert">
-              Evidence upload failed. The catalog keeps its previous Drive link.
-            </p>
+            <LiveRunMessage tone="error" role="alert">
+              Evidence upload failed. The latest result remains separate from evidence upload status.
+            </LiveRunMessage>
           )}
-          {run.tests.length === 0 && <p className="live-empty">Steps will appear when the scenario starts.</p>}
+          {run.tests.length === 0 && (
+            <LiveRunMessage tone="empty">Steps will appear when the scenario starts.</LiveRunMessage>
+          )}
           {run.tests.map((test) => (
             <div className="live-test" key={test.testId}>
               <div className="live-test-heading">
@@ -154,13 +172,13 @@ export function LiveRun({ run, onClose }: { run: Run; onClose: () => void }) {
                   ))}
                 </ol>
               ) : (
-                <p className="live-empty">
+                <LiveRunMessage tone="empty">
                   {test.status === "pending"
                     ? "Waiting to start."
                     : test.status === "running"
                       ? "Preparing test…"
                       : "No step details were recorded."}
-                </p>
+                </LiveRunMessage>
               )}
             </div>
           ))}
@@ -185,7 +203,7 @@ function BrowserPreview({ runId, done, stage }: { runId: string; done: boolean; 
         return;
       }
       try {
-        const response = await fetch(`/automation/api/local/live?${new URLSearchParams({ run: runId })}`, {
+        const response = await fetch(`/api/local/live?${new URLSearchParams({ run: runId })}`, {
           signal: controller.signal,
           cache: "no-store",
           headers: etag ? { "If-None-Match": etag } : {},

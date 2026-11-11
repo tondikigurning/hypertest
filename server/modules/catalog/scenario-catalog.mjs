@@ -135,50 +135,53 @@ export function scenarioCatalog(root) {
   return scenarios;
 }
 
+/** Add the fields used by the Automation explorer to an authored scenario. */
+export function enrichScenario(scenario) {
+  const tag = (prefix) => scenario.tags.find((value) => value.startsWith(prefix))?.slice(prefix.length);
+  const flow = tag("@flow:")
+    ?.replace(/_FLOW$/, "")
+    .split("_");
+  const category =
+    flow
+      ?.slice(flow.length > 2 ? 2 : flow.length === 2 ? 1 : 0)
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+      .join(" ") || scenario.feature;
+  let expect = tag("@expect:");
+  if (expect) {
+    try {
+      expect = decodeURIComponent(expect);
+    } catch {
+      /* Keep the authored value. */
+    }
+  }
+  if (!expect) {
+    let asserting = false;
+    for (const step of scenario.steps) {
+      const match = step.match(/^(Given|When|Then|And|But)\s+(.+)$/);
+      if (!match) continue;
+      if (match[1] === "Then") asserting = true;
+      else if (match[1] === "Given" || match[1] === "When") asserting = false;
+      if (asserting) expect = match[2];
+    }
+  }
+  return {
+    ...scenario,
+    category,
+    type: tag("@type:") || "positive",
+    method: "e2e",
+    catalogTags: scenario.tags
+      .filter((value) => ["@smoke", "@regression", "@quarantine", "@fixme"].includes(value))
+      .map((value) => value.slice(1)),
+    expect: expect || scenario.title,
+    status: "",
+    lastRun: "",
+    duration: "",
+    evidenceLabel: "View evidence",
+    evidenceUrl: "",
+  };
+}
+
 /** Build the Automation catalog from the versioned feature sources. */
 export function automationCatalog(root) {
-  return scenarioCatalog(root).map((scenario) => {
-    const tag = (prefix) => scenario.tags.find((value) => value.startsWith(prefix))?.slice(prefix.length);
-    const flow = tag("@flow:")
-      ?.replace(/_FLOW$/, "")
-      .split("_");
-    const category =
-      flow
-        ?.slice(flow.length > 2 ? 2 : flow.length === 2 ? 1 : 0)
-        .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
-        .join(" ") || scenario.feature;
-    let expect = tag("@expect:");
-    if (expect) {
-      try {
-        expect = decodeURIComponent(expect);
-      } catch {
-        /* Keep the authored value. */
-      }
-    }
-    if (!expect) {
-      let asserting = false;
-      for (const step of scenario.steps) {
-        const match = step.match(/^(Given|When|Then|And|But)\s+(.+)$/);
-        if (!match) continue;
-        if (match[1] === "Then") asserting = true;
-        else if (match[1] === "Given" || match[1] === "When") asserting = false;
-        if (asserting) expect = match[2];
-      }
-    }
-    return {
-      ...scenario,
-      category,
-      type: tag("@type:") || "positive",
-      method: "e2e",
-      catalogTags: scenario.tags
-        .filter((value) => ["@smoke", "@regression", "@quarantine", "@fixme"].includes(value))
-        .map((value) => value.slice(1)),
-      expect: expect || scenario.title,
-      status: "",
-      lastRun: "",
-      duration: "",
-      evidenceLabel: "View evidence",
-      evidenceUrl: "",
-    };
-  });
+  return scenarioCatalog(root).map(enrichScenario);
 }

@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { CloseButton } from "../../../components";
 import { EvidenceViewer } from "../../evidence/components/evidence-viewer";
 import { DraftRun } from "../../runs/components/draft-run";
@@ -6,6 +7,14 @@ import { hasDistinctExpectedResult, type Scenario } from "../scenario";
 import { RunStatus } from "./run-status";
 import { ScenarioMetadata } from "./scenario-metadata";
 import { ScenarioSteps } from "./scenario-steps";
+
+function ExecutionState({ children }: { children: ReactNode }) {
+  return <p className="execution-state">{children}</p>;
+}
+
+function ScenarioDetailsDivider() {
+  return <div className="divider" />;
+}
 
 export function ScenarioDetails({
   scenario,
@@ -110,15 +119,27 @@ export function ScenarioDetails({
               <ScenarioSteps background={scenario.draftBefore.background} steps={scenario.draftBefore.steps} />
             </details>
           )}
-          <div className="divider" />
+          <ScenarioDetailsDivider />
           <ScenarioSteps background={scenario.background} steps={scenario.steps} />
           {scenario.draft && scenario.draft !== "deleted" ? (
-            <DraftRun key={scenario.key} scenario={scenario} />
+            <>
+              {scenario.availabilityReasons.some(
+                (reason) => reason !== "Draft scenario execution is currently unavailable in this preview.",
+              ) && (
+                <ExecutionState>
+                  Draft preview:{" "}
+                  {scenario.availabilityReasons
+                    .filter((reason) => reason !== "Draft scenario execution is currently unavailable in this preview.")
+                    .join(" ")}
+                </ExecutionState>
+              )}
+              <DraftRun key={scenario.key} scenario={scenario} />
+            </>
           ) : scenario.availability === "unavailable" ? (
-            <p className="execution-state">Execution unavailable: {scenario.availabilityReasons.join(" ")}</p>
+            <ExecutionState>Execution unavailable: {scenario.availabilityReasons.join(" ")}</ExecutionState>
           ) : (
             <>
-              <div className="divider" />
+              <ScenarioDetailsDivider />
               <LocalRun key={scenario.key} scenarioId={scenario.id} />
             </>
           )}

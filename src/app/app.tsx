@@ -1,6 +1,6 @@
 import { Icon } from "@hyperscal/icons";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { CollapsibleRegion, FilterSelect } from "../components";
+import { CollapsibleRegion, SelectInput, TextInput } from "../components";
 import { AgentWidget } from "../features/agent/agent-widget";
 import { LiveRun } from "../features/runs/components/live-run";
 import { EnvironmentVariables, GroupRun } from "../features/runs/components/local-run";
@@ -8,11 +8,18 @@ import { useActiveRun } from "../features/runs/use-active-run";
 import { useRunEnvironment } from "../features/runs/use-run-environment";
 import { RunStatus } from "../features/scenarios/components/run-status";
 import { ScenarioDetails } from "../features/scenarios/components/scenario-details";
+import { ClearFiltersButton, ScenarioListState } from "../features/scenarios/components/scenario-list-state";
 import { ScenarioMetadata } from "../features/scenarios/components/scenario-metadata";
 import { ScenarioNavigation } from "../features/scenarios/components/scenario-navigation";
 import { navigationFromUrl, writeNavigationUrl } from "../features/scenarios/navigation";
 import { category, featureTitle, label, type Scenario } from "../features/scenarios/scenario";
-import { filterScenarios, groupFlows, groupModules } from "../features/scenarios/selectors";
+import {
+  filterScenarios,
+  groupFlows,
+  groupModules,
+  type ScenarioSort,
+  sortScenarios,
+} from "../features/scenarios/selectors";
 import { useDraftScenarios } from "../features/scenarios/use-draft-scenarios";
 import { useScenarioCatalog } from "../features/scenarios/use-scenario-catalog";
 
@@ -28,35 +35,43 @@ export function App() {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [isHome, setIsHome] = useState(
     () =>
-      ["/automation", "/automation/"].includes(window.location.pathname) &&
+      window.location.pathname === "/" &&
       !new URL(window.location.href).searchParams.has("module") &&
       !new URL(window.location.href).searchParams.has("submodule"),
   );
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => window.matchMedia("(max-width: 650px)").matches);
-  const isRunning = (scenario: Scenario) =>
-    Boolean(activeRun && !activeRun.done && scenario.hasId && activeRun.scenarioIds?.includes(scenario.id));
-  const activeStatus = (scenario: Scenario) =>
-    isRunning(scenario)
-      ? activeRun?.tests.some((test) => test.scenarioId === scenario.id && test.status === "running")
-        ? "Running"
-        : "In run"
-      : scenario.status;
+  const isRunning = useCallback(
+    (scenario: Scenario) =>
+      Boolean(activeRun && !activeRun.done && scenario.hasId && activeRun.scenarioIds?.includes(scenario.id)),
+    [activeRun],
+  );
+  const activeStatus = useCallback(
+    (scenario: Scenario) =>
+      isRunning(scenario)
+        ? activeRun?.tests.some((test) => test.scenarioId === scenario.id && test.status === "running")
+          ? "Running"
+          : "In run"
+        : scenario.status,
+    [activeRun, isRunning],
+  );
   const [search, setSearch] = useState("");
   const [featureFile, setFeatureFile] = useState<string>();
   const [openModules, setOpenModules] = useState<Set<string>>(new Set());
   const [closedFlows, setClosedFlows] = useState<Set<string>>(new Set());
   const [selected, setSelected] = useState<string>();
-  const [filter, setFilter] = useState("all");
+  const [tag, setTag] = useState("all");
+  const [flow, setFlow] = useState("all");
+  const [status, setStatus] = useState("all");
   const [priority, setPriority] = useState("all");
   const [type, setType] = useState("all");
+  const [sort, setSort] = useState<ScenarioSort>("source");
   const initializeNavigation = useCallback((catalog: Array<Scenario>) => {
     const navigation = navigationFromUrl(new URL(window.location.href), catalog);
     setFeatureFile(navigation.featureFile);
     setIsHome(navigation.isHome);
     setOpenModules(navigation.module ? new Set([navigation.module]) : new Set());
     if (navigation.featureFile) writeNavigationUrl(navigation.module, navigation.featureFile, true);
-    else if (window.location.pathname !== "/automation" || window.location.search)
-      writeNavigationUrl(undefined, undefined, true);
+    else if (window.location.pathname !== "/" || window.location.search) writeNavigationUrl(undefined, undefined, true);
   }, []);
   const {
     scenarios: officialScenarios,
@@ -73,7 +88,7 @@ export function App() {
       setSelected(undefined);
       setOpenModules(navigation.module ? new Set([navigation.module]) : new Set());
       if (navigation.featureFile) writeNavigationUrl(navigation.module, navigation.featureFile, true);
-      else if (window.location.pathname !== "/automation" || window.location.search)
+      else if (window.location.pathname !== "/" || window.location.search)
         writeNavigationUrl(undefined, undefined, true);
     };
     window.addEventListener("popstate", restoreNavigation);
@@ -87,6 +102,26 @@ export function App() {
         ...new Set(scenarios.flatMap((s) => s.tags.filter((t) => t.startsWith("@priority:")).map((t) => t.slice(10)))),
       ].sort(),
     [scenarios],
+  );
+  const tags = useMemo(
+    () =>
+      [
+        ...new Set(
+          scenarios.flatMap((scenario) =>
+            scenario.tags.filter(
+              (value) =>
+                !/^@(?:flow|expect|type|ref|priority):/.test(value) &&
+                !/^@[A-Z]{2,4}_[A-Z0-9_]+_E2E_\d{3,4}$/.test(value),
+            ),
+          ),
+        ),
+      ].sort(),
+    [scenarios],
+  );
+  const flowOptions = useMemo(() => [...new Set(scenarios.map((scenario) => category(scenario)))].sort(), [scenarios]);
+  const statuses = useMemo(
+    () => [...new Set(scenarios.map((scenario) => activeStatus(scenario)?.trim() || "Not run"))].sort(),
+    [scenarios, activeStatus],
   );
   const agentContextScenarios = useMemo(
     () =>
@@ -103,9 +138,17 @@ export function App() {
       })),
     [scenarios],
   );
+  const filterableScenarios = useMemo(
+    () => scenarios.map((scenario) => ({ ...scenario, status: activeStatus(scenario) })),
+    [scenarios, activeStatus],
+  );
   const filtered = useMemo(
-    () => filterScenarios(scenarios, { featureFile, suite: filter, priority, type, search }),
-    [scenarios, featureFile, filter, priority, type, search],
+    () =>
+      sortScenarios(
+        filterScenarios(filterableScenarios, { featureFile, tag, flow, status, priority, type, search }),
+        sort,
+      ),
+    [filterableScenarios, featureFile, tag, flow, status, priority, type, search, sort],
   );
   const chosen = scenarios.find((s) => s.key === selected);
   const references = useMemo(
@@ -128,21 +171,35 @@ export function App() {
       next.delete(`${scenario.file}:${category(scenario)}`);
       return next;
     });
-    setFilter("all");
+    setTag("all");
+    setFlow("all");
+    setStatus("all");
     setPriority("all");
     setType("all");
+    setSort("source");
     setSearch("");
     setSelected(scenario.key);
   };
   const feature = scenarios.find((s) => s.file === featureFile);
   const flows = useMemo(() => groupFlows(filtered), [filtered]);
-  const hasFilters = Boolean(search.trim() || filter !== "all" || priority !== "all" || type !== "all");
+  const hasFilters = Boolean(
+    search.trim() ||
+      tag !== "all" ||
+      flow !== "all" ||
+      status !== "all" ||
+      priority !== "all" ||
+      type !== "all" ||
+      sort !== "source",
+  );
   const featureCount = feature ? scenarios.filter((item) => item.file === feature.file).length : 0;
   const clearFilters = () => {
     setSearch("");
-    setFilter("all");
+    setTag("all");
+    setFlow("all");
+    setStatus("all");
     setPriority("all");
     setType("all");
+    setSort("source");
   };
   const goHome = () => {
     writeNavigationUrl();
@@ -190,7 +247,7 @@ export function App() {
               className="environment-select"
               title={activeRun && !activeRun.done ? "Environment cannot be changed during a run" : undefined}
             >
-              <FilterSelect
+              <SelectInput
                 label="Select environment"
                 value={environment}
                 onChange={setEnvironment}
@@ -248,26 +305,35 @@ export function App() {
                   )}
                 </div>
                 <div className="toolbar">
-                  <label className="search">
+                  <label className="search" htmlFor="scenario-search">
                     <Icon name="search" aria-hidden="true" className="search-icon" />
-                    <input
+                    <TextInput
+                      id="scenario-search"
                       aria-label="Search scenarios"
                       placeholder="Search all scenarios"
                       value={search}
-                      onChange={(e) => setSearch(e.target.value)}
+                      onValueChange={setSearch}
                     />
                   </label>
-                  <FilterSelect
-                    label="Filter by suite"
-                    value={filter}
-                    onChange={setFilter}
+                  <SelectInput
+                    label="Filter by tag"
+                    value={tag}
+                    onChange={setTag}
                     options={[
-                      { value: "all", label: "All suites" },
-                      { value: "smoke", label: "Smoke" },
-                      { value: "regression", label: "Regression" },
+                      { value: "all", label: "All tags" },
+                      ...tags.map((value) => ({ value: value.toLowerCase(), label: label(value.slice(1)) })),
                     ]}
                   />
-                  <FilterSelect
+                  <SelectInput
+                    label="Filter by flow"
+                    value={flow}
+                    onChange={setFlow}
+                    options={[
+                      { value: "all", label: "All flows" },
+                      ...flowOptions.map((value) => ({ value, label: value })),
+                    ]}
+                  />
+                  <SelectInput
                     label="Filter by priority"
                     value={priority}
                     onChange={setPriority}
@@ -276,7 +342,7 @@ export function App() {
                       ...priorities.map((p) => ({ value: p, label: p })),
                     ]}
                   />
-                  <FilterSelect
+                  <SelectInput
                     label="Filter by type"
                     value={type}
                     onChange={setType}
@@ -285,35 +351,45 @@ export function App() {
                       ...types.map((t) => ({ value: t, label: label(t) })),
                     ]}
                   />
+                  <SelectInput
+                    label="Filter by status"
+                    value={status}
+                    onChange={setStatus}
+                    options={[
+                      { value: "all", label: "All statuses" },
+                      ...statuses.map((value) => ({ value, label: value })),
+                    ]}
+                  />
+                  <SelectInput
+                    label="Sort scenarios"
+                    value={sort}
+                    onChange={(value) => setSort(value as ScenarioSort)}
+                    options={[
+                      { value: "source", label: "Source order" },
+                      { value: "id", label: "ID" },
+                      { value: "flow", label: "Flow" },
+                      { value: "tag", label: "Tag" },
+                      { value: "title", label: "Title" },
+                      { value: "type", label: "Type" },
+                      { value: "priority", label: "Priority" },
+                      { value: "status", label: "Status" },
+                      { value: "last-run", label: "Last run" },
+                    ]}
+                  />
                 </div>
                 {hasFilters && (
                   <div className="filter-summary">
-                    <span>Filters applied</span>
-                    <button type="button" onClick={clearFilters}>
-                      Clear all
-                    </button>
+                    <span>Filters or sorting applied</span>
+                    <ClearFiltersButton onClear={clearFilters}>Clear all</ClearFiltersButton>
                   </div>
                 )}
               </div>
               <div className="scenario-list">
                 {error && <p role="alert">{error}</p>}
                 {draftError && <p role="alert">Drafts: {draftError}</p>}
-                {loading && (
-                  <div className="empty" role="status">
-                    Loading scenarios&hellip;
-                  </div>
-                )}
+                {loading && <ScenarioListState kind="loading" />}
                 {!loading && !error && feature && filtered.length === 0 && (
-                  <div className="empty">
-                    <span className="empty-symbol" aria-hidden="true">
-                      ⌕
-                    </span>
-                    <strong>No matching scenarios</strong>
-                    <span>Try a different search or adjust your filters.</span>
-                    <button type="button" className="clear-filters" onClick={clearFilters}>
-                      Clear filters
-                    </button>
-                  </div>
+                  <ScenarioListState kind="empty" onClear={clearFilters} />
                 )}
                 {flows.map(([flowKey, entries]) => {
                   const categoryName = category(entries[0]);

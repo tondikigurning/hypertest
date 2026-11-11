@@ -3,6 +3,7 @@ import type { DraftRunState } from "./draft-evidence-store";
 
 export interface DraftRunsState {
   run: DraftRunState | null;
+  starting: boolean;
   error: string;
   revision: number;
   start: (scenarioId: string, environment: string) => Promise<void>;

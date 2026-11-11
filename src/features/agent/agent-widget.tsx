@@ -1,12 +1,31 @@
 ﻿import { Icon } from "@hyperscal/icons";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { CloseButton, FilterSelect } from "../../components";
+import { CloseButton, SelectInput, TextAreaInput, TextInput } from "../../components";
 import { readVariables } from "../runs/run-variables";
 import { useActiveRun } from "../runs/use-active-run";
+import { useDraftRuns } from "../runs/use-draft-runs";
 import { useRunEnvironment } from "../runs/use-run-environment";
 import { label as displayLabel } from "../scenarios/scenario";
-import { agentFetch } from "./agent-api";
-import { Testasaurus, type TestasaurusMood } from "./testasaurus";
+import { agentFetch, getActiveDraftId, setActiveDraftId } from "./agent-api";
+import { AgentSettings } from "./agent-settings";
+import {
+  AgentContextAction,
+  AgentContextError,
+  AgentContextOption,
+  AgentContextResults,
+  AgentContextSearch,
+} from "./components/agent-context-controls";
+import {
+  AgentAlert,
+  AgentModelButton,
+  AgentReviewHeading,
+  AgentReviewNote,
+  AgentReviewStatus,
+  PullRequestLink,
+} from "./components/agent-review-controls";
+import { AgentStarterButton } from "./components/agent-starter-button";
+import { AgentWorkspaceTab } from "./components/agent-workspace-tab";
+import { QRex, type QRexMood } from "./q-rex";
 import "./agent.css";
 
 interface Message {
@@ -49,42 +68,58 @@ interface Session {
   busy: boolean;
   error: string;
   mode: string;
+  provider?: string;
   model?: string;
-  effort?: string;
   baseCommit?: string;
   branch?: string;
+  baseBranch?: string;
+  syncConflicts?: Array<string>;
   requestedSkill?: string;
   canCancel?: boolean;
   userRequest?: { id: string | number; questions: Array<AgentQuestion> };
-  approvalRequest?: { id: string | number; kind: "command" | "file"; reason: string; command: string };
+  approvalRequest?: { id: string | number; kind: "command" | "file" | "data-safety"; reason: string; command: string };
 }
-interface AgentModel {
+interface LocalDraft {
   id: string;
-  name: string;
-  isDefault: boolean;
-  efforts: Array<string>;
-  defaultEffort?: string;
+  title: string;
+  branch?: string;
+  targetBranch: string;
+  status: "active" | "archived";
+  lastActivityAt: string;
+}
+interface PullRequestRecord {
+  title: string;
+  url: string;
+  number: number;
+  branch: string;
+  baseBranch: string;
+  status: string;
+  createdAt: string;
+  mergedAt?: string;
+  closedAt?: string;
 }
 interface AgentQuestion {
   id: string;
   header: string;
   question: string;
   isSecret: boolean;
-  options: Array<{ label: string; description: string }> | null;
+  options: Array<{ label: string; description: string; recommended?: boolean }> | null;
 }
 interface DraftFeature {
   file: string;
   deleted?: boolean;
   scenarios: Array<{ id: string; title: string; line: number; steps: Array<string> }>;
 }
-const endpoint = "/automation/api/agent";
+const endpoint = "/api/agent";
 
 const contextStorageKey = "automation-agent-contexts";
 const commands = [
   { name: "ask-qa", description: "Ask about testing or investigate a scenario." },
+  { name: "write-prd", description: "Import, explore, or review a sub-module PRD." },
   { name: "write-e2e-scenarios", description: "Discover, write or review E2E scenarios." },
   { name: "write-e2e-code", description: "Implement or repair E2E test code." },
 ];
+const environmentSkills = new Set(["write-prd", "write-e2e-scenarios", "write-e2e-code"]);
 
 function contextId() {
   return globalThis.crypto?.randomUUID?.() ?? `context-${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -176,7 +211,7 @@ export function AgentWidget({
 }) {
   const [open, setOpen] = useState(false);
   const [expanded, setExpanded] = useState(false);
-  const [view, setView] = useState<"chat" | "changes">("chat");
+  const [view, setView] = useState<"chat" | "changes" | "history" | "settings">("chat");
   const [message, setMessage] = useState("");
   const [waves, setWaves] = useState(0);
   const [selectedSkill, setSelectedSkill] = useState<string>();
@@ -211,6 +246,7 @@ export function AgentWidget({
   }, [home, contextPicker]);
   const toggleRef = useRef<HTMLButtonElement>(null);
   const latestRun = useActiveRun(true);
+  const { run: draftRun, starting: draftRunStarting } = useDraftRuns();
   const selectionSignature = scenario ? `scenario:${scenario.key}` : feature ? `feature:${feature.file}` : "";
   const previousSelection = useRef(selectionSignature);
   const close = () => {
@@ -218,7 +254,7 @@ export function AgentWidget({
     toggleRef.current?.focus();
   };
   const selectPrompt = (value: string) => {
-    const match = value.match(/^\/(ask-qa|write-e2e-scenarios|write-e2e-code)\s*/);
+    const match = value.match(/^\/(ask-qa|write-prd|write-e2e-scenarios|write-e2e-code)\s*/);
     if (match) {
       setSelectedSkill(match[1]);
       setMessage(value.slice(match[0].length));
@@ -239,11 +275,26 @@ export function AgentWidget({
     return () => window.removeEventListener("keydown", onKey);
   }, [open, home]);
   const [session, setSession] = useState<Session>();
-  const [modelInfo, setModelInfo] = useState<string>();
-  const [effortInfo, setEffortInfo] = useState<string>();
-  const [modelOptions, setModelOptions] = useState<Array<AgentModel>>([]);
-  const [modelError, setModelError] = useState("");
-  const [changingSettings, setChangingSettings] = useState(false);
+  const [activeDraftId, setDraftIdState] = useState(() => getActiveDraftId());
+  const [drafts, setDrafts] = useState<Array<LocalDraft>>([]);
+  const [draftTargets, setDraftTargets] = useState<Array<string>>([]);
+  const [defaultDraftTarget, setDefaultDraftTarget] = useState("");
+  const [draftsLoading, setDraftsLoading] = useState(false);
+  const [showDraftForm, setShowDraftForm] = useState(false);
+  const [draftTitle, setDraftTitle] = useState("");
+  const [draftTarget, setDraftTarget] = useState("");
+  const [draftError, setDraftError] = useState("");
+  const [pullRequests, setPullRequests] = useState<Array<PullRequestRecord>>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  useEffect(() => {
+    const update = () => setDraftIdState(getActiveDraftId());
+    window.addEventListener("automation-agent-draft-change", update);
+    window.addEventListener("storage", update);
+    return () => {
+      window.removeEventListener("automation-agent-draft-change", update);
+      window.removeEventListener("storage", update);
+    };
+  }, []);
   // Recalculate after text changes and whenever the conditionally rendered composer returns.
   // biome-ignore lint/correctness/useExhaustiveDependencies: These values control the textarea's content and presence.
   useEffect(() => {
@@ -386,8 +437,159 @@ export function AgentWidget({
     setSession(snapshot);
   }, []);
 
+  const selectDraft = useCallback(
+    (draftId: string) => {
+      if (draftRun || draftRunStarting || sending || reviewing || session?.busy) return;
+      setActiveDraftId(draftId);
+      setDraftIdState(draftId);
+      setSession(undefined);
+      setConnectionError(false);
+      setError("");
+      setPatch(undefined);
+      setReviewDigest(undefined);
+      setScenarioReview(undefined);
+      setPreview([]);
+      setView("chat");
+    },
+    [draftRun, draftRunStarting, reviewing, sending, session?.busy],
+  );
+
+  const loadDrafts = useCallback(async () => {
+    setDraftsLoading(true);
+    setDraftError("");
+    try {
+      const [draftResponse, targetResponse] = await Promise.all([
+        agentFetch(`${endpoint}/drafts`, { cache: "no-store" }),
+        agentFetch(`${endpoint}/draft-targets`, { cache: "no-store" }),
+      ]);
+      const [draftResult, targetResult] = await Promise.all([draftResponse.json(), targetResponse.json()]);
+      if (!draftResponse.ok) throw new Error(draftResult.error || "Could not load local drafts.");
+      if (!targetResponse.ok) throw new Error(targetResult.error || "Could not load target branches.");
+      let nextDrafts = draftResult as Array<LocalDraft>;
+      const targets = targetResult as { branches?: Array<string>; defaultBranch?: string };
+      setDrafts(nextDrafts);
+      setDraftTargets(targets.branches || []);
+      setDefaultDraftTarget(targets.defaultBranch || "");
+      setDraftTarget((current) => current || targets.defaultBranch || targets.branches?.[0] || "");
+
+      let preferred = nextDrafts.find((draft) => draft.id === activeDraftId);
+      if (!preferred) preferred = nextDrafts.find((draft) => draft.status === "active");
+      if (!preferred && nextDrafts.length === 0 && targets.defaultBranch) {
+        const createResponse = await agentFetch(`${endpoint}/drafts`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title: "Local draft", targetBranch: targets.defaultBranch }),
+        });
+        const created = (await createResponse.json()) as LocalDraft & { error?: string };
+        if (!createResponse.ok) throw new Error(created.error || "Could not create a local draft.");
+        nextDrafts = [created];
+        setDrafts(nextDrafts);
+        preferred = created;
+      }
+      if (preferred && preferred.id !== activeDraftId) {
+        setActiveDraftId(preferred.id);
+        setDraftIdState(preferred.id);
+      } else if (!preferred && activeDraftId) {
+        setActiveDraftId("");
+        setDraftIdState("");
+      }
+      if (!preferred && nextDrafts.length === 0 && !targets.defaultBranch)
+        setDraftError("Create a local target branch before starting a draft.");
+    } catch (cause) {
+      setDraftError(
+        cause instanceof SyntaxError
+          ? "Could not load local drafts. Check that the local Automation API is running."
+          : cause instanceof Error
+            ? cause.message
+            : "Could not load local drafts.",
+      );
+    } finally {
+      setDraftsLoading(false);
+    }
+  }, [activeDraftId]);
+
+  const createDraft = async () => {
+    if (sending || reviewing || session?.busy || draftRunStarting || draftRun) return;
+    const title = draftTitle.trim() || "Local draft";
+    const targetBranch = draftTarget || defaultDraftTarget;
+    if (!targetBranch) {
+      setDraftError("Choose a target branch before creating a draft.");
+      return;
+    }
+    setSending(true);
+    setDraftError("");
+    try {
+      const response = await agentFetch(`${endpoint}/drafts`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title, targetBranch }),
+      });
+      const result = (await response.json()) as LocalDraft & { error?: string };
+      if (!response.ok) throw new Error(result.error || "Could not create a local draft.");
+      setDrafts((current) => [result, ...current.filter((item) => item.id !== result.id)]);
+      setDraftTitle("");
+      setShowDraftForm(false);
+      selectDraft(result.id);
+    } catch (cause) {
+      setDraftError(cause instanceof Error ? cause.message : "Could not create a local draft.");
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const restoreDraft = async () => {
+    const selected = drafts.find((draft) => draft.id === activeDraftId);
+    if (!selected || selected.status !== "archived") return;
+    setSending(true);
+    setDraftError("");
+    try {
+      const response = await agentFetch(`${endpoint}/drafts/${selected.id}/restore`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: "{}",
+      });
+      const result = (await response.json()) as LocalDraft & { error?: string };
+      if (!response.ok) throw new Error(result.error || "Could not restore this draft.");
+      setDrafts((current) => current.map((draft) => (draft.id === result.id ? result : draft)));
+      selectDraft(result.id);
+    } catch (cause) {
+      setDraftError(cause instanceof Error ? cause.message : "Could not restore this draft.");
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const loadPullRequests = useCallback(async (refresh = false) => {
+    setHistoryLoading(true);
+    setError("");
+    try {
+      const response = await agentFetch(`${endpoint}/pull-requests${refresh ? "/refresh" : ""}`, {
+        method: refresh ? "POST" : "GET",
+        ...(refresh ? { headers: { "Content-Type": "application/json" }, body: "{}" } : {}),
+        cache: "no-store",
+      });
+      const result = (await response.json()) as Array<PullRequestRecord> & { error?: string };
+      if (!response.ok) throw new Error(result.error || "Could not load PR history.");
+      setPullRequests(result as Array<PullRequestRecord>);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Could not load PR history.");
+    } finally {
+      setHistoryLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     if (!open && !home) return;
+    void loadDrafts();
+  }, [open, home, loadDrafts]);
+
+  useEffect(() => {
+    if ((!open && !home) || view !== "history") return;
+    void loadPullRequests();
+  }, [open, home, view, loadPullRequests]);
+
+  useEffect(() => {
+    if ((!open && !home) || !activeDraftId) return;
     const controller = new AbortController();
     const refresh = async () => {
       const sequence = ++requestNumber.current;
@@ -409,75 +611,7 @@ export function AgentWidget({
       controller.abort();
       window.clearInterval(timer);
     };
-  }, [open, home, applySnapshot]);
-
-  useEffect(() => {
-    if ((!open && !home) || modelOptions.length) return;
-    const controller = new AbortController();
-    const refreshModel = async () => {
-      try {
-        const response = await agentFetch(`${endpoint}/models`, { signal: controller.signal, cache: "no-store" });
-        if (!response.ok) return;
-        const result = (await response.json()) as {
-          model?: string;
-          effort?: string;
-          models?: Array<AgentModel>;
-        };
-        if (!controller.signal.aborted) {
-          if (Array.isArray(result.models)) setModelOptions(result.models);
-          if (typeof result.model === "string") setModelInfo(result.model);
-          if (typeof result.effort === "string") setEffortInfo(result.effort);
-        }
-      } catch {
-        // The model label is optional while Codex is unavailable.
-      }
-    };
-    void refreshModel();
-    return () => {
-      controller.abort();
-    };
-  }, [open, home, modelOptions.length]);
-
-  const changeModel = async (value: string) => {
-    setModelError("");
-    setChangingSettings(true);
-    try {
-      const response = await agentFetch(`${endpoint}/model`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ model: value }),
-      });
-      const result = (await response.json()) as Session & { error?: string };
-      if (!response.ok) throw new Error(result.error || "Could not change the model.");
-      applySnapshot(result, ++requestNumber.current);
-      setModelInfo(value);
-      setEffortInfo(result.effort);
-    } catch (cause) {
-      setModelError(cause instanceof Error ? cause.message : "Could not change the model.");
-    } finally {
-      setChangingSettings(false);
-    }
-  };
-
-  const changeEffort = async (value: string) => {
-    setModelError("");
-    setChangingSettings(true);
-    try {
-      const response = await agentFetch(`${endpoint}/effort`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ effort: value }),
-      });
-      const result = (await response.json()) as Session & { error?: string };
-      if (!response.ok) throw new Error(result.error || "Could not change the reasoning effort.");
-      applySnapshot(result, ++requestNumber.current);
-      setEffortInfo(value);
-    } catch (cause) {
-      setModelError(cause instanceof Error ? cause.message : "Could not change the reasoning effort.");
-    } finally {
-      setChangingSettings(false);
-    }
-  };
+  }, [open, home, activeDraftId, applySnapshot]);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: Scroll when conversation content or visibility changes.
   useEffect(() => {
@@ -616,14 +750,20 @@ export function AgentWidget({
     if (
       !message.trim() ||
       sending ||
-      changingSettings ||
       readingFile ||
       reviewing ||
       !session ||
       connectionError ||
-      session.busy
+      !session.provider ||
+      !session.model ||
+      !drafts.some((draft) => draft.id === activeDraftId && draft.status === "active") ||
+      session.busy ||
+      draftRunStarting ||
+      draftRun
     )
       return;
+    const typedSkill = message.trim().match(/^\/([\w-]+)(?:\s|$)/)?.[1];
+    const activeSkill = typedSkill ?? selectedSkill ?? session.requestedSkill;
     setSending(true);
     followMessages.current = true;
     setError("");
@@ -641,7 +781,7 @@ export function AgentWidget({
           skill: selectedSkill,
           contexts,
           environment,
-          variables: (selectedSkill || session.requestedSkill) === "write-e2e-scenarios" ? readVariables() : undefined,
+          variables: activeSkill && environmentSkills.has(activeSkill) ? readVariables() : undefined,
         }),
       });
       const result = (await response.json()) as Session & { error: string };
@@ -679,8 +819,8 @@ export function AgentWidget({
     }
   };
 
-  const reviewDiff = async () => {
-    if (reviewing || sending) return;
+  const reviewDiff = async (force = false) => {
+    if (reviewing || (sending && !force)) return;
     setView("changes");
     setReviewing(true);
     setError("");
@@ -731,6 +871,49 @@ export function AgentWidget({
     }
   };
 
+  const syncDraft = async () => {
+    if (!reviewDigest || !commitMessage.trim() || sending) return;
+    setSending(true);
+    setError("");
+    try {
+      const response = await agentFetch(`${endpoint}/sync`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: commitMessage, digest: reviewDigest }),
+      });
+      const result = (await response.json()) as {
+        status?: string;
+        conflicts?: Array<string>;
+        digest?: string;
+        error?: string;
+        sync?: { status?: string; conflicts?: Array<string> };
+      };
+      if (!response.ok) {
+        if (result.sync?.conflicts)
+          setSession((current) => current && { ...current, syncConflicts: result.sync?.conflicts });
+        throw new Error(result.error || "Could not synchronize the draft.");
+      }
+      const conflicts = result.conflicts || [];
+      setSession((current) => current && { ...current, syncConflicts: conflicts });
+      if (result.status === "conflicts") {
+        setError(`Resolve target-branch conflicts in the draft workspace: ${conflicts.join(", ")}`);
+        return;
+      }
+      setSending(false);
+      await reviewDiff(true);
+      setError(
+        result.status === "updated" || result.status === "merge-ready"
+          ? "The draft is synchronized. Review the updated changes before finalizing."
+          : "The draft is up to date with its target branch.",
+      );
+    } catch (cause) {
+      const error = cause instanceof Error ? cause.message : "Could not synchronize the draft.";
+      setError(error);
+    } finally {
+      setSending(false);
+    }
+  };
+
   const finalize = async () => {
     if (!reviewDigest || !commitMessage.trim() || sending) return;
     if (!window.confirm("Finalize these reviewed changes and create a pull request?")) return;
@@ -742,14 +925,42 @@ export function AgentWidget({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: commitMessage, digest: reviewDigest }),
       });
-      const result = (await response.json()) as { pullRequest?: { url: string }; session?: Session; error?: string };
-      if (!response.ok) throw new Error(result.error);
+      const result = (await response.json()) as {
+        pullRequest?: { url: string };
+        session?: Session;
+        error?: string;
+        sync?: { status?: string; conflicts?: Array<string> };
+      };
+      if (!response.ok) {
+        if (result.sync) {
+          setSession((current) => current && { ...current, syncConflicts: result.sync?.conflicts });
+          if (result.sync.status !== "conflicts") {
+            setSending(false);
+            await reviewDiff(true);
+          }
+        }
+        throw new Error(result.error);
+      }
       if (result.session) applySnapshot(result.session, ++requestNumber.current);
-      setPatch("Your changes were submitted for manual review. See your change history below.");
+      const draftsResponse = await agentFetch(`${endpoint}/drafts`, { cache: "no-store" });
+      const remainingDrafts = (await draftsResponse.json()) as Array<LocalDraft>;
+      setDrafts(remainingDrafts);
+      const nextDraft = remainingDrafts.find((draft) => draft.status === "active");
+      if (nextDraft) {
+        setActiveDraftId(nextDraft.id);
+        setDraftIdState(nextDraft.id);
+        setSession(undefined);
+      } else {
+        setActiveDraftId("");
+        setDraftIdState("");
+        setSession(undefined);
+      }
       setReviewDigest(undefined);
       setScenarioReview(undefined);
       setPreview([]);
       setCommitMessage("");
+      setView("history");
+      void loadPullRequests();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Could not finalize changes.");
     } finally {
@@ -834,19 +1045,21 @@ export function AgentWidget({
     }
   };
 
-  const mood: TestasaurusMood = connectionError
-    ? "offline"
-    : !session
-      ? "connecting"
-      : session.approvalRequest || session.userRequest
-        ? "waiting"
-        : session.busy || sending || reviewing
-          ? "working"
-          : message.trim()
-            ? "listening"
-            : "idle";
+  const selectedDraft = drafts.find((draft) => draft.id === activeDraftId);
+  const mood: QRexMood =
+    connectionError || (Boolean(draftError) && !selectedDraft && !draftsLoading)
+      ? "offline"
+      : !session
+        ? "connecting"
+        : session.approvalRequest || session.userRequest
+          ? "waiting"
+          : session.busy || sending || reviewing
+            ? "working"
+            : message.trim()
+              ? "listening"
+              : "idle";
   const statusLabel = {
-    offline: "Reconnecting",
+    offline: connectionError ? "Reconnecting" : "Unavailable",
     connecting: "Connecting",
     waiting: "Needs your input",
     working: reviewing ? "Loading changes" : "Working",
@@ -855,32 +1068,36 @@ export function AgentWidget({
   }[mood];
   const sendBlockedReason = sending
     ? "Sending your message…"
-    : changingSettings
-      ? "Updating settings…"
-      : readingFile
-        ? "Reading the attached file…"
-        : reviewing
-          ? "Loading workspace changes…"
-          : !session || connectionError
-            ? "Connecting to Testasaurus…"
-            : session.busy
-              ? "The agent is working. Stop it before sending another message."
-              : !message.trim()
-                ? "Enter a message."
-                : undefined;
-  const selectedModel = modelOptions.find((option) => option.id === (session?.model || modelInfo)) || modelOptions[0];
-  const currentEffort = session?.effort || effortInfo;
-  const selectedEffort = selectedModel?.efforts.includes(currentEffort || "")
-    ? currentEffort || selectedModel.defaultEffort || selectedModel.efforts[0]
-    : selectedModel?.defaultEffort || selectedModel?.efforts[0];
-
+    : draftRunStarting || draftRun
+      ? "Wait for the draft scenario run and evidence capture to finish."
+      : draftsLoading && !selectedDraft
+        ? "Loading local drafts…"
+        : draftError && !selectedDraft
+          ? "Retry loading local drafts before chatting."
+          : !selectedDraft
+            ? "Create a local draft before chatting."
+            : selectedDraft.status === "archived"
+              ? "Restore this archived draft before continuing."
+              : readingFile
+                ? "Reading the attached file…"
+                : reviewing
+                  ? "Loading workspace changes…"
+                  : !session || connectionError
+                    ? "Connecting to Q-Rex…"
+                    : session.busy
+                      ? "The agent is working. Stop it before sending another message."
+                      : !session.provider || !session.model
+                        ? "Configure and select a tested provider model in Provider settings."
+                        : !message.trim()
+                          ? "Enter a message."
+                          : undefined;
   return (
     <div className={home ? "agent-widget agent-home" : "agent-widget"}>
       {(open || home) && (
         <section
           id="agent-panel"
           className={expanded ? "agent-panel agent-expanded" : "agent-panel"}
-          aria-label="Testasaurus"
+          aria-label="Q-Rex"
         >
           <header className="agent-header">
             <div className="agent-heading">
@@ -888,11 +1105,11 @@ export function AgentWidget({
                 className="agent-mascot-button"
                 type="button"
                 onClick={() => setWaves((count) => count + 1)}
-                aria-label="Wave to Testasaurus"
-                title="Wave to Testasaurus"
+                aria-label="Wave to Q-Rex"
+                title="Wave to Q-Rex"
               >
                 <span key={waves} className={waves ? "agent-mascot-wave" : undefined}>
-                  <Testasaurus mood={mood} />
+                  <QRex mood={mood} />
                 </span>
                 {waves > 0 && (
                   <span className="agent-mascot-hello" aria-hidden="true">
@@ -901,69 +1118,74 @@ export function AgentWidget({
                 )}
               </button>
               <span className="agent-sr-only" aria-live="polite">
-                {waves > 0 && <span key={waves}>Testasaurus waves back!</span>}
+                {waves > 0 && <span key={waves}>Q-Rex waves back!</span>}
               </span>
-              <strong>Testasaurus</strong>
-              <span title="This local preview identity is not authentication">Local preview user</span>
-              <span
-                role="status"
-                data-mood={mood}
-                className={connectionError ? "agent-status offline" : "agent-status"}
-              >
-                <i aria-hidden="true" />
-                {statusLabel}
+              <span className="agent-heading-copy">
+                <strong>Q-Rex</strong>
+                <span
+                  role="status"
+                  data-mood={mood}
+                  className={mood === "offline" ? "agent-status offline" : "agent-status"}
+                >
+                  <i aria-hidden="true" />
+                  {statusLabel}
+                </span>
               </span>
             </div>
-            {selectedModel && (
-              <div className="agent-model-settings" title="Choose settings for the next Codex message">
-                <div className="agent-model-setting">
-                  <span>Model</span>
-                  <FilterSelect
-                    label="Testasaurus model"
-                    value={selectedModel.id}
-                    disabled={Boolean(session?.busy || sending || changingSettings)}
-                    onChange={(value) => void changeModel(value)}
-                    options={modelOptions.map((option) => ({
-                      value: option.id,
-                      label: `${option.name}${option.isDefault ? " (default)" : ""}`,
-                    }))}
-                  />
-                </div>
-                {selectedModel.efforts.length > 0 && (
-                  <div className="agent-model-setting">
-                    <span>Effort</span>
-                    <FilterSelect
-                      label="Testasaurus reasoning effort"
-                      value={selectedEffort || selectedModel.efforts[0]}
-                      disabled={Boolean(session?.busy || sending || changingSettings)}
-                      onChange={(value) => void changeEffort(value)}
-                      options={selectedModel.efforts.map((effort) => ({
-                        value: effort,
-                        label: `${effort[0].toUpperCase()}${effort.slice(1)}`,
-                      }))}
-                    />
-                  </div>
-                )}
-                {modelError && (
-                  <span className="agent-model-error" role="alert">
-                    {modelError}
-                  </span>
-                )}
-              </div>
+            {session?.provider && session.model ? (
+              <AgentModelButton onClick={() => setView("settings")} title="Change the provider or model">
+                {session.provider} · {session.model}
+              </AgentModelButton>
+            ) : (
+              <AgentModelButton onClick={() => setView("settings")}>Configure AI provider</AgentModelButton>
             )}
-            {!selectedModel && modelError && <span className="agent-model-error">{modelError}</span>}
-            {!modelOptions.length && (session?.model || modelInfo) && (
-              <span className="agent-model-fallback">
-                Model: {session?.model || modelInfo}
-                {session?.effort || effortInfo ? ` · ${session?.effort || effortInfo} effort` : ""}
-              </span>
-            )}
+            <div className="agent-draft-toolbar">
+              <label htmlFor="agent-active-draft">Local draft</label>
+              <SelectInput
+                label="Local draft"
+                id="agent-active-draft"
+                placeholder="No draft selected"
+                value={activeDraftId}
+                disabled={
+                  draftsLoading || sending || reviewing || session?.busy || draftRunStarting || Boolean(draftRun)
+                }
+                onChange={selectDraft}
+                options={drafts.map((draft) => ({
+                  value: draft.id,
+                  label: `${draft.title} · ${draft.status === "archived" ? "Archived" : draft.targetBranch}`,
+                }))}
+              />
+              <button
+                type="button"
+                disabled={
+                  sending ||
+                  reviewing ||
+                  session?.busy ||
+                  draftsLoading ||
+                  draftRunStarting ||
+                  Boolean(draftRun) ||
+                  draftTargets.length === 0
+                }
+                onClick={() => setShowDraftForm(!showDraftForm)}
+              >
+                New draft
+              </button>
+              {selectedDraft?.status === "archived" && (
+                <button type="button" disabled={sending} onClick={() => void restoreDraft()}>
+                  Restore draft
+                </button>
+              )}
+              <small className="agent-sr-only">
+                Stored in this local preview. The browser identity is not sign-in.
+              </small>
+            </div>
             <div className="agent-header-actions">
               <button
                 type="button"
                 onClick={() => setConfirmReset(true)}
-                disabled={sending || reviewing || session?.busy}
+                disabled={sending || reviewing || session?.busy || draftRunStarting || Boolean(draftRun)}
                 className="agent-new-chat"
+                aria-label="New chat"
                 title="Start a new conversation"
               >
                 <Icon name="plus" aria-hidden="true" /> <span>New chat</span>
@@ -973,14 +1195,14 @@ export function AgentWidget({
                   className="agent-expand"
                   type="button"
                   onClick={() => setExpanded(!expanded)}
-                  aria-label={expanded ? "Restore panel size" : "Expand Testasaurus"}
+                  aria-label={expanded ? "Restore panel size" : "Expand Q-Rex"}
                   aria-pressed={expanded}
                   title={expanded ? "Restore panel size" : "Expand panel"}
                 >
                   <Icon name={expanded ? "arrows-diagonal-minimize-2" : "arrows-diagonal"} aria-hidden="true" />
                 </button>
               )}
-              {!home && <CloseButton label="Close Testasaurus" onClick={close} className="agent-close" />}
+              {!home && <CloseButton label="Close Q-Rex" onClick={close} className="agent-close" />}
             </div>
           </header>
           {confirmReset && (
@@ -996,25 +1218,126 @@ export function AgentWidget({
               </div>
             </div>
           )}
-          <nav className="agent-tabs" aria-label="Agent workspace">
-            <button type="button" aria-current={view === "chat" ? "page" : undefined} onClick={() => setView("chat")}>
-              Conversation
-            </button>
-            <button
-              type="button"
-              aria-current={view === "changes" ? "page" : undefined}
-              disabled={!session?.branch || session.busy || sending || reviewing}
-              onClick={() => void reviewDiff()}
+          {showDraftForm && (
+            <form
+              className="agent-draft-form"
+              onSubmit={(event) => {
+                event.preventDefault();
+                void createDraft();
+              }}
             >
-              {reviewing ? "Loading changes..." : "Workspace changes"}{" "}
+              <label htmlFor="agent-draft-title">Draft name</label>
+              <TextInput
+                id="agent-draft-title"
+                value={draftTitle}
+                maxLength={80}
+                onValueChange={setDraftTitle}
+                placeholder="e.g. Improve user management scenarios"
+              />
+              <label htmlFor="agent-draft-target">Target branch</label>
+              <SelectInput
+                label="Target branch"
+                id="agent-draft-target"
+                value={draftTarget}
+                onChange={setDraftTarget}
+                options={draftTargets.map((branch) => ({ value: branch, label: branch }))}
+              />
+              <div>
+                <button
+                  type="submit"
+                  disabled={
+                    sending || reviewing || session?.busy || draftRunStarting || Boolean(draftRun) || !draftTarget
+                  }
+                >
+                  Create draft
+                </button>
+                <button type="button" disabled={sending} onClick={() => setShowDraftForm(false)}>
+                  Cancel
+                </button>
+              </div>
+            </form>
+          )}
+          {draftError && (
+            <AgentAlert as="div" className="agent-draft-error">
+              <span>{draftError}</span>
+              <button type="button" disabled={draftsLoading} onClick={() => void loadDrafts()}>
+                Retry
+              </button>
+            </AgentAlert>
+          )}
+          {selectedDraft?.status === "archived" && (
+            <p className="agent-archive-note" role="status">
+              This draft was archived after 30 days without activity. Its local branch and worktree were kept.
+            </p>
+          )}
+          <nav className="agent-tabs" aria-label="Agent workspace">
+            <AgentWorkspaceTab current={view === "chat"} onSelect={() => setView("chat")}>
+              Chat
+            </AgentWorkspaceTab>
+            <AgentWorkspaceTab
+              current={view === "changes"}
+              disabled={
+                !session?.branch || session.busy || sending || reviewing || draftRunStarting || Boolean(draftRun)
+              }
+              onSelect={() => void reviewDiff()}
+            >
+              {reviewing ? "Loading..." : "Changes"}{" "}
               {reviewDigest && (
                 <>
                   <span className="agent-change-dot" aria-hidden="true" />
                   <span className="agent-sr-only">Changes ready for review</span>
                 </>
               )}
-            </button>
+            </AgentWorkspaceTab>
+            <AgentWorkspaceTab current={view === "history"} onSelect={() => setView("history")}>
+              PR history
+            </AgentWorkspaceTab>
+            <AgentWorkspaceTab current={view === "settings"} onSelect={() => setView("settings")}>
+              Provider
+            </AgentWorkspaceTab>
           </nav>
+          {view === "settings" && (
+            <AgentSettings
+              onSessionSaved={(saved) => {
+                setSession((current) => current && { ...current, provider: saved.provider, model: saved.model });
+              }}
+            />
+          )}
+          {view === "history" && (
+            <section className="agent-pr-history" aria-label="History PR">
+              <AgentReviewHeading
+                title="Pull request history"
+                description="Refresh checks GitHub through the CLI account configured on this computer."
+                actionLabel={historyLoading ? "Refreshing…" : "Refresh status"}
+                disabled={historyLoading}
+                onAction={() => void loadPullRequests(true)}
+              />
+              <AgentReviewNote title="Local preview status">
+                GitHub webhooks are not available in this loopback preview; refresh to check open, merged, or closed
+                status.
+              </AgentReviewNote>
+              {error && <AgentAlert>{error}</AgentAlert>}
+              {historyLoading ? (
+                <p role="status">Loading pull requests…</p>
+              ) : pullRequests.length ? (
+                <ul className="agent-pr-list">
+                  {pullRequests.map((pullRequest) => (
+                    <li key={pullRequest.url}>
+                      <PullRequestLink url={pullRequest.url}>
+                        {pullRequest.title} · PR #{pullRequest.number}
+                      </PullRequestLink>
+                      <span>{pullRequest.status.toLowerCase()}</span>
+                      <small>
+                        {pullRequest.branch} → {pullRequest.baseBranch}
+                      </small>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p>No pull requests have been recorded in this browser's local preview history.</p>
+              )}
+            </section>
+          )}
           {view === "chat" && (
             <div
               className="agent-messages"
@@ -1028,56 +1351,44 @@ export function AgentWidget({
             >
               {!session?.messages.length && (
                 <div className="agent-welcome">
-                  <Testasaurus mood={mood} large />
+                  <QRex mood={mood} large />
                   <span className="agent-eyebrow">YOUR QA SIDEKICK</span>
                   <h2>Small arms. Big test coverage.</h2>
-                  <p>I’m Testasaurus. Let’s explore, design, and improve your tests.</p>
+                  <p>I’m Q-Rex. Let’s explore, design, and improve your tests.</p>
                   <div className="agent-starters">
-                    <button
-                      type="button"
-                      onClick={() =>
+                    <AgentStarterButton
+                      title="Understand & investigate"
+                      description="Understand coverage and find gaps"
+                      onSelect={() =>
                         selectPrompt(
                           scenario
                             ? "Explain this scenario and identify gaps in its coverage."
                             : "Help me understand our QA workflows and test coverage.",
                         )
                       }
-                    >
-                      <span>
-                        <strong>Understand & investigate</strong>
-                        <small>Understand coverage and find gaps</small>
-                      </span>
-                      <span aria-hidden="true">&#8599;</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => selectPrompt("/write-e2e-scenarios Help me draft scenarios for ")}
-                    >
-                      <span>
-                        <strong>Design a scenario</strong>
-                        <small>Draft a test for review</small>
-                      </span>
-                      <span aria-hidden="true">&#8599;</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => selectPrompt("/write-e2e-code Help me repair the implementation of ")}
-                    >
-                      <span>
-                        <strong>Work on test code</strong>
-                        <small>Implement or repair a test</small>
-                      </span>
-                      <span aria-hidden="true">&#8599;</span>
-                    </button>
+                    />
+                    <AgentStarterButton
+                      title="Create a sub-module PRD"
+                      description="Import a document or explore a module"
+                      onSelect={() => selectPrompt("/write-prd Help me create or import a PRD for ")}
+                    />
+                    <AgentStarterButton
+                      title="Design a scenario"
+                      description="Draft a test for review"
+                      onSelect={() => selectPrompt("/write-e2e-scenarios Help me draft scenarios for ")}
+                    />
+                    <AgentStarterButton
+                      title="Work on test code"
+                      description="Implement or repair a test"
+                      onSelect={() => selectPrompt("/write-e2e-code Help me repair the implementation of ")}
+                    />
                   </div>
                 </div>
               )}
 
               {session?.messages.map((item) => (
                 <div className={`agent-message ${item.role}`} key={item.id}>
-                  <strong>
-                    {item.role === "user" ? "You" : item.role === "tool" ? "HyperTest runner" : "Testasaurus"}
-                  </strong>
+                  <strong>{item.role === "user" ? "You" : item.role === "tool" ? "HyperTest runner" : "Q-Rex"}</strong>
                   {(item.skill || item.contexts?.length) && (
                     <div className="agent-message-contexts">
                       {item.skill && <span className="agent-message-skill">/{item.skill}</span>}
@@ -1093,7 +1404,7 @@ export function AgentWidget({
               ))}
               {session?.busy && !session.userRequest && !session.approvalRequest && (
                 <div className="agent-working" role="status">
-                  <Testasaurus mood={mood} />
+                  <QRex mood={mood} />
                   <span>
                     Working through your request
                     <span className="agent-working-dots" aria-hidden="true">
@@ -1107,15 +1418,18 @@ export function AgentWidget({
           )}
           {view === "changes" && (
             <section className="agent-diff" aria-label="Workspace changes">
-              <div className="agent-review-heading">
-                <div>
-                  <h2>Workspace changes</h2>
-                  <p>Review your changes before submitting them for manual review.</p>
-                </div>
-                <button type="button" onClick={() => void reviewDiff()} disabled={reviewing || sending}>
-                  Refresh
-                </button>
-              </div>
+              <AgentReviewHeading
+                title="Workspace changes"
+                description="Review the diff, sync with the target branch, then create a pull request."
+                actionLabel="Refresh"
+                disabled={reviewing || sending}
+                onAction={() => void reviewDiff()}
+              />
+              {session?.baseBranch && (
+                <p className="agent-target-branch">
+                  Target branch: <code>{session.baseBranch}</code>
+                </p>
+              )}
               {session?.branch && (
                 <div className="agent-branch">
                   <span>Local branch</span>
@@ -1123,14 +1437,11 @@ export function AgentWidget({
                   {session.baseCommit && <small>Based on {session.baseCommit.slice(0, 7)}</small>}
                 </div>
               )}
-              <div className="agent-review-note">
-                <strong>Verification not recorded</strong>
-                <span>Check the conversation for test results. Submitting changes does not mean tests passed.</span>
-              </div>
+              <AgentReviewNote as="div" title="Verification not recorded">
+                Check the conversation for test results. Submitting changes does not mean tests passed.
+              </AgentReviewNote>
               {reviewing ? (
-                <p className="agent-review-empty" role="status">
-                  Loading workspace changes...
-                </p>
+                <AgentReviewStatus>Loading workspace changes...</AgentReviewStatus>
               ) : reviewDigest ? (
                 <details className="agent-review-section">
                   <summary>View technical file changes</summary>
@@ -1154,9 +1465,20 @@ export function AgentWidget({
                   </pre>
                 </details>
               ) : (
-                <p className="agent-review-empty" role="status">
-                  {patch || "No changes in this workspace."}
-                </p>
+                <AgentReviewStatus>{patch || "No changes in this workspace."}</AgentReviewStatus>
+              )}
+              {session?.syncConflicts && session.syncConflicts.length > 0 && (
+                <div className="agent-review-section agent-sync-conflicts" role="alert">
+                  <h3>Resolve target-branch conflicts</h3>
+                  <p>Ask the Agent to resolve these files, or resolve them in the local worktree, then sync again.</p>
+                  <ul>
+                    {session.syncConflicts.map((file) => (
+                      <li key={file}>
+                        <code>{file}</code>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               )}
               {!reviewing && preview.length > 0 && (
                 <details className="agent-scenario-preview" open>
@@ -1217,21 +1539,35 @@ export function AgentWidget({
                   <div className="agent-section-heading">
                     <h3>Finalize changes</h3>
                     <span>
-                      Pull request submission is temporarily unavailable while the draft workflow is being verified.
+                      Sync with the target first. Pull requests use the GitHub CLI account configured on this computer.
                     </span>
                   </div>
                   <label htmlFor="agent-commit-message">Change title</label>
-                  <input
+                  <TextInput
                     id="agent-commit-message"
                     value={commitMessage}
-                    onChange={(event) => setCommitMessage(event.target.value)}
+                    onValueChange={setCommitMessage}
                     maxLength={200}
                     placeholder="Describe these changes"
                   />
                   {scenarioReview?.hasChanges && !scenarioReview.approved && (
                     <p>Approve scenario changes before finalizing.</p>
                   )}
-                  <button type="submit" disabled>
+                  <button
+                    type="button"
+                    disabled={
+                      sending || draftRunStarting || Boolean(draftRun) || !reviewDigest || !commitMessage.trim()
+                    }
+                    onClick={() => void syncDraft()}
+                  >
+                    {sending ? "Syncing…" : "Sync with target branch"}
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={
+                      sending || draftRunStarting || Boolean(draftRun) || !reviewDigest || !commitMessage.trim()
+                    }
+                  >
                     Finalize and create pull request
                   </button>
                 </form>
@@ -1241,9 +1577,9 @@ export function AgentWidget({
                   <h3>Your change history</h3>
                   {session?.history?.map((item) => (
                     <p key={item.url}>
-                      <a href={item.url} target="_blank" rel="noreferrer">
+                      <PullRequestLink url={item.url}>
                         {item.title} ? PR #{item.number}
-                      </a>{" "}
+                      </PullRequestLink>{" "}
                       <span>Submitted for review</span>
                     </p>
                   ))}
@@ -1260,13 +1596,19 @@ export function AgentWidget({
             </div>
           )}
           {(error || session?.error || connectionError) && (
-            <p className="agent-error" role="alert">
+            <AgentAlert>
               {error || session?.error || "Cannot connect to the local Automation API. Retrying..."}
-            </p>
+            </AgentAlert>
           )}
           {session?.approvalRequest ? (
             <fieldset className="agent-form agent-approval">
-              <legend>{session.approvalRequest.kind === "command" ? "Command permission" : "File permission"}</legend>
+              <legend>
+                {session.approvalRequest.kind === "data-safety"
+                  ? "Live data-safety approval"
+                  : session.approvalRequest.kind === "command"
+                    ? "Command permission"
+                    : "File permission"}
+              </legend>
               {session.approvalRequest.reason && <p>{session.approvalRequest.reason}</p>}
               {session.approvalRequest.command && <pre>{session.approvalRequest.command}</pre>}
               <div>
@@ -1274,7 +1616,7 @@ export function AgentWidget({
                   Decline
                 </button>{" "}
                 <button type="button" disabled={sending} onClick={() => void decideApproval("accept")}>
-                  Allow
+                  {session.approvalRequest.kind === "data-safety" ? "Approve this action" : "Allow"}
                 </button>
               </div>
             </fieldset>
@@ -1299,14 +1641,17 @@ export function AgentWidget({
                           onChange={() => setAnswers((current) => ({ ...current, [question.id]: option.label }))}
                         />
                         {option.label}
-                        <small>{option.description}</small>
+                        <small>
+                          {option.recommended ? "Recommended. " : ""}
+                          {option.description}
+                        </small>
                       </label>
                     ))}
                   {question.isSecret ? (
                     <div className="agent-secret-answer">
                       <p>
-                        Secret values are never sent to Testasaurus. Add this value in HyperTest Variables, then
-                        continue without sharing it.
+                        Secret values are never sent to Q-Rex. Add this value in HyperTest Variables, then continue
+                        without sharing it.
                       </p>
                       <button
                         type="button"
@@ -1316,7 +1661,7 @@ export function AgentWidget({
                       </button>
                     </div>
                   ) : (
-                    <input
+                    <TextInput
                       aria-label={`Your answer: ${question.question}`}
                       type="text"
                       placeholder={question.options?.length ? "Or type your answer" : "Type your answer"}
@@ -1325,7 +1670,7 @@ export function AgentWidget({
                           ? ""
                           : (answers[question.id] ?? "")
                       }
-                      onChange={(event) => setAnswers((current) => ({ ...current, [question.id]: event.target.value }))}
+                      onValueChange={(value) => setAnswers((current) => ({ ...current, [question.id]: value }))}
                     />
                   )}
                 </fieldset>
@@ -1346,7 +1691,7 @@ export function AgentWidget({
               }}
             >
               <label className="agent-sr-only" htmlFor="agent-message">
-                Message Testasaurus
+                Message Q-Rex
               </label>
               <fieldset className="agent-composer-context" ref={contextRef}>
                 <legend className="agent-sr-only">Message context</legend>
@@ -1552,13 +1897,9 @@ export function AgentWidget({
                           <p>Source content is loaded from the selected QA workspace when you send this message.</p>
                         )}
                         {item.kind !== "run" && item.kind !== "upload" && (
-                          <button type="button" className="agent-context-edit" onClick={() => editContext(item)}>
-                            Change context
-                          </button>
+                          <AgentContextAction onSelect={() => editContext(item)}>Change context</AgentContextAction>
                         )}
-                        <button type="button" className="agent-context-edit" onClick={() => removeContext(item.id)}>
-                          Remove
-                        </button>
+                        <AgentContextAction onSelect={() => removeContext(item.id)}>Remove</AgentContextAction>
                       </div>
                     );
                   })()}
@@ -1604,23 +1945,25 @@ export function AgentWidget({
                       </div>
                     ) : contextPicker === "note" ? (
                       <div className="agent-context-note-form">
-                        <label>
+                        <label htmlFor="agent-note-title">
                           Label
-                          <input
+                          <TextInput
+                            id="agent-note-title"
                             value={noteTitle}
                             maxLength={80}
                             placeholder="Acceptance criteria"
-                            onChange={(event) => setNoteTitle(event.target.value)}
+                            onValueChange={setNoteTitle}
                           />
                         </label>
-                        <label>
+                        <label htmlFor="agent-note-text">
                           Note
-                          <textarea
+                          <TextAreaInput
+                            id="agent-note-text"
                             value={noteText}
                             maxLength={4000}
                             rows={3}
                             placeholder="Add only context relevant to this QA task."
-                            onChange={(event) => setNoteText(event.target.value)}
+                            onValueChange={setNoteText}
                           />
                         </label>
                         <small>Do not put passwords, tokens, or credentials in a note.</small>
@@ -1630,35 +1973,35 @@ export function AgentWidget({
                       </div>
                     ) : contextPicker === "scenario" ? (
                       <>
-                        <input
-                          className="agent-context-search"
+                        <AgentContextSearch
                           value={contextSearch}
-                          maxLength={160}
-                          onChange={(event) => setContextSearch(event.target.value)}
                           placeholder="Search scenarios"
-                          aria-label="Search scenarios to attach"
+                          label="Search scenarios to attach"
+                          maxLength={160}
+                          onChange={setContextSearch}
                         />
-                        <div className="agent-context-results">
+                        <AgentContextResults>
                           {scenarioOptions.map((item) => (
-                            <button type="button" key={item.key} onClick={() => addScenarioContext(item)}>
-                              <strong>{item.title}</strong>
-                              <small>{item.feature || displayLabel(item.module)}</small>
-                            </button>
+                            <AgentContextOption
+                              key={item.key}
+                              title={item.title}
+                              description={item.feature || displayLabel(item.module)}
+                              onSelect={() => addScenarioContext(item)}
+                            />
                           ))}
                           {scenarioOptions.length === 0 && <p>No matching scenarios.</p>}
-                        </div>
+                        </AgentContextResults>
                       </>
                     ) : contextPicker === "feature" ? (
                       <>
-                        <input
-                          className="agent-context-search"
+                        <AgentContextSearch
                           value={contextSearch}
-                          maxLength={160}
-                          onChange={(event) => setContextSearch(event.target.value)}
                           placeholder="Search menus"
-                          aria-label="Search menus to attach"
+                          label="Search menus to attach"
+                          maxLength={160}
+                          onChange={setContextSearch}
                         />
-                        <div className="agent-context-results">
+                        <AgentContextResults>
                           {featureOptions
                             .filter((item) => !selectedContextRefs.has(`feature:${item.file}`))
                             .filter((item) =>
@@ -1668,24 +2011,25 @@ export function AgentWidget({
                             )
                             .slice(0, 30)
                             .map((item) => (
-                              <button type="button" key={item.file} onClick={() => addFeatureContext(item)}>
-                                <strong>{item.title}</strong>
-                                <small>{displayLabel(item.module)}</small>
-                              </button>
+                              <AgentContextOption
+                                key={item.file}
+                                title={item.title}
+                                description={displayLabel(item.module)}
+                                onSelect={() => addFeatureContext(item)}
+                              />
                             ))}
-                        </div>
+                        </AgentContextResults>
                       </>
                     ) : contextPicker === "category" ? (
                       <>
-                        <input
-                          className="agent-context-search"
+                        <AgentContextSearch
                           value={contextSearch}
-                          maxLength={160}
-                          onChange={(event) => setContextSearch(event.target.value)}
                           placeholder="Search categories"
-                          aria-label="Search categories to attach"
+                          label="Search categories to attach"
+                          maxLength={160}
+                          onChange={setContextSearch}
                         />
-                        <div className="agent-context-results">
+                        <AgentContextResults>
                           {categoryOptions
                             .filter(
                               (item) =>
@@ -1700,39 +2044,38 @@ export function AgentWidget({
                             )
                             .slice(0, 30)
                             .map((item) => (
-                              <button
-                                type="button"
+                              <AgentContextOption
                                 key={JSON.stringify([item.module, item.file, item.category])}
-                                onClick={() => addCategoryContext(item)}
-                              >
-                                <strong>{item.category}</strong>
-                                <small>{item.feature}</small>
-                              </button>
+                                title={item.category}
+                                description={item.feature}
+                                onSelect={() => addCategoryContext(item)}
+                              />
                             ))}
                           {categoryOptions.every((item) =>
                             selectedContextRefs.has(
                               `category:${JSON.stringify([item.module, item.file, item.category])}`,
                             ),
                           ) && <p>No categories available.</p>}
-                        </div>
+                        </AgentContextResults>
                       </>
                     ) : contextPicker === "flow" ? (
                       <>
-                        <input
-                          className="agent-context-search"
+                        <AgentContextSearch
                           value={contextSearch}
-                          onChange={(event) => setContextSearch(event.target.value)}
                           placeholder="Search flow registries by feature"
-                          aria-label="Search flow registries"
+                          label="Search flow registries"
+                          onChange={setContextSearch}
                         />
-                        <div className="agent-context-results">
+                        <AgentContextResults>
                           {contextFiles
                             .filter((path) => path.endsWith(".flows.md"))
                             .map((path) => (
-                              <button type="button" key={path} onClick={() => addFlowContext(path)}>
-                                <strong>{path}</strong>
-                                <small>Flow inventory and review state</small>
-                              </button>
+                              <AgentContextOption
+                                key={path}
+                                title={path}
+                                description="Flow inventory and review state"
+                                onSelect={() => addFlowContext(path)}
+                              />
                             ))}
                           {contextLoading && <p>Searching flow registries...</p>}
                           {contextSearch.trim().length < 2 && (
@@ -1744,27 +2087,24 @@ export function AgentWidget({
                             contextFiles.filter((path) => path.endsWith(".flows.md")).length === 0 && (
                               <p>No flow registry found for that search.</p>
                             )}
-                        </div>
+                        </AgentContextResults>
                       </>
                     ) : contextPicker === "file" ? (
                       <>
-                        <input
-                          className="agent-context-search"
+                        <AgentContextSearch
                           value={contextSearch}
-                          onChange={(event) => setContextSearch(event.target.value)}
                           placeholder="Search project source files"
-                          aria-label="Search source files to attach"
+                          label="Search source files to attach"
+                          onChange={setContextSearch}
                         />
-                        <div className="agent-context-results">
+                        <AgentContextResults>
                           {contextFiles.map((path) => (
-                            <button
-                              type="button"
+                            <AgentContextOption
                               key={path}
-                              onClick={() => addContext({ id: contextId(), kind: "file", ref: path, label: path })}
-                            >
-                              <strong>{path.split("/").at(-1)}</strong>
-                              <small>{path}</small>
-                            </button>
+                              title={path.split("/").at(-1)}
+                              description={path}
+                              onSelect={() => addContext({ id: contextId(), kind: "file", ref: path, label: path })}
+                            />
                           ))}
                           {contextLoading && <p>Searching project sources...</p>}
                           {contextSearch.trim().length < 2 && (
@@ -1774,14 +2114,19 @@ export function AgentWidget({
                             !contextError &&
                             contextSearch.trim().length >= 2 &&
                             contextFiles.length === 0 && <p>No matching source files.</p>}
-                        </div>
+                        </AgentContextResults>
                       </>
                     ) : (
-                      <div className="agent-context-results">
+                      <AgentContextResults>
                         {latestRun?.done && (
-                          <button
-                            type="button"
-                            onClick={() =>
+                          <AgentContextOption
+                            title={
+                              <>
+                                {latestRun.status} · {latestRun.scenarioId}
+                              </>
+                            }
+                            description={latestRun.target}
+                            onSelect={() =>
                               addContext({
                                 id: contextId(),
                                 kind: "run",
@@ -1789,35 +2134,22 @@ export function AgentWidget({
                                 label: `Run result · ${latestRun.scenarioId} · ${latestRun.status}`,
                               })
                             }
-                          >
-                            <strong>
-                              {latestRun.status} · {latestRun.scenarioId}
-                            </strong>
-                            <small>{latestRun.target}</small>
-                          </button>
+                          />
                         )}
-                      </div>
+                      </AgentContextResults>
                     )}
-                    {contextError && (
-                      <p className="agent-context-error" role="alert">
-                        {contextError}
-                      </p>
-                    )}
+                    {contextError && <AgentContextError>{contextError}</AgentContextError>}
                   </section>
                 )}
-                {contextError && !contextPicker && (
-                  <p className="agent-context-error" role="alert">
-                    {contextError}
-                  </p>
-                )}
+                {contextError && !contextPicker && <AgentContextError>{contextError}</AgentContextError>}
               </fieldset>
-              <textarea
+              <TextAreaInput
                 id="agent-message"
                 className="agent-message-input"
                 ref={composerRef}
                 value={message}
                 aria-describedby="agent-message-hint"
-                onChange={(event) => setMessage(event.target.value)}
+                onValueChange={setMessage}
                 onKeyDown={(event) => {
                   if (event.key !== "Enter" || event.nativeEvent.isComposing) return;
                   if (event.ctrlKey || event.metaKey) {
@@ -1869,8 +2201,17 @@ export function AgentWidget({
                     ))}
                   </fieldset>
                 )}
-                <span className="agent-keyboard-hint" id="agent-message-hint">
-                  {sendBlockedReason || "Enter to send · Ctrl / ⌘ + Enter for a new line"}
+                <span
+                  className={
+                    sendBlockedReason && sendBlockedReason !== "Enter a message."
+                      ? "agent-keyboard-hint agent-send-reason"
+                      : "agent-keyboard-hint"
+                  }
+                  id="agent-message-hint"
+                >
+                  {sendBlockedReason === "Enter a message."
+                    ? "Enter to send · Shift + Enter for a new line"
+                    : sendBlockedReason || "Enter to send · Shift + Enter for a new line"}
                 </span>
                 <button type="submit" disabled={Boolean(sendBlockedReason)} title={sendBlockedReason}>
                   {sending ? "Sending..." : "Send"} <span aria-hidden="true">&#8593;</span>
@@ -1890,10 +2231,10 @@ export function AgentWidget({
           aria-controls="agent-panel"
         >
           <span className="agent-toggle-avatar" aria-hidden="true">
-            <Testasaurus mood={mood} />
+            <QRex mood={mood} />
           </span>
           <span className="agent-toggle-copy">
-            <strong>{open ? "Minimize chat" : "Chat with Testasaurus"}</strong>
+            <strong>{open ? "Minimize chat" : "Chat with Q-Rex"}</strong>
             <span className="agent-toggle-status" data-mood={mood}>
               <i aria-hidden="true" /> {statusLabel}
             </span>

@@ -1,13 +1,19 @@
 import { Icon } from "@hyperscal/icons";
 import { useQueryClient } from "@tanstack/react-query";
-import { useEffect, useRef, useState } from "react";
-import { CloseButton, Modal, PrimaryButton, Spinner } from "../../../components";
+import { type ReactNode, useEffect, useRef, useState } from "react";
+import { Modal, PrimaryButton, Spinner, TextInput } from "../../../components";
 import { readVariables, storageKey } from "../run-variables";
 import type { Run, RunSelection } from "../types";
 import { activeRunKey, useActiveRun } from "../use-active-run";
 import { useRunEnvironment } from "../use-run-environment";
 import { useRunMonitor } from "../use-run-monitor";
 import { LiveRun } from "./live-run";
+import { RunDialogHeading } from "./run-dialog-heading";
+import { RunPanel } from "./run-panel";
+
+function RunHint({ children }: { children: ReactNode }) {
+  return <p className="muted">{children}</p>;
+}
 
 export function EnvironmentVariables({ disabled = false }: { disabled?: boolean }) {
   const { config, variablesOpen, setVariablesOpen } = useRunEnvironment();
@@ -41,13 +47,13 @@ export function EnvironmentVariables({ disabled = false }: { disabled?: boolean 
           onClose={() => setVariablesOpen(false)}
           returnFocus={trigger}
         >
-          <div className="group-run-heading">
-            <div className="group-run-heading-copy">
-              <h2 id="environment-title">Variables</h2>
-              <p>Used for every run.</p>
-            </div>
-            <CloseButton onClick={() => setVariablesOpen(false)} label="Close environment variables" />
-          </div>
+          <RunDialogHeading
+            titleId="environment-title"
+            title="Variables"
+            description="Used for every run."
+            closeLabel="Close environment variables"
+            onClose={() => setVariablesOpen(false)}
+          />
           <form
             onSubmit={(event) => {
               event.preventDefault();
@@ -56,14 +62,15 @@ export function EnvironmentVariables({ disabled = false }: { disabled?: boolean 
             }}
           >
             {config.variables.map((variable) => (
-              <label key={variable.name}>
+              <label key={variable.name} htmlFor={variable.name}>
                 {variable.label.replace(/^E2E\s+/i, "").replace(/^\p{L}/u, (letter) => letter.toLocaleUpperCase())}
-                <input
+                <TextInput
+                  id={variable.name}
                   required
                   type={variable.secret ? "password" : "text"}
                   autoComplete="off"
                   value={values[variable.name] || ""}
-                  onChange={(event) => setValues({ ...values, [variable.name]: event.target.value })}
+                  onValueChange={(value) => setValues({ ...values, [variable.name]: value })}
                 />
               </label>
             ))}
@@ -115,7 +122,7 @@ export function LocalRun({
     }
     setSubmitting(true);
     try {
-      const response = await fetch("/automation/api/local/run", {
+      const response = await fetch("/api/local/run", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ selection: selection || { kind: "scenario", scenarioId }, variables, environment }),
@@ -141,10 +148,10 @@ export function LocalRun({
       : null;
   const activeRun = run && !run.done ? run : null;
   const currentRun = current && !current.done ? current : null;
-  if (!config) return <p className="muted">Local execution is available from the development server.</p>;
-  if (!scenarioId && !selection) return <p className="muted">This scenario has no valid ID for selection.</p>;
+  if (!config) return <RunHint>Local execution is available from the development server.</RunHint>;
+  if (!scenarioId && !selection) return <RunHint>This scenario has no valid ID for selection.</RunHint>;
   return (
-    <div className="local-run">
+    <RunPanel>
       <form onSubmit={start}>
         <PrimaryButton
           type="submit"
@@ -178,7 +185,7 @@ export function LocalRun({
         </p>
       )}
       {showLive && current && <LiveRun run={current} onClose={() => setShowLive(false)} />}
-    </div>
+    </RunPanel>
   );
 }
 
@@ -210,20 +217,22 @@ export function GroupRun({ selection, name, items }: { selection: RunSelection; 
       </button>
       {open && (
         <Modal className="group-run-dialog" labelledBy="group-run-title" onClose={close} returnFocus={trigger}>
-          <div className="group-run-heading">
-            <div className="group-run-heading-copy">
-              <span className="group-run-kicker">
+          <RunDialogHeading
+            titleId="group-run-title"
+            title={name}
+            description={
+              selection.kind === "category"
+                ? "Run every scenario in this category"
+                : "Run every scenario in this feature"
+            }
+            closeLabel="Close run form"
+            onClose={close}
+            kicker={
+              <>
                 <Icon name="player-play-filled" aria-hidden="true" /> RUN {selection.kind.toUpperCase()}
-              </span>
-              <h2 id="group-run-title">{name}</h2>
-              <p>
-                {selection.kind === "category"
-                  ? "Run every scenario in this category"
-                  : "Run every scenario in this feature"}
-              </p>
-            </div>
-            <CloseButton onClick={close} label="Close run form" />
-          </div>
+              </>
+            }
+          />
           <details className="group-scenario-list">
             <summary>
               Scenarios in this run <span>{items.length}</span>

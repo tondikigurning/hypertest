@@ -11,7 +11,7 @@ const server = await createServer({
 await server.listen();
 const address = server.httpServer.address();
 if (!address || typeof address === "string") throw new Error("Vite did not expose its listening address.");
-process.stdout.write(`\n  VITE ready\n\n  \u279c  Local:   http://${host}:${address.port}/automation\n\n`);
+process.stdout.write(`\n  VITE ready\n\n  \u279c  Local:   http://${host}:${address.port}/\n\n`);
 
 for (const signal of ["SIGINT", "SIGTERM"]) {
   process.once(signal, () => void server.close().finally(() => process.exit(0)));

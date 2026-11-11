@@ -1,19 +1,31 @@
 import { Icon } from "@hyperscal/icons";
 import * as Select from "@radix-ui/react-select";
+import type { ReactNode } from "react";
 
-interface FilterSelectProps {
+interface SelectOption {
+  value: string;
+  label: ReactNode;
+}
+
+interface SelectInputBaseProps {
   label: string;
   value: string;
-  options: Array<{ value: string; label: string }>;
   onChange: (value: string) => void;
   disabled?: boolean;
 }
 
-export function FilterSelect({ label, value, options, onChange, disabled = false }: FilterSelectProps) {
+interface SelectInputProps extends SelectInputBaseProps {
+  id?: string;
+  placeholder?: ReactNode;
+  options?: Array<SelectOption>;
+}
+
+export function SelectInput(props: SelectInputProps) {
+  const { id, label, value, placeholder, options = [], onChange, disabled = false } = props;
   return (
     <Select.Root value={value} onValueChange={onChange} disabled={disabled}>
-      <Select.Trigger aria-label={label} className="filter-select">
-        <Select.Value />
+      <Select.Trigger id={id} aria-label={label} className="filter-select">
+        <Select.Value placeholder={placeholder} />
         <Select.Icon aria-hidden="true">
           <Icon name="chevron-down" className="filter-select-chevron" />
         </Select.Icon>

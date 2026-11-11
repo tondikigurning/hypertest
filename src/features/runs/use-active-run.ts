@@ -12,7 +12,7 @@ export function useActiveRun(poll = false) {
   const { data } = useQuery({
     queryKey: activeRunKey,
     queryFn: async ({ signal }): Promise<Run | null> => {
-      const response = await fetch("/automation/api/local/run", { signal, cache: "no-store" });
+      const response = await fetch("/api/local/run", { signal, cache: "no-store" });
       if (!response.ok || !response.headers.get("content-type")?.includes("application/json")) {
         throw new Error("Local runner unavailable");
       }

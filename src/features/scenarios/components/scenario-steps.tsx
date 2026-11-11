@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+
 function Step({ text, index }: { text: string; index: number }) {
   return (
     <div className="step">
@@ -7,6 +9,10 @@ function Step({ text, index }: { text: string; index: number }) {
   );
 }
 
+function StepGroup({ children }: { children: ReactNode }) {
+  return <div className="steps">{children}</div>;
+}
+
 export function ScenarioSteps({ background, steps }: { background: Array<string>; steps: Array<string> }) {
   return (
     <>
@@ -14,15 +20,15 @@ export function ScenarioSteps({ background, steps }: { background: Array<string>
       {background.length > 0 && (
         <>
           <h4>Background</h4>
-          <div className="steps">
+          <StepGroup>
             {background.map((step, index) => (
               // biome-ignore lint/suspicious/noArrayIndexKey: Source lines can repeat and rows have no state.
               <Step key={index} text={step} index={index} />
             ))}
-          </div>
+          </StepGroup>
         </>
       )}
-      <div className="steps">
+      <StepGroup>
         {steps.length ? (
           steps.map((step, index) =>
             step.startsWith("|") || step.startsWith("Examples:") || step.startsWith("@") ? (
@@ -38,7 +44,7 @@ export function ScenarioSteps({ background, steps }: { background: Array<string>
         ) : (
           <p>No steps available.</p>
         )}
-      </div>
+      </StepGroup>
     </>
   );
 }

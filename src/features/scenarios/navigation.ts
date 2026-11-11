@@ -1,6 +1,6 @@
 ﻿import type { Scenario } from "./scenario";
 
-const base = "/automation";
+const base = "/";
 const featureRoute = `${base}/features/`;
 
 function encodeFeaturePath(file: string) {

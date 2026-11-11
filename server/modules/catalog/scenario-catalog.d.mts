@@ -28,4 +28,5 @@ export interface AutomationScenario extends CatalogScenario {
 }
 export function parseFeature(content: string, file: string): Array<CatalogScenario>;
 export function scenarioCatalog(root: string): Array<CatalogScenario>;
+export function enrichScenario(scenario: CatalogScenario): AutomationScenario;
 export function automationCatalog(root: string): Array<AutomationScenario>;
