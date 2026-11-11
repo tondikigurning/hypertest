@@ -4,6 +4,16 @@ import type { Scenario } from "./scenario";
 const catalogApi = "/automation/api/scenarios";
 const catalogSnapshot = "/automation/scenario-catalog.json";
 
+async function readCatalog(response: Response | null): Promise<Array<Scenario> | null> {
+  if (!response?.ok || !response.headers.get("content-type")?.includes("application/json")) return null;
+  try {
+    const catalog: unknown = await response.json();
+    return Array.isArray(catalog) ? (catalog as Array<Scenario>) : null;
+  } catch {
+    return null;
+  }
+}
+
 /** Load the snapshot when the development API is unavailable; refresh after each completed run. */
 export function useScenarioCatalog(
   completedRunId: string | undefined,
@@ -25,12 +35,13 @@ export function useScenarioCatalog(
             () => null,
           )
         : null;
-      if (!environment || !response) {
-        response = await fetch(catalogSnapshot, { signal: controller.signal });
+      const usingSnapshot = !response;
+      if (usingSnapshot) {
+        response = await fetch(catalogSnapshot, { signal: controller.signal }).catch(() => null);
       }
-      if (!response.ok) throw new Error("Could not load the scenario catalog.");
-      let catalog: Array<Scenario> = await response.json();
-      if (!environment)
+      let catalog = await readCatalog(response);
+      if (!catalog) throw new Error("Could not load the scenario catalog.");
+      if (!environment || usingSnapshot)
         catalog = catalog.map((scenario) => ({ ...scenario, status: "", lastRun: "", duration: "", evidenceUrl: "" }));
       if (controller.signal.aborted) return;
       setScenarios(catalog);
