@@ -6,12 +6,6 @@
 # Reference page: /user-management/users
 # Submodule features mirror with TEN_* IDs and @ref:TEN_COM_VDT_E2E_*.
 #
-# Unit catalogs (split — not 1:1 with a single source file):
-#   testing-docs/components/dataview/table.md           — DV_TBL_UT_* (variant/table.tsx)
-#   testing-docs/components/dataview/clear-active-rows.md — DV_CLR_UT_*
-#   testing-docs/components/dataview/set-active-row.md    — DV_SAR_UT_*
-# UI shell: testing-docs/components/ui/detail-panel.md — UI_DPN_UT_*
-
 Feature: View Detail — Component
 
   @TEN_COM_VDT_E2E_001 @regression @flow:TEN_COM_VIEW_DETAIL_FLOW @type:positive

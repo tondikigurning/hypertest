@@ -6,8 +6,6 @@
 # Reference page (golden path): /user-management/users
 # Submodule features (e.g. users.feature) link via @ref:TEN_COM_PIP_E2E_* — do not duplicate these steps.
 #
-# Unit catalog: testing-docs/components/dataview/pipeline-renderer.md
-
 Feature: Pipeline Renderer — Component
 
   @TEN_COM_PIP_E2E_001 @regression @flow:TEN_COM_PIPELINE_TAB_FLOW @type:ui-interaction

@@ -17,7 +17,7 @@ For new or changed scenario intent, Phase 0 (`write-e2e-scenarios`) must produce
 
 For new or changed scenarios using a registry and batches, read the registry file `e2e/tests/bdd/features/<module>/<submodule>.flows.md` (see write-e2e-scenarios, "Registry file"). Implement **approved batches only**, using the exact reviewed scope. Each batch is implemented and verified before the next one starts. Do not implement `written` flows, because they are not approved yet. Intent-preserving technical repairs to an existing implemented or verified flow do not require a new approved batch; preserve its scenario contract and check data safety.
 
-Implement the reviewed business journeys and consequential branches in the approved scenarios. Do not expand them into field-by-field or component-level E2E checks; route missing business journeys back to `write-e2e-scenarios` and identify other relevant coverage gaps for unit or integration tests. An approved or verified batch does not prove that the whole business flow or sub-module has been discovered or covered.
+Implement the reviewed business journeys and consequential branches in the approved scenarios. Do not expand them into field-by-field or component-level checks; route missing business journeys back to `write-e2e-scenarios`. An approved or verified batch does not prove that the whole business flow or sub-module has been discovered or covered.
 
 Conventions: [../write-e2e-scenarios/references/e2e-conventions.md](../write-e2e-scenarios/references/e2e-conventions.md). Data safety: [../write-e2e-scenarios/references/data-safety.md](../write-e2e-scenarios/references/data-safety.md). MSW: [references/msw-mocking.md](references/msw-mocking.md). Troubleshooting: [references/troubleshooting.md](references/troubleshooting.md).
 
@@ -205,16 +205,14 @@ Check `components/ProfileMenuComponent.ts` for the reference structure.
 - Data safety: use E2E-owned records; seed mutations require explicit scoped approval recorded in the `.feature` file. Capture, restore and verify original state wherever possible, including after failure; see [data-safety.md](../write-e2e-scenarios/references/data-safety.md). Guard the approved record and current-session authorization before execution; historical approval comments do not authorize later runs.
 - Pipeline state and membership follow the same approval rule. "First available" selection applies to reference values, never to an unverified mutation target.
 
-## Step 8 — Run, catalog, report
+## Step 8 — Run and report
 
 ```bash
 cd e2e
 pnpm test:bdd                   # bddgen + run the BDD suite (needs the live app and .env.local)
 ```
 
-Catalog output goes to `testing-docs/e2e/<app>/<relPath>.md`, where `relPath` is derived from the feature file path by `packages/internal/test-utils/src/playwright/catalog-routes.ts` (`bddCatalogTargetFromFile`). The reporter rewrites the catalogs for features covered by each run, including filtered runs: unexecuted scenarios keep their prior status/last-run. Inspect the printed paths and diffs; do not hand-edit generated catalogs or reports. Hand-maintained inputs such as `coverage-targets.yaml` are separate. Do not commit unless requested.
-
-Official aggregate (repo root, includes unit tests): `TEST_E2E=1 TEST_WRITE=1 TEST_COVERAGE=1 pnpm test:report`.
+The Automation API derives the scenario catalog from BDD feature files and syncs metadata to PostgreSQL. The Playwright reporter writes per-run results to JSON; the BDD script imports environment-scoped results when configured. Scenario catalogs are not generated as Markdown files. Report the selected scenarios, actual outcomes, evidence upload status and any unrun scope separately.
 
 Run the commands yourself where the environment allows it. If you cannot run them (no live app, no credentials), say so and list the exact command for the user.
 
@@ -241,5 +239,4 @@ Then stop. Do not start the next batch in the same session.
 - MSW rules and helpers: [references/msw-mocking.md](references/msw-mocking.md)
 - Troubleshooting: [references/troubleshooting.md](references/troubleshooting.md)
 - Exploring and writing the `.feature`: `write-e2e-scenarios`
-- Unit and integration tests: `write-unit-tests`
 - Not sure which workflow applies: `ask-qa`

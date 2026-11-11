@@ -1,55 +1,33 @@
 import fs from "node:fs";
 import path from "node:path";
 
-/** Subset of a Google service-account JSON key used for Sheets/Drive push. */
 export interface ServiceAccountCredentials {
   client_email: string;
   private_key: string;
   project_id?: string;
 }
 
-/** Legacy single-spreadsheet push (flat tabs). */
-export interface GoogleSheetsPushConfig {
-  spreadsheetId: string;
-  credentials: ServiceAccountCredentials;
-  credentialsPath?: string;
-}
-
-/** Drive folder-mirror push — one Spreadsheet per report `.md` leaf. */
 export interface GoogleDrivePushConfig {
   parentFolderId: string;
   credentials: ServiceAccountCredentials;
   credentialsPath?: string;
 }
 
-export type ResolveSheetsPushConfigResult = { ok: true; config: GoogleSheetsPushConfig } | { ok: false; error: string };
-
 export type ResolveDrivePushConfigResult = { ok: true; config: GoogleDrivePushConfig } | { ok: false; error: string };
 
-/**
- * Drive mirror push (default `--push`).
- *
- * Required env:
- * - `GOOGLE_DRIVE_FOLDER_ID` — parent folder id **or** full Drive folder URL
- * - `GOOGLE_SERVICE_ACCOUNT_FILE` **or** `GOOGLE_SERVICE_ACCOUNT_JSON`
- */
+/** Reads the Drive folder and service-account credentials used for E2E evidence uploads. */
 export function resolveGoogleDrivePushConfig(
   env: NodeJS.ProcessEnv = process.env,
   cwd = process.cwd(),
 ): ResolveDrivePushConfigResult {
   const rawFolder = env.GOOGLE_DRIVE_FOLDER_ID?.trim();
-  if (!rawFolder) {
-    return {
-      ok: false,
-      error: "Missing GOOGLE_DRIVE_FOLDER_ID.",
-    };
-  }
+  if (!rawFolder) return { ok: false, error: "Missing GOOGLE_DRIVE_FOLDER_ID." };
 
   const parentFolderId = normalizeGoogleDriveFolderId(rawFolder);
   if (!parentFolderId) {
     return {
       ok: false,
-      error: "Invalid GOOGLE_DRIVE_FOLDER_ID. Expected an id like 1abc… or a URL …/folders/1abc…",
+      error: "Invalid GOOGLE_DRIVE_FOLDER_ID. Expected an id or a Drive folder URL.",
     };
   }
 
@@ -69,38 +47,9 @@ export function resolveGoogleDrivePushConfig(
 export function normalizeGoogleDriveFolderId(value: string): string | null {
   const trimmed = value.trim();
   if (!trimmed) return null;
-
   const fromUrl = trimmed.match(/\/folders\/([a-zA-Z0-9_-]+)/)?.[1];
   if (fromUrl) return fromUrl;
-
-  if (/^[a-zA-Z0-9_-]{10,}$/.test(trimmed)) return trimmed;
-
-  return null;
-}
-
-export function resolveGoogleSheetsPushConfig(
-  env: NodeJS.ProcessEnv = process.env,
-  cwd = process.cwd(),
-): ResolveSheetsPushConfigResult {
-  const spreadsheetId = env.GOOGLE_SHEETS_SPREADSHEET_ID?.trim();
-  if (!spreadsheetId) {
-    return {
-      ok: false,
-      error: "Missing GOOGLE_SHEETS_SPREADSHEET_ID.",
-    };
-  }
-
-  const credentialsResult = loadCredentials(env, cwd);
-  if (!credentialsResult.ok) return credentialsResult;
-
-  return {
-    ok: true,
-    config: {
-      spreadsheetId,
-      credentials: credentialsResult.credentials,
-      credentialsPath: credentialsResult.credentialsPath,
-    },
-  };
+  return /^[a-zA-Z0-9_-]{10,}$/.test(trimmed) ? trimmed : null;
 }
 
 function loadCredentials(
@@ -113,10 +62,9 @@ function loadCredentials(
   if (!inline && !fileRef) {
     return {
       ok: false,
-      error: "Missing credentials. Set GOOGLE_SERVICE_ACCOUNT_FILE (path) or GOOGLE_SERVICE_ACCOUNT_JSON (CI secret).",
+      error: "Missing credentials. Set GOOGLE_SERVICE_ACCOUNT_FILE or GOOGLE_SERVICE_ACCOUNT_JSON.",
     };
   }
-
   if (inline && fileRef) {
     return {
       ok: false,
@@ -126,7 +74,6 @@ function loadCredentials(
 
   let raw: string;
   let credentialsPath: string | undefined;
-
   if (inline) {
     raw = inline;
   } else if (fileRef) {
@@ -136,10 +83,7 @@ function loadCredentials(
     }
     raw = fs.readFileSync(credentialsPath, "utf8");
   } else {
-    return {
-      ok: false,
-      error: "Missing credentials.",
-    };
+    return { ok: false, error: "Missing credentials." };
   }
 
   let parsed: unknown;
@@ -156,11 +100,10 @@ function loadCredentials(
       error: "Service account JSON must include client_email and private_key.",
     };
   }
-
   return { ok: true, credentials, credentialsPath };
 }
 
-export function validateServiceAccountCredentials(value: unknown): ServiceAccountCredentials | null {
+function validateServiceAccountCredentials(value: unknown): ServiceAccountCredentials | null {
   if (!value || typeof value !== "object") return null;
   const record = value as Record<string, unknown>;
   if (typeof record.client_email !== "string" || !record.client_email.includes("@")) return null;

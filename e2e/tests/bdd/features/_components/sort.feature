@@ -6,8 +6,6 @@
 # Reference page: /user-management/users
 # Submodule features mirror these scenarios with TEN_* IDs and @ref:TEN_COM_SAP_E2E_*.
 #
-# Unit catalog: testing-docs/components/dataview/sort-button-applied.md
-
 Feature: Sort Controls — Component
 
   @TEN_COM_SAP_E2E_001 @regression @flow:TEN_COM_SORT_FLOW @type:ui-interaction

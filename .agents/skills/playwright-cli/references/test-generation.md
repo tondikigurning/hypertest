@@ -17,4 +17,4 @@ For other browser-test scopes, inspect their existing runner, fixtures, test fil
 
 Follow the relevant specialist skill and approved scope. Reuse existing steps, fixtures and page objects; avoid generating one test per file as a blanket rule. Assert the state or outcome the scenario promises; a mocked HTTP response alone does not demonstrate visible UI feedback. Use response probes as supporting evidence when appropriate.
 
-For a technical repair, reproduce the failure and distinguish locator/setup changes from product defects. Preserve approved behavior; a changed journey goes through the applicable review workflow. Run a focused, safe selection, report passes, failures and skips, and inspect generated catalog changes. Close only the sessions and processes you started.
+For a technical repair, reproduce the failure and distinguish locator/setup changes from product defects. Preserve approved behavior; a changed journey goes through the applicable review workflow. Run a focused, safe selection, report passes, failures and skips, and inspect result and evidence artifacts. Close only the sessions and processes you started.

@@ -138,5 +138,5 @@ Tag order: ID → cross-cutting (`@smoke`/`@regression`) → `@mock` → `@quara
 - `@regression`: non-smoke scenarios selected for E2E, including consequential negative paths or bug guards. The tag does not by itself justify adding isolated component checks to E2E.
 - `@mock`: see the rule in `write-e2e-code/references/msw-mocking.md`.
 - `@fixme`: real application defect, paired with `@ref:<JIRA-ID>`. Playwright marks it skipped, so a normal run cannot demonstrate recovery. To verify a fix, temporarily run the specific scenario without the skip in a controlled local selection, restore the tag if it still fails, and clear it only after an observed pass; preserve review requirements for any scenario-intent change.
-- `quarantine`: the test itself is unreliable. The BDD fixture currently skips `@quarantine` unless `RUN_QUARANTINE=1` is set. Vitest's tag filter requires all requested tags and does not inherently exclude quarantine; its wrapper does not make failures non-blocking. Check the selected runner and CI job rather than assuming the strategy's intended non-blocking behavior is enforced.
+- `quarantine`: the E2E scenario is unreliable. The BDD fixture currently skips `@quarantine` unless `RUN_QUARANTINE=1` is set. Check the selected runner and CI job rather than assuming quarantine is non-blocking.
 - Never use `@fixme` and `quarantine` interchangeably.

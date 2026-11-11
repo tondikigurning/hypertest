@@ -41,5 +41,4 @@ The runner requires Chromium and the local BDD workspace. Install Chromium with 
 pnpm exec biome check src server vite.config.ts drizzle.config.ts
 pnpm typecheck
 pnpm build
-node --test 'server/**/*.test.mjs'
 ```

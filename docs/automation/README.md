@@ -24,7 +24,7 @@ Direct `pnpm --filter e2e test:bdd` runs can write to the same store when both `
 
 `src/main.tsx` starts React and loads shared styles and icons. `src/app` composes the explorer. Scenario, run, evidence, and agent logic and feature-specific UI live in `src/features`. Shared UI components are exported from `src/components/index.ts` (`Modal`, `CloseButton`, `CollapsibleRegion`, `FilterSelect`, `Spinner`, and `RetryButton`). Keep feature behavior in its feature folder. The controls have app-specific focus, loading, and close behavior.
 
-Shared assets and the global stylesheet are in `src/assets` and `src/styles`. The stylesheet is global because selector order affects existing overrides. The local Express API, catalog and runner modules, and Node tests are in `server/`.
+Shared assets and the global stylesheet are in `src/assets` and `src/styles`. The stylesheet is global because selector order affects existing overrides. The local Express API, catalog and runner modules are in `server/`.
 
 ```text
 server/
@@ -37,7 +37,6 @@ server/
     evidence/               # Evidence routes, controller and Drive client
     agent/                  # Local agent routes, sessions and workspaces
   shared/                   # Request checks used by multiple features
-  app.test.mjs              # HTTP integration tests for the composed app
 ```
 
 The API runs on the machine that starts it. Hosted authentication, a persistent queue, worker deployment, and environment-specific hosted storage are not implemented.
@@ -56,7 +55,7 @@ New sessions use the destination repository's committed `HEAD` and create a deta
 
 Use **Review changes** to inspect tracked and new files. The preview can commit the reviewed version to a local branch; review it again after any change. Binary changes appear as Git binary patches and need a local viewer. Pull request submission is disabled; the preview does not push branches or create PRs.
 
-Changed feature files appear in the review panel with all scenarios in the file, including unchanged ones. If a draft contains E2E implementation changes, the panel blocks approval of its scenario changes. Remove or preserve those implementation changes separately, review the scenarios, then restore the implementation changes for their own review. Committing the agent worktree does not update the current checkout, regenerate its catalog, or redeploy Automation. Inspect `git worktree list` and use the team's normal Git workflow to integrate a branch. Do not edit generated catalogs by hand.
+Changed feature files appear in the review panel with all scenarios in the file, including unchanged ones. If a draft contains E2E implementation changes, the panel blocks approval of its scenario changes. Remove or preserve those implementation changes separately, review the scenarios, then restore the implementation changes for their own review. Committing the agent worktree does not update the current checkout or redeploy Automation. Inspect `git worktree list` and use the team's normal Git workflow to integrate a branch.
 
 Codex command and file approval requests are separate from QA review. For changed `.feature` or `.flows.md` files, **Approve reviewed scenario changes** records approval for the current file contents. The preview blocks an explicit `/write-e2e-code` turn or a commit if those contents differ from the approved snapshot. This does not enforce automatic specialist handoffs, flow-list review, historical scenario approval, or data-safety rules; those still depend on the agent and user.
 
@@ -79,7 +78,7 @@ Follow the [repository AGENTS.md](../../AGENTS.md) as well as these app-specific
 - Follow Biome and TypeScript strict mode. Explain narrow suppressions where source data or an intentional browser fallback requires them. Preserve the global stylesheet cascade.
 - For behavior changes, verify the affected workflow and add coverage using the repository's testing conventions. Never hand-edit generated scenario catalogs.
 
-From the repository root, run `pnpm exec biome check src server vite.config.ts drizzle.config.ts`, `pnpm typecheck`, `pnpm build`, and `node --test 'server/**/*.test.mjs'`. The server tests do not run BDD scenarios.
+From the repository root, run `pnpm exec biome check src server vite.config.ts drizzle.config.ts`, `pnpm typecheck`, and `pnpm build`. These checks do not execute BDD scenarios.
 
 ## Local execution
 
@@ -99,7 +98,7 @@ Progress polling reads only newly appended reporter events. Browser preview poll
 
 The active run can be reopened from the floating run indicator. After it ends, the app does not offer run history. If the preview remained open, it shows final progress until closed. Cancelling stops the local process; on Windows, this forcibly stops its process tree and can interrupt scenario cleanup. This does not implement the graceful after-scenario cancellation described for the hosted runner.
 
-The local preview does not require sign-in and executes one run at a time through the loopback server. It does not enforce scenario data-safety approvals, so maintain the suite and test data accordingly. Each run stores its latest results in PostgreSQL and uploads available screenshots and videos to the selected environment's Drive folder, using the optional credentials described in the root README. Automation runs do not update generated Markdown catalogs. Missing Drive configuration and upload failures are reported separately from test outcomes.
+The local preview does not require sign-in and executes one run at a time through the loopback server. It does not enforce scenario data-safety approvals, so maintain the suite and test data accordingly. Each run stores its latest results in PostgreSQL and uploads available screenshots and videos to the selected environment's Drive folder, using the optional credentials described in the root README. Run results and evidence metadata do not write scenario catalog files. Missing Drive configuration and upload failures are reported separately from test outcomes.
 
 Do not expose or deploy this preview. It has no access control, durable queue, or hosted evidence access. The development API reads the PostgreSQL catalog synced from BDD features; a built app uses the generated feature snapshot and has no runner API.
 

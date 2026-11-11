@@ -204,7 +204,7 @@ For every journey found, classify it:
 
 Authoring rules:
 
-- Register the in-scope business journeys supported by evidence, including meaningful alternate outcomes and lifecycle paths. Write E2E scenarios for consequential cross-component or business behavior; leave isolated field, visual and component checks to unit or integration tests. Do not equate every UI action or technical endpoint with a business flow.
+- Register the in-scope business journeys supported by evidence, including meaningful alternate outcomes and lifecycle paths. Keep E2E scenarios focused on business outcomes; do not equate every UI action or technical endpoint with a business flow.
 - Treat each supported, in-scope CRUD happy path as a minimum sub-module release-gating smoke baseline, not an exhaustive list. Identify and recommend happy paths for other main business functions of the sub-module as smoke too; use requirements, discovery and user context to assess them, and resolve genuinely unclear priorities in the interview. Apply `@smoke` to the resulting meaningful success scenarios, and use `@regression` for consequential non-smoke variants. Do not invent unsupported CRUD operations or tag every validation, error or exploratory UI check as smoke. Record unavailable or blocked operations and their reasons; existing review, real-backend and data-safety rules still apply. An explicit user exception takes precedence.
 - When a consequential business journey needs an API error, delay, or auth-failure scenario, add `@mock`. Reuse applicable `_components/` step text and add `@ref` to the component master. Never write duplicate mock Gherkin. `@mock` never goes on `@smoke`.
 - Mutations (create, edit, delete, add/remove member, activate/suspend) must assert the **data-changing outcome**: a success toast, a row that appears or disappears, a changed value. Asserting only that a dialog closed is not enough.
@@ -223,7 +223,7 @@ If the real behavior contradicts the spec, PRD or ticket:
 3. Save a trace or screenshot as evidence (`playwright-cli tracing-start` / `tracing-stop`, or `screenshot`) and record the path.
 4. Note expected vs. actual behavior in the summary.
 
-`@fixme` is for real product defects. The Vitest `quarantine` tag is for flaky tests. Never use one in place of the other.
+`@fixme` is for real product defects. Use `quarantine` only for demonstrated E2E test unreliability. Never use the tags interchangeably.
 
 ## Step 5 — Write the `.feature` file
 
@@ -249,5 +249,4 @@ For a registry batch, end with the next step: "Batch N is written. Approve it, o
 ## Related
 
 - Write the step definitions, POM and MSW mocks for the approved scenarios: `write-e2e-code`
-- Unit and integration tests: `write-unit-tests`
 - Not sure which workflow applies: `ask-qa`

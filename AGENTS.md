@@ -1,7 +1,7 @@
 # Automation app: instructions for contributors and coding agents
 
 These instructions apply to the Automation app at the repository root. Before editing, read
-`README.md`, `docs/automation/README.md`, the relevant source and its callers, and the affected tests. `SPEC.md`
+`README.md`, `docs/automation/README.md`, the relevant source and its callers, and affected BDD scenarios. `SPEC.md`
 describes a draft hosted product; use the README and implementation to understand what the local preview supports.
 
 ## Architecture
@@ -54,17 +54,15 @@ describes a draft hosted product; use the README and implementation to understan
 - Use existing patterns and dependencies unless the task justifies a change. Keep effects and polling cancellable;
   account for loading, empty, failure and unavailable states as relevant. Do not add dependencies solely to enforce a
   preference.
-- For Vitest changes follow `.agents/skills/write-unit-tests/SKILL.md`; for E2E changes follow the relevant
-  `write-e2e-scenarios` or `write-e2e-code` workflow. Preserve stable scenario IDs and generated artifacts.
+- For E2E changes follow the relevant `write-e2e-scenarios` or `write-e2e-code` workflow. Preserve stable
+  scenario IDs and generated artifacts.
 - From the repository root, run the checks appropriate to the change:
 
   ```sh
   pnpm exec biome check src server vite.config.ts drizzle.config.ts
   pnpm typecheck
   pnpm build
-  node --test 'server/**/*.test.mjs'
   ```
 
-  The server tests do not execute BDD scenarios. Add focused behavior coverage or browser verification when the
-  change warrants it; these commands alone do not prove UI behavior. Report checks actually run and any remaining
-  warnings or limitations.
+  These checks do not execute BDD scenarios. Use browser verification when the change warrants it, and report checks
+  actually run and any remaining warnings or limitations.

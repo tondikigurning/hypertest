@@ -2,7 +2,7 @@
   "name": "@hyperscal/test-utils",
   "version": "0.0.0",
   "private": true,
-  "description": "Testing utilities: scenario contract, adapters, and reporters",
+  "description": "Playwright BDD reporter and E2E evidence utilities",
   "type": "module",
   "exports": {
     "./playwright": "./src/playwright/reporter.ts",

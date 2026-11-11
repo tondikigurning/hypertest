@@ -6,8 +6,6 @@
 # Reference page: /user-management/users
 # Submodule features mirror these scenarios with TEN_* IDs and @ref:TEN_COM_FIL_E2E_*.
 #
-# Unit catalogs: testing-docs/components/dataview/filter.md, filter-button-add.md
-
 Feature: Filter — Component
 
   @TEN_COM_FIL_E2E_001 @regression @flow:TEN_COM_FILTER_FLOW @type:ui-interaction

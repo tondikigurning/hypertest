@@ -9,7 +9,7 @@ import { bddCatalogTargetFromFile } from "../playwright/catalog-routes";
 import { writeBddCatalogs } from "../playwright/catalog-writer";
 import { collectAllFeatureCatalogs } from "../playwright/feature-catalog";
 import type { ScenarioResult } from "../schema/types";
-import { loadEnvLocal } from "./index";
+import { loadEnvLocal } from "./env";
 import { resolveGoogleDrivePushConfig } from "./resolve-credentials";
 
 // Upload is explicit unless the BDD runner invokes this with --auto.

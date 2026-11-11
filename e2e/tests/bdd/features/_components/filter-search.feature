@@ -6,8 +6,6 @@
 # Reference page: /user-management/users
 # Submodule features link via @ref:TEN_COM_FSR_E2E_* — do not duplicate these steps.
 #
-# Unit catalog: testing-docs/components/dataview/filter-search.md
-
 Feature: Filter Search — Component
 
   @TEN_COM_FSR_E2E_001 @regression @flow:TEN_COM_FILTER_SEARCH_FLOW @type:positive
