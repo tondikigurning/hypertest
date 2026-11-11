@@ -259,7 +259,7 @@ async function main() {
   console.log(`Uploaded evidence for ${selected.length} scenarios.`);
 }
 
-// Keep in sync with apps/tenants/tests/bdd/utils/e2e-test-data.ts (local DDMMYYYYHHmm).
+// Keep in sync with e2e/tests/bdd/utils/e2e-test-data.ts (local DDMMYYYYHHmm).
 function e2eTimestamp(date: Date): string {
   const pad = (value: number) => String(value).padStart(2, "0");
   return [

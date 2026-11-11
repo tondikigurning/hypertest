@@ -15,7 +15,7 @@ export function formatDateTag(date: Date): string {
   return `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())}_${pad(date.getUTCHours())}${pad(date.getUTCMinutes())}`;
 }
 
-/** Folder segments for a relative markdown path (`e2e/tenants/users.md` → `["e2e","tenants"]`). */
+/** Folder segments for a relative markdown path (`e2e/scenarios/users.md` → `["e2e","scenarios"]`). */
 export function parentFoldersOf(relativePath: string): Array<string> {
   const parts = relativePath.replace(/\\/g, "/").split("/").filter(Boolean);
   if (parts.length <= 1) return [];

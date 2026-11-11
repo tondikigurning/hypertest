@@ -21,7 +21,7 @@ describe("packageSlugFromName", () => {
 
 describe("componentNameFromFile", () => {
   it("derives a kebab-case component name from a .test.tsx path", () => {
-    expect(componentNameFromFile("apps/tenants/tests/unit-test/features/users/users-create-payload.test.tsx")).toBe(
+    expect(componentNameFromFile("e2e/tests/unit-test/features/users/users-create-payload.test.tsx")).toBe(
       "users-create-payload",
     );
   });

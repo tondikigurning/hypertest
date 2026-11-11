@@ -4,7 +4,7 @@ export interface GoogleSheetTab {
   title: string;
   /**
    * Relative virtual file path mirroring the report .md tree, e.g.
-   * "overview.md", "e2e/tenants/auth/authentication.md",
+   * "overview.md", "e2e/scenarios/auth/authentication.md",
    * "unit/dataview.md".
    */
   relativePath: string;

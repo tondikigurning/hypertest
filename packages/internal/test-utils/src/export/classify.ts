@@ -71,14 +71,14 @@ export function classifyResults(results: Array<ScenarioResult>): ClassifiedResul
 }
 
 function e2eModuleSlug(result: ScenarioResult): string {
-  const file = result.file;
+  const file = result.file.replace(/\\/g, "/");
 
   const match = file.match(
-    /^apps\/([^/]+)\/.features-gen\/[^/]+\/tests\/bdd\/(?:features|steps)\/(.+)\.spec\.(?:ts|tsx|js|mjs)$/,
+    /(?:^|\/)(?:apps\/([^/]+)|(e2e))\/.features-gen\/[^/]+\/tests\/bdd\/(?:features|steps)\/(.+)\.spec\.(?:ts|tsx|js|mjs)$/,
   );
   if (match) {
-    const app = match[1];
-    let featurePath = match[2];
+    const app = match[1] ?? "scenarios";
+    let featurePath = match[3];
     if (featurePath.endsWith(".feature")) featurePath = featurePath.slice(0, -".feature".length);
     return `${app}/${featurePath}`;
   }

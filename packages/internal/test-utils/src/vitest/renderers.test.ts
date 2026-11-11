@@ -25,7 +25,7 @@ const e2eResult: ScenarioResult = {
   runner: "playwright",
   status: "passed",
   durationMs: 1000,
-  file: "apps/tenants/tests/bdd/features/_components/pipeline.feature",
+  file: "e2e/tests/bdd/features/_components/pipeline.feature",
 };
 
 const unitResult: ScenarioResult = {

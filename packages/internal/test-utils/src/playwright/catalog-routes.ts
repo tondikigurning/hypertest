@@ -2,9 +2,9 @@
  * Resolves committed catalog paths for BDD scenarios by MIRRORING the source
  * feature-file tree under testing-docs/e2e/.
  *
- * Every `apps/<app>/tests/bdd/features/<rel>.feature` maps 1:1 to
- * `testing-docs/e2e/<app>/<rel>.md`, so the catalog tree always reflects the
- * feature tree (auth/, user-management/, _components/, …).
+ * The root `e2e/tests/bdd/features/<rel>.feature` tree maps to
+ * `testing-docs/e2e/scenarios/<rel>.md`. Other apps under `apps/<app>` map to
+ * `testing-docs/e2e/<app>/<rel>.md`.
  *
  * The source path is read from `ScenarioResult.file`, which is either the
  * `.feature` source (catalog generation) or the playwright-bdd generated
@@ -12,7 +12,7 @@
  * `tests/bdd/features/<rel>.feature` segment.
  */
 export interface BddCatalogTarget {
-  /** App slug, e.g. "tenants". */
+  /** App slug, e.g. "scenarios". */
   app: string;
   /** Feature path relative to the features root, without extension, e.g. "user-management/users". */
   relPath: string;
@@ -22,6 +22,7 @@ export interface BddCatalogTarget {
 
 const FEATURE_PATH_RE = /tests\/bdd\/features\/(.+?)\.feature(?:\.spec\.[cm]?[jt]s)?$/;
 const APP_PATH_RE = /apps\/([^/]+)\//;
+const E2E_WORKSPACE_PATH_RE = /(?:^|\/)e2e\/(?:\.features-gen\/[^/]+\/)?tests\/bdd\//;
 
 /**
  * Derives the mirrored catalog target from a feature (or generated spec) file path.
@@ -29,7 +30,7 @@ const APP_PATH_RE = /apps\/([^/]+)\//;
  */
 export function bddCatalogTargetFromFile(file: string): BddCatalogTarget | null {
   const normalized = file.replace(/\\/g, "/");
-  const app = normalized.match(APP_PATH_RE)?.[1];
+  const app = normalized.match(APP_PATH_RE)?.[1] ?? (E2E_WORKSPACE_PATH_RE.test(normalized) ? "scenarios" : undefined);
   const relPath = normalized.match(FEATURE_PATH_RE)?.[1];
   if (!app || !relPath) return null;
 
