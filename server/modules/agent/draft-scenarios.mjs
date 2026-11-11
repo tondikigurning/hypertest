@@ -2,7 +2,7 @@ import { execFile } from "node:child_process";
 import { lstat, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { promisify } from "node:util";
-import { parseFeature } from "../catalog/scenario-catalog.mjs";
+import { enrichScenario, parseFeature } from "../catalog/scenario-catalog.mjs";
 
 const git = promisify(execFile);
 const prefix = "e2e/tests/bdd/features/";
@@ -38,18 +38,50 @@ export async function draftScenarios(workspace, baseCommit) {
     }
     const before = parseFeature(beforeText, relative);
     const after = parseFeature(afterText, relative);
-    const beforeIds = before.map((item) => item.id).filter(Boolean);
-    const afterIds = after.map((item) => item.id).filter(Boolean);
-    if (new Set(beforeIds).size !== beforeIds.length || new Set(afterIds).size !== afterIds.length)
-      throw new Error("Draft preview cannot match duplicate scenario IDs. Fix the duplicate IDs in this feature.");
-    const old = new Map(before.filter((item) => item.id).map((item) => [item.id, item]));
-    const current = new Map(after.filter((item) => item.id).map((item) => [item.id, item]));
+    const counts = (items, key) => {
+      const result = new Map();
+      for (const item of items) {
+        const value = key(item);
+        if (value) result.set(value, (result.get(value) ?? 0) + 1);
+      }
+      return result;
+    };
+    const beforeIds = counts(before, (item) => item.id);
+    const afterIds = counts(after, (item) => item.id);
+    const beforeSemantics = counts(before, semantic);
+    const afterSemantics = counts(after, semantic);
+    const matchedBefore = new Set();
     for (const item of after) {
-      const previous = item.id ? old.get(item.id) : undefined;
-      if (!previous) changes.push({ kind: "added", after: item });
-      else if (semantic(previous) !== semantic(item)) changes.push({ kind: "changed", before: previous, after: item });
+      const uniqueIdMatch =
+        item.id && beforeIds.get(item.id) === 1 && afterIds.get(item.id) === 1
+          ? before.find((candidate) => candidate.id === item.id)
+          : undefined;
+      const exactCandidates = before.filter((candidate) => semantic(candidate) === semantic(item));
+      const uniqueSemanticMatch =
+        beforeSemantics.get(semantic(item)) === 1 && afterSemantics.get(semantic(item)) === 1
+          ? exactCandidates[0]
+          : undefined;
+      const previous = uniqueIdMatch || uniqueSemanticMatch;
+      if (previous) {
+        matchedBefore.add(previous.key);
+        if (semantic(previous) !== semantic(item))
+          changes.push({ kind: "changed", before: enrichScenario(previous), after: enrichScenario(item) });
+      } else {
+        const duplicateId = Boolean(item.id && ((beforeIds.get(item.id) ?? 0) > 1 || (afterIds.get(item.id) ?? 0) > 1));
+        const ambiguousSemantic = exactCandidates.length > 1 || afterSemantics.get(semantic(item)) > 1;
+        changes.push({
+          kind: "added",
+          after: enrichScenario(item),
+          identityAmbiguous: duplicateId || ambiguousSemantic,
+        });
+      }
     }
-    for (const item of before) if (item.id && !current.has(item.id)) changes.push({ kind: "deleted", before: item });
+    for (const item of before) {
+      if (matchedBefore.has(item.key)) continue;
+      const duplicateId = Boolean(item.id && ((beforeIds.get(item.id) ?? 0) > 1 || (afterIds.get(item.id) ?? 0) > 0));
+      const ambiguousIdentity = duplicateId || beforeSemantics.get(semantic(item)) > 1;
+      changes.push({ kind: "deleted", before: enrichScenario(item), identityAmbiguous: ambiguousIdentity });
+    }
   }
   return changes;
 }

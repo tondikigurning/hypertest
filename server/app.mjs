@@ -6,13 +6,13 @@ import { createCatalogRouter } from "./modules/catalog/catalog-routes.mjs";
 import { createEvidenceRouter } from "./modules/evidence/evidence-routes.mjs";
 import { createRunRouter } from "./modules/runs/run-routes.mjs";
 
-export function createApp({ catalogHandler, evidenceHandler } = {}) {
+export function createApp({ catalogHandler, evidenceHandler, resolveAgentIdentity } = {}) {
   const app = express();
   app.disable("x-powered-by");
-  app.use("/automation/api/agent", createAgentRouter());
-  app.use("/automation/api/local", createRunRouter());
-  app.use("/automation/api/evidence", createEvidenceRouter(evidenceHandler));
-  app.use("/automation/api/scenarios", createCatalogRouter(catalogHandler));
+  app.use("/api/agent", createAgentRouter({ resolveIdentity: resolveAgentIdentity }));
+  app.use("/api/local", createRunRouter());
+  app.use("/api/evidence", createEvidenceRouter(evidenceHandler));
+  app.use("/api/scenarios", createCatalogRouter(catalogHandler));
   app.use(notFound);
   app.use(errorHandler);
   return app;

@@ -17,10 +17,15 @@
     "test:evidence": "tsx packages/internal/test-utils/src/export/evidence-cli.ts"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^4.0.99",
+    "@ai-sdk/google": "^4.0.114",
+    "@ai-sdk/openai": "^4.0.111",
+    "@ai-sdk/openai-compatible": "^3.0.87",
     "@hyperscal/icons": "workspace:*",
     "@hyperscal/tailwind-config": "workspace:*",
     "@radix-ui/react-select": "2.1.0",
     "@tanstack/react-query": "^5.85.0",
+    "ai": "^7.0.166",
     "dotenv": "^17.2.3",
     "drizzle-orm": "^0.45.4",
     "exceljs": "^4.4.0",
@@ -30,7 +35,9 @@
     "pg": "^8.23.1",
     "react": "19.2.4",
     "react-dom": "19.2.4",
-    "tailwindcss": "^4.1.11"
+    "tailwindcss": "^4.1.11",
+    "undici": "^8.12.4",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.15",

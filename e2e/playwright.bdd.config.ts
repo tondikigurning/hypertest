@@ -74,6 +74,7 @@ export default defineConfig({
     ],
     use: {
         baseURL: process.env.BASE_URL || "https://converge.stt.hyperscal.com/",
+        ...(process.env.AUTOMATION_AGENT_PROXY ? { proxy: { server: process.env.AUTOMATION_AGENT_PROXY } } : {}),
         headless: true,
         screenshot: "on",
         viewport: EVIDENCE_SIZE,

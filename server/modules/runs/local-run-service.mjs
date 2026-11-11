@@ -50,6 +50,32 @@ const playwright = join(dirname(require.resolve("@playwright/test")), "cli.js");
 const tsx = require.resolve("tsx/cli");
 const evidenceCli = join(repoRoot, "packages/internal/test-utils/src/export/evidence-cli.ts");
 
+function runnerBaseEnvironment() {
+  const allowedNames = [
+    "PATH",
+    "PATHEXT",
+    "SystemRoot",
+    "WINDIR",
+    "ComSpec",
+    "TEMP",
+    "TMP",
+    "HOME",
+    "USERPROFILE",
+    "APPDATA",
+    "LOCALAPPDATA",
+    "PLAYWRIGHT_BROWSERS_PATH",
+    "HTTP_PROXY",
+    "HTTPS_PROXY",
+    "http_proxy",
+    "https_proxy",
+    "AUTOMATION_AGENT_PROXY",
+    "CI",
+  ];
+  return Object.fromEntries(
+    allowedNames.filter((name) => process.env[name] !== undefined).map((name) => [name, process.env[name]]),
+  );
+}
+
 function fingerprintRunner() {
   const workspaceE2e = join(repoRoot, "e2e");
   return runnerFingerprint({
@@ -74,6 +100,8 @@ export function createLocalRunService({
   workspaceRoot = repoRoot,
   configFile = "playwright.bdd.config.ts",
   skipEvidenceUpload = false,
+  maxRuntimeMs,
+  safeProcessEnvironment = false,
   onFinished = async () => {},
   resultStore,
 } = {}) {
@@ -101,8 +129,17 @@ export function createLocalRunService({
       done: run.done,
       error: run.error,
       evidenceUpload: run.evidenceUpload,
-      status: run.cancelRequested ? (run.done ? "cancelled" : "cancelling") : progress.status,
+      status: run.timedOut
+        ? run.done
+          ? "timed out"
+          : "stopping after the time limit"
+        : run.cancelRequested
+          ? run.done
+            ? "cancelled"
+            : "cancelling"
+          : progress.status,
       cancelRequested: Boolean(run.cancelRequested),
+      timedOut: Boolean(run.timedOut),
       tests: Object.values(progress.tests).map((test) => ({
         testId: test.testId,
         scenarioId: test.scenarioId,
@@ -133,7 +170,7 @@ export function createLocalRunService({
   async function execute(environment) {
     const auth = join(run.dir, "auth.json");
     const env = {
-      ...process.env,
+      ...(safeProcessEnvironment ? runnerBaseEnvironment() : process.env),
       BASE_URL: run.target,
       ...environment,
       AUTOMATION_SETUP_AUTH_FILE: auth,
@@ -250,6 +287,7 @@ export function createLocalRunService({
     } catch {
       run.error = "The local runner could not complete.";
     } finally {
+      clearTimeout(run.timeoutTimer);
       try {
         rmSync(auth, { force: true });
       } catch {
@@ -308,6 +346,15 @@ export function createLocalRunService({
       stage: "starting",
       done: false,
     };
+    if (Number.isFinite(maxRuntimeMs) && maxRuntimeMs > 0) {
+      run.timeoutTimer = setTimeout(() => {
+        if (run.done) return;
+        run.timedOut = true;
+        run.error = `This isolated run exceeded its ${Math.ceil(maxRuntimeMs / 60000)} minute limit.`;
+        cancel();
+      }, maxRuntimeMs);
+      run.timeoutTimer.unref?.();
+    }
     void execute(environment);
     return publicRun();
   }
