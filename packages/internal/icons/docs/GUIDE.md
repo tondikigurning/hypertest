@@ -50,7 +50,7 @@ resolve: {
 },
 ```
 
-(Copy this from `apps/tenants/vite.config.ts` or `apps/admin/vite.config.ts`
+(Copy this from `e2e/vite.config.ts` or `apps/admin/vite.config.ts`
 — both already have it.) Practically, this means you need to have run
 `pnpm build` (or at least `pnpm run gen` + the CSS copy step) for this
 package at least once before the stylesheet resolves.

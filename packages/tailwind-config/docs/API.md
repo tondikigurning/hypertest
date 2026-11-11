@@ -112,27 +112,19 @@ Tailwind v4 only generates utility classes for files it's told to scan.
 Current list (relative to `packages/tailwind-config/`):
 
 ```
-../../apps/**/*.{ts,tsx}
-../core/**/*.{ts,tsx}          (⚠ packages/core no longer exists — see below)
-../command/**/*.{ts,tsx}
-../internal/ui/src/**/*.{ts,tsx}
+../../src/**/*.{ts,tsx}
+../../e2e/**/*.{ts,tsx}
 ../internal/icons/src/icon.tsx
-../internal/form/src/**/*.{ts,tsx}
-../dataview/src/**/*.{ts,tsx}
-../filters/src/**/*.{ts,tsx}
 ```
 
 Plus explicit inline safelisting: `line-clamp-{2..6}`, `row-start-{1..100}`,
 `min-w-{xs,sm,md,lg,xl}` (for dynamically-constructed class names Tailwind's
 static scanner can't otherwise detect).
 
-**⚠️ `@source "../core/**/\*.{ts,tsx}"`points at a deleted package** —`packages/core`was removed in commit`3754124361`("totally remove core
-package"). This`@source` line is now a no-op (the glob matches nothing),
-not a broken build — but it's stale and should be removed.
-
-**Adding a new package that ships Tailwind classes?** It needs a new
-`@source` line here, or its components render unstyled — this is the exact
-gotcha documented in `@hyperscal/ui`'s own GUIDE.md.
+The `apps/` glob covers the surviving applications, while `src/` and `e2e/`
+cover the root Automation and E2E workspaces. The package paths include
+shared components whose classes are used by those applications. Add a source
+path when a new app or package contains Tailwind classes not covered here.
 
 ---
 
@@ -157,7 +149,7 @@ every consumer simultaneously (all four apps share one stylesheet).
 - Adding new tokens, new `@source` entries, or new utility/component
   classes.
 - Deleting the confirmed-dead files (`global.css`, `index.ts`,
-  `postcss.config.js`, the stale `../core` `@source` line) — see
+  `postcss.config.js`) — see
   [[tailwind-config-intent]]'s Open questions before doing so.
 
 ---

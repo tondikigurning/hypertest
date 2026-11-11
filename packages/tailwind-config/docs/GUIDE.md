@@ -150,7 +150,7 @@ consumer.
 | Package                                                                                                             | Relationship                                                                                                                       |
 | ------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
 | `@hyperscal/ui`, `@hyperscal/icons`, `@hyperscal/form`, `packages/dataview`, `packages/filters`, `packages/command` | Every package listed in `backoffice.css`'s `@source` — their Tailwind classes only render because this package scans their source. |
-| `apps/tenants`, `apps/admin`, `apps/crm/order-management`, `apps/docs`                                              | The four real consumers, each importing `backoffice.css` once at their app root/entry.                                             |
+| `e2e`, `apps/admin`, `apps/crm/order-management`, `apps/docs`                                                   | The four real consumers, each importing `backoffice.css` once at their app root/entry.                                             |
 
 ## Links
 

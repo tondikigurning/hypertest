@@ -91,7 +91,7 @@ select`, `.ql-active`, etc.) is duplicated verbatim, back-to-back, within
 - **Font `@import` is deliberately commented out.** `backoffice.css`'s
   Google Fonts `@import` for Rubik is commented out, while
   `--font-family: "Rubik"` stays active as a token. Not a gap: both
-  `apps/tenants/app/root.tsx` and `apps/admin/app/root.tsx` load Rubik
+  `e2e/app/root.tsx` and `apps/admin/app/root.tsx` load Rubik
   themselves via `<link rel="preconnect">`/`<link>` tags in the document
   head instead — faster than a render-blocking CSS `@import`. `global.css`
   (dead) still has the CSS `@import` active, which is one more reason not
@@ -104,7 +104,6 @@ select`, `.ql-active`, etc.) is duplicated verbatim, back-to-back, within
 | `tailwindcss`           | dev, imported via `@import "tailwindcss"` in `backoffice.css` | Tailwind v4 core.                                                                                                                                                                                                               |
 | `tailwindcss-animate`   | dependency                                                    | Referenced as a Tailwind plugin/animation utility set (not directly imported in the files read — likely wired through Tailwind v4's plugin resolution rather than an explicit `@plugin` directive; not confirmed in this pass). |
 | `@tailwindcss/postcss`  | dev                                                           | Backs the dead `postcss.config.js` — see [[tailwind-config-intent]].                                                                                                                                                            |
-| `@hyperscal/app-config` | dev                                                           | Only used for `tsconfig.json`'s `extends` (shared TS config for packages) — no runtime/CSS relationship.                                                                                                                        |
 
 ## Known technical debt
 
@@ -114,9 +113,6 @@ additions:
 
 - **Duplicated Quill toolbar CSS block within the same file** (see Design
   tradeoffs) — a cleanup candidate independent of the dead-file question.
-- **The `../core` `@source` line points at a deleted package**
-  (`packages/core`, removed in commit `3754124361`) — currently a harmless
-  no-op glob match, but stale and should be removed (see [[tailwind-config-api]]).
 
 ## Superseded
 
