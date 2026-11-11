@@ -167,7 +167,6 @@ export function automationCatalog(root) {
     }
     return {
       ...scenario,
-      docFile: scenario.file.replace(/\.feature$/i, ".md"),
       category,
       type: tag("@type:") || "positive",
       method: "e2e",

@@ -30,7 +30,7 @@ export function createDriveEvidenceHandler({
     } catch {
       return fail(503, "Scenario catalog is unavailable.");
     }
-    if (!scenario?.docFile || !scenario.id || scenario.availability === "unavailable")
+    if (!scenario?.file || !scenario.id || scenario.availability === "unavailable")
       return fail(404, "Evidence folder is unavailable.");
 
     let latest;
@@ -54,7 +54,7 @@ export function createDriveEvidenceHandler({
       const folder = await client.findEvidenceFolder([
         environment,
         "tenants",
-        ...scenario.docFile.replace(/\.md$/i, "").split("/"),
+        ...scenario.file.replace(/\.feature$/i, "").split("/"),
         scenario.id,
         latest.runId,
       ]);

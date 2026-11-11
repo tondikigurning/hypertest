@@ -16,10 +16,9 @@
  * already run `bddgen` in this session. playwright-bdd writes generated tests to
  * .features-gen/; without bddgen, only previously generated scenarios run.
  *
- * Scenario catalogs (testing-docs/e2e/...) are refreshed automatically by the reporter
- * for the features covered by each run: rows mirror the .feature source, and executed
- * scenarios carry the latest status/last-run. Commit the catalog files alongside the
- * test changes.
+ * The Automation API builds its scenario catalog from the .feature sources and stores it
+ * in PostgreSQL at startup. This reporter writes per-run results only; it does not create
+ * scenario catalog files.
  *
  * Run only smoke scenarios:
  *   pnpm test:bdd --grep=@smoke

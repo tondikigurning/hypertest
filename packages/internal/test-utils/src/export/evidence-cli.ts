@@ -5,9 +5,7 @@ import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { GoogleAuth } from "google-auth-library";
-import { bddCatalogTargetFromFile } from "../playwright/catalog-routes";
-import { writeBddCatalogs } from "../playwright/catalog-writer";
-import { collectAllFeatureCatalogs } from "../playwright/feature-catalog";
+import { bddFeatureTargetFromFile } from "../playwright/feature-paths";
 import type { ScenarioResult } from "../schema/types";
 import { loadEnvLocal } from "./env";
 import { resolveGoogleDrivePushConfig } from "./resolve-credentials";
@@ -150,11 +148,10 @@ async function main() {
   let evidenceRoot = await cachedFolder(config.config.parentFolderId, "E2E Evidence");
   if (environment) evidenceRoot = await cachedFolder(evidenceRoot, environment);
   for (const result of selected) {
-    const target = bddCatalogTargetFromFile(result.file);
+    const target = bddFeatureTargetFromFile(result.file);
     if (!target) throw new Error(`Unsupported feature path: ${result.file}`);
     let parent = evidenceRoot;
-    for (const segment of [target.app, ...target.relPath.replace(/\.md$/, "").split("/")])
-      parent = await cachedFolder(parent, segment);
+    for (const segment of [target.app, ...target.relPath.split("/")]) parent = await cachedFolder(parent, segment);
     const scenarioRoot = await cachedFolder(parent, result.meta.id);
     const scenarioFolder = runId ? await cachedFolder(scenarioRoot, runId) : scenarioRoot;
     const timestamp = e2eTimestamp(new Date(result.executedAt));
@@ -228,34 +225,8 @@ async function main() {
     }
     result.evidenceUrl = `https://drive.google.com/drive/folders/${scenarioFolder}`;
   }
-  // Only persist links after every selected upload succeeds; stubs retain unrelated catalog rows.
+  // Persist links only after every selected upload succeeds.
   fs.writeFileSync(resultsPath, JSON.stringify(results, null, 2));
-  if (process.env.BDD_SKIP_CATALOG_WRITE === "1") {
-    console.log(`Uploaded evidence for ${selected.length} scenarios.`);
-    return;
-  }
-  const targets = new Set(
-    selected.map((r) => {
-      const t = bddCatalogTargetFromFile(r.file);
-      if (!t) throw new Error(`Unsupported feature path: ${r.file}`);
-      return `${t.app}/${t.relPath}`;
-    }),
-  );
-  const byId = new Map(
-    collectAllFeatureCatalogs(root)
-      .filter((r) => {
-        const t = bddCatalogTargetFromFile(r.file);
-        return t && targets.has(`${t.app}/${t.relPath}`);
-      })
-      .map((r) => [r.meta.id, r]),
-  );
-  for (const r of results)
-    if (byId.has(r.meta.id)) {
-      // The shared catalog cannot represent an environment-specific link.
-      if (environment) r.evidenceUrl = byId.get(r.meta.id)?.evidenceUrl;
-      byId.set(r.meta.id, r);
-    }
-  writeBddCatalogs([...byId.values()], root);
   console.log(`Uploaded evidence for ${selected.length} scenarios.`);
 }
 

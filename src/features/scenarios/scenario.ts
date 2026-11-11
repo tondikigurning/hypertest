@@ -9,7 +9,6 @@ export interface Scenario {
   feature: string;
   module: string;
   file: string;
-  docFile: string;
   tags: Array<string>;
   catalogTags: Array<string>;
   steps: Array<string>;

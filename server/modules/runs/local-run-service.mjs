@@ -142,7 +142,6 @@ export function createLocalRunService({
       AUTOMATION_EVENTS_FILE: run.events,
       AUTOMATION_LIVE_FRAME: join(run.dir, "live.jpg"),
       BDD_RESULTS_FILE: join(run.dir, "bdd.results.json"),
-      BDD_SKIP_CATALOG_WRITE: "1",
     };
     try {
       if (resultStore) {

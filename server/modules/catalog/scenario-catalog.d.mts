@@ -14,8 +14,7 @@ export interface CatalogScenario {
   availability: "unknown" | "unavailable";
   availabilityReasons: Array<string>;
 }
-export interface DocumentScenario extends CatalogScenario {
-  docFile: string;
+export interface AutomationScenario extends CatalogScenario {
   category: string;
   type: string;
   method: string;
@@ -29,4 +28,4 @@ export interface DocumentScenario extends CatalogScenario {
 }
 export function parseFeature(content: string, file: string): Array<CatalogScenario>;
 export function scenarioCatalog(root: string): Array<CatalogScenario>;
-export function automationCatalog(root: string): Array<DocumentScenario>;
+export function automationCatalog(root: string): Array<AutomationScenario>;

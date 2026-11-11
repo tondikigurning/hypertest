@@ -4,9 +4,7 @@ import type { FullResult, Reporter, TestCase, TestResult } from "@playwright/tes
 import type { ScenarioMeta, ScenarioResult, ScenarioStatus } from "../schema/types.js";
 import { validateMeta } from "../schema/validate.js";
 import { resolveBddScenarioMeta } from "./bdd-scenario-meta.js";
-import { bddCatalogTargetFromFile } from "./catalog-routes.js";
-import { writeBddCatalogs } from "./catalog-writer.js";
-import { collectAllFeatureCatalogs, collectFeatureScenarioMap } from "./feature-catalog.js";
+import { collectFeatureScenarioMap } from "./feature-catalog.js";
 
 /**
  * Regex matching a valid scenario ID for the E2E tier (e.g. TEN_LOGIN_E2E_001).
@@ -132,38 +130,6 @@ export default class PlaywrightScenarioReporter implements Reporter {
       // biome-ignore lint/suspicious/noConsole: reporter output
       console.log(`[playwright-reporter] results → ${this.outputFile}`);
     }
-
-    if (process.env.BDD_SKIP_CATALOG_WRITE !== "1") writeBddCatalogs(this.buildCatalogResults(), this.repoRoot);
-  }
-
-  /**
-   * Builds catalog rows only for the feature files covered by this run.
-   * Rows mirror the .feature source so scenarios filtered out of the run stay
-   * in the catalog with their previous status/last-run, while executed ones are
-   * overlaid with this run's result.
-   */
-  private buildCatalogResults(): Array<ScenarioResult> {
-    const executedTargets = new Set<string>();
-    for (const result of this.results) {
-      const target = bddCatalogTargetFromFile(result.file);
-      if (target) executedTargets.add(`${target.app}/${target.relPath}`);
-    }
-
-    if (executedTargets.size === 0) return [];
-
-    const byId = new Map<string, ScenarioResult>();
-
-    for (const stub of collectAllFeatureCatalogs(this.repoRoot)) {
-      const target = bddCatalogTargetFromFile(stub.file);
-      if (!target || !executedTargets.has(`${target.app}/${target.relPath}`)) continue;
-      if (!byId.has(stub.meta.id)) byId.set(stub.meta.id, stub);
-    }
-
-    for (const result of this.results) {
-      byId.set(result.meta.id, result);
-    }
-
-    return [...byId.values()];
   }
 }
 

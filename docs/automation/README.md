@@ -2,7 +2,7 @@
 
 Automation is a local preview of the product described in [SPEC.md](../../SPEC.md). From the repository root, run `pnpm dev` and open `http://localhost:3110/automation/`. Vite serves the UI on port 3110 and proxies API requests to the Express server on port 3111. Both ports must be available.
 
-The API reads authored BDD features from `e2e/tests/bdd/features` and syncs their metadata to PostgreSQL at startup. It reads the explorer catalog from `automation_scenario_catalog`; generated Markdown catalogs under `testing-docs/e2e/scenarios` are not a runtime data source. The static build includes a feature snapshot for use when the API is unavailable.
+The API reads authored BDD features from `e2e/tests/bdd/features` and creates or replaces their metadata in PostgreSQL at startup. The explorer reads `automation_scenario_catalog`; `pnpm db:sync-catalog` refreshes it without restarting the API. Scenario catalog files are not generated in Markdown. The static build includes a feature snapshot for use when the API is unavailable.
 
 ## Database setup
 
@@ -18,7 +18,9 @@ The development database uses `127.0.0.1:55432`, database and user `automation`,
 
 Existing results without an environment are not imported because their target is unknown. The static build snapshot does not include environment-specific results.
 
-Direct `pnpm --filter e2e test:bdd` runs can write to the same store when both `AUTOMATION_ENVIRONMENT_ID` (the matching Automation environment ID) and `AUTOMATION_DATABASE_URL` are set. Without the environment ID, the existing unscoped BDD workflow continues. Results waiting for a database write are kept in `.cache/automation-results-pending` and retried at the next Automation server start or BDD import against the same database. If a process crashes before Playwright writes its result file, rerun the test.
+Each completed Automation run upserts its result in `automation_latest_results` for the selected environment and scenario. The row stores the outcome, execution time, duration, evidence URL, upload status, and outline example results. The explorer overlays these values on the feature sourced catalog; it does not replace the authored scenario metadata with run data. The local runner writes once after execution and again after evidence upload so the final upload status is retained.
+
+Direct `pnpm --filter e2e test:bdd` runs refresh the scenario catalog when `AUTOMATION_DATABASE_URL` is set. They also write environment-specific results when both `AUTOMATION_ENVIRONMENT_ID` (the matching Automation environment ID) and `AUTOMATION_DATABASE_URL` are set. Without the environment ID, the existing unscoped BDD results workflow continues. Results waiting for a database write are kept in `.cache/automation-results-pending` and retried at the next Automation server start or BDD import against the same database. If a process crashes before Playwright writes its result file, rerun the test.
 
 ## Source layout
 
@@ -111,7 +113,7 @@ The BDD configuration has opt-in integration points for a future trusted worker:
 - `AUTOMATION_STORAGE_STATE` points to an absolute Playwright storage-state file and disables the normal setup dependency for authenticated projects.
 - `AUTOMATION_OUTPUT_DIR` and `AUTOMATION_REPORT_DIR` isolate artifacts.
 - An absolute `AUTOMATION_EVENTS_FILE` enables JSONL reporter events.
-- An absolute `BDD_RESULTS_FILE` keeps the shared result reporter's JSON separate per run while it updates catalogs only for covered features. The reporter preserves Playwright test IDs for outline examples.
+- An absolute `BDD_RESULTS_FILE` keeps the shared result reporter's JSON separate per run. The reporter preserves Playwright test IDs for outline examples.
 
 These options do not provide session delegation, a queue, access control, or hosted evidence access. Storage-state files contain secrets and require secure, short-lived handling. Do not enable these options for untrusted requests.
 

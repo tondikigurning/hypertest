@@ -64,7 +64,6 @@ export function useDraftScenarios(official: Array<Scenario>) {
       const item: Scenario = {
         ...source,
         key: existing?.key || `draft:${source.file}:${source.id || source.line}`,
-        docFile: existing?.docFile || "",
         category: existing?.category || "Draft scenarios",
         type: source.tags.find((tag) => tag.startsWith("@type:"))?.slice(6) || existing?.type || "",
         method: existing?.method || "",

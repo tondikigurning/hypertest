@@ -8,6 +8,9 @@ const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const appDir = path.resolve(scriptDir, "..");
 const repoRoot = path.resolve(appDir, "..");
 const args = process.argv.slice(2);
+const environment = process.env.AUTOMATION_ENVIRONMENT_ID;
+if (environment && (!/^[a-z0-9-]+$/.test(environment) || !process.env.AUTOMATION_DATABASE_URL))
+  throw new Error("Set a valid AUTOMATION_ENVIRONMENT_ID and AUTOMATION_DATABASE_URL together.");
 
 function run(command, commandArgs, cwd, env = process.env) {
   return spawnSync(command, commandArgs, {
@@ -18,15 +21,22 @@ function run(command, commandArgs, cwd, env = process.env) {
   });
 }
 
+if (process.env.AUTOMATION_DATABASE_URL) {
+  const syncCatalog = spawnSync(
+    process.execPath,
+    [path.join(repoRoot, "server/modules/catalog/sync-catalog.mjs")],
+    { cwd: repoRoot, stdio: "inherit", env: process.env, windowsHide: true },
+  );
+  if (syncCatalog.error) throw syncCatalog.error;
+  if (syncCatalog.status !== 0) process.exit(syncCatalog.status ?? 1);
+}
+
 const generate = run("pnpm", ["exec", "bddgen", "--config=playwright.bdd.config.ts"], appDir);
 if (generate.error) throw generate.error;
 if (generate.status !== 0) process.exit(generate.status ?? 1);
 
 const sourceResults = path.join(repoRoot, "temp/test-results/tenants/bdd.results.json");
 const runResults = path.join(appDir, "test-results", `bdd-evidence-${process.pid}-${Date.now()}.results.json`);
-const environment = process.env.AUTOMATION_ENVIRONMENT_ID;
-if (environment && (!/^[a-z0-9-]+$/.test(environment) || !process.env.AUTOMATION_DATABASE_URL))
-  throw new Error("Set a valid AUTOMATION_ENVIRONMENT_ID and AUTOMATION_DATABASE_URL together.");
 const runId = randomUUID();
 const eventsPath = `${runResults}.events`;
 const importScript = path.join(repoRoot, "server/modules/results/import-results.mjs");
