@@ -65,7 +65,7 @@ export function createDriveApi(token, fetchRequest = fetch, parentFolderId = env
         const response = await fetchRequest(`https://www.googleapis.com/drive/v3/files?${params}`, { headers });
         if (!response.ok) throw new Error("Drive list failed");
         const data = await response.json();
-        files.push(...data.files.filter((file) => /^(image|video)\//.test(file.mimeType)));
+        files.push(...data.files.filter((file) => file.mimeType !== "application/vnd.google-apps.folder"));
         pageToken = data.nextPageToken;
       } while (pageToken);
       return files;

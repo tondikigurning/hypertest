@@ -111,9 +111,13 @@ export default class PlaywrightScenarioReporter implements Reporter {
       executedAt: result.startTime.toISOString(),
       file: relativePath(this.repoRoot, test.location.file),
       line: test.location.line,
-      evidenceAttachments: result.attachments
-        .filter((attachment) => attachment.path && /^(image|video)\//.test(attachment.contentType))
-        .map((attachment) => ({ path: attachment.path!, contentType: attachment.contentType })),
+      evidenceAttachments: result.attachments.flatMap((attachment) =>
+        attachment.path &&
+        (/^(image|video)\//.test(attachment.contentType) ||
+          (attachment.name === "trace" && attachment.contentType === "application/zip"))
+          ? [{ path: attachment.path, contentType: attachment.contentType }]
+          : [],
+      ),
       ...(status === "failed" && result.errors.length > 0 ? { error: result.errors[0]?.message?.slice(0, 200) } : {}),
     };
 

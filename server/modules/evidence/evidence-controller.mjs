@@ -1,4 +1,9 @@
 import { Readable } from "node:stream";
+import {
+  createR2Storage,
+  parseR2EvidenceLocation,
+  r2EvidencePrefix,
+} from "../../../packages/internal/test-utils/src/export/r2-client.mjs";
 import { isLocalRequest } from "../../shared/local-request.mjs";
 import { catalogStore } from "../catalog/catalog-store.mjs";
 import { resultStore } from "../results/result-store.mjs";
@@ -10,6 +15,7 @@ const environments = createLocalRunService().environments;
 export function createDriveEvidenceHandler({
   catalog = () => catalogStore.list(),
   drive = createDriveClient,
+  r2 = createR2Storage,
   results = resultStore,
 } = {}) {
   return async function driveEvidence(req, res) {
@@ -39,11 +45,77 @@ export function createDriveEvidenceHandler({
     } catch {
       return fail(503, "Run results are unavailable.");
     }
+    if (latest?.uploadStatus !== "uploaded" || !latest.evidenceUrl) {
+      if (url.searchParams.has("file")) return fail(404, "Evidence file is unavailable.");
+      res.setHeader("Content-Type", "application/json");
+      res.setHeader("Cache-Control", "no-store");
+      return res.end("[]");
+    }
+
+    const r2Location = parseR2EvidenceLocation(latest.evidenceUrl);
+    if (r2Location) {
+      let storage;
+      try {
+        storage = r2();
+        if (!storage || storage.bucket !== r2Location.bucket) return fail(503, "R2 credentials are not configured.");
+        const expectedPrefix = r2EvidencePrefix(
+          environment,
+          "scenarios",
+          scenario.file.replace(/\.feature$/i, ""),
+          scenario.id,
+        );
+        if (r2Location.prefix !== expectedPrefix) return fail(404, "Evidence folder is unavailable.");
+        const exampleNames = new Map(
+          (latest.examples ?? []).flatMap((example) =>
+            (example.evidenceNames ?? []).map((name) => [name, example.title]),
+          ),
+        );
+        const objects = await storage.list(expectedPrefix);
+        const files = await Promise.all(
+          objects
+            .filter(
+              (item) => item.Key && (!exampleNames.size || exampleNames.has(item.Key.slice(expectedPrefix.length))),
+            )
+            .map(async (item) => {
+              const id = item.Key;
+              const name = id.slice(expectedPrefix.length);
+              const mimeType = mimeTypeForEvidenceName(name);
+              return {
+                id,
+                name,
+                mimeType,
+                url: await storage.signDownload(
+                  id,
+                  mimeType.startsWith("image/") || mimeType.startsWith("video/") ? undefined : name,
+                ),
+                ...(exampleNames.has(name) ? { exampleTitle: exampleNames.get(name) } : {}),
+              };
+            }),
+        );
+        const fileId = url.searchParams.get("file");
+        if (fileId) {
+          const selected = files.find((file) => file.id === fileId);
+          if (!selected) return fail(404, "Evidence file is unavailable.");
+          res.statusCode = 302;
+          res.setHeader("Location", selected.url);
+          res.setHeader("Cache-Control", "no-store");
+          return res.end();
+        }
+        res.setHeader("Content-Type", "application/json");
+        res.setHeader("Cache-Control", "no-store");
+        return res.end(JSON.stringify(files));
+      } catch {
+        return fail(502, "Unable to load evidence from Cloudflare R2. Check the local R2 configuration.");
+      } finally {
+        storage?.close();
+      }
+    }
+
     try {
       const expectedFolder = latest?.evidenceUrl?.match(
         /^https:\/\/drive\.google\.com\/drive\/folders\/([\w-]+)(?:[/?#]|$)/,
       )?.[1];
-      if (latest?.uploadStatus !== "uploaded" || !expectedFolder) {
+      if (!expectedFolder) {
         if (url.searchParams.has("file")) return fail(404, "Evidence file is unavailable.");
         res.setHeader("Content-Type", "application/json");
         res.setHeader("Cache-Control", "no-store");
@@ -51,13 +123,15 @@ export function createDriveEvidenceHandler({
       }
       const client = await drive();
       if (!client) return fail(503, "Drive credentials are not configured for the local viewer.");
-      const folder = await client.findEvidenceFolder([
+      const scenarioFolder = [
         environment,
-        "tenants",
+        "scenarios",
         ...scenario.file.replace(/\.feature$/i, "").split("/"),
         scenario.id,
-        latest.runId,
-      ]);
+      ];
+      const stableFolder = await client.findEvidenceFolder(scenarioFolder);
+      const runFolder = latest.runId ? await client.findEvidenceFolder([...scenarioFolder, latest.runId]) : null;
+      const folder = stableFolder === expectedFolder ? stableFolder : runFolder;
       if (!folder) {
         if (url.searchParams.has("file")) return fail(404, "Evidence file is unavailable.");
         res.setHeader("Content-Type", "application/json");
@@ -71,8 +145,11 @@ export function createDriveEvidenceHandler({
         ),
       );
       const files = (await client.listMedia(folder))
-        .filter((file) => exampleNames.has(file.name))
-        .map((file) => ({ ...file, exampleTitle: exampleNames.get(file.name) }));
+        .filter((file) => !exampleNames.size || exampleNames.has(file.name))
+        .map((file) => ({
+          ...file,
+          ...(exampleNames.has(file.name) ? { exampleTitle: exampleNames.get(file.name) } : {}),
+        }));
       const id = url.searchParams.get("file");
       if (!id) {
         res.setHeader("Content-Type", "application/json");
@@ -97,3 +174,22 @@ export function createDriveEvidenceHandler({
 }
 
 export const driveEvidence = createDriveEvidenceHandler();
+
+function mimeTypeForEvidenceName(name) {
+  const extension = name.split(".").at(-1)?.toLowerCase();
+  return (
+    {
+      jpg: "image/jpeg",
+      jpeg: "image/jpeg",
+      png: "image/png",
+      webp: "image/webp",
+      mp4: "video/mp4",
+      webm: "video/webm",
+      zip: "application/zip",
+      json: "application/json",
+      txt: "text/plain",
+      log: "text/plain",
+      bin: "application/octet-stream",
+    }[extension] || "application/octet-stream"
+  );
+}

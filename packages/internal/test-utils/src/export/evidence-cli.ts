@@ -8,6 +8,7 @@ import { GoogleAuth } from "google-auth-library";
 import { bddFeatureTargetFromFile } from "../playwright/feature-paths";
 import type { ScenarioResult } from "../schema/types";
 import { loadEnvLocal } from "./env";
+import { createR2Storage, r2EvidenceLocation, r2EvidencePrefix, resolveR2Config } from "./r2-client.mjs";
 import { resolveGoogleDrivePushConfig } from "./resolve-credentials";
 
 // Upload is explicit unless the BDD runner invokes this with --auto.
@@ -47,7 +48,7 @@ async function main() {
   if (scenarioId && !selected.length)
     throw new Error(`No executed BDD result with attachments found for ${scenarioId} in ${resultsPath}`);
   if (!selected.length) {
-    console.log("No image/video attachments found; nothing to upload.");
+    console.log("No evidence attachments found; nothing to upload.");
     return;
   }
   for (const r of selected)
@@ -59,6 +60,12 @@ async function main() {
   );
   if (!args.includes("--push")) {
     console.log("Preview only. Pass --push to upload.");
+    return;
+  }
+  const r2Config = resolveR2Config();
+  if (r2Config.status === "invalid") throw new Error(r2Config.error);
+  if (r2Config.status === "configured") {
+    await uploadR2Evidence(selected, results, resultsPath, environment, runId, r2Config);
     return;
   }
   const config = resolveGoogleDrivePushConfig();
@@ -153,12 +160,12 @@ async function main() {
     let parent = evidenceRoot;
     for (const segment of [target.app, ...target.relPath.split("/")]) parent = await cachedFolder(parent, segment);
     const scenarioRoot = await cachedFolder(parent, result.meta.id);
-    const scenarioFolder = runId ? await cachedFolder(scenarioRoot, runId) : scenarioRoot;
+    const scenarioFolder = scenarioRoot;
     const timestamp = e2eTimestamp(new Date(result.executedAt));
     const currentAttachments = result.evidenceAttachments.map((attachment, index) => {
       const data = fs.readFileSync(attachment.path);
       const extension = path.extname(attachment.path) || extensionForContentType(attachment.contentType);
-      const name = `${result.meta.id}_${timestamp}${result.examples && result.examples.length > 1 ? `_${index + 1}` : ""}${extension}`;
+      const name = `${result.meta.id}_${timestamp}_${index + 1}${extension}`;
       const legacyHash = createHash("sha256").update(data).digest("hex").slice(0, 16);
       const legacyName = `${result.executedAt.replace(/[^0-9]/g, "")}-${legacyHash}-${path.basename(attachment.path)}`;
       return { attachment, data, name, legacyName };
@@ -230,6 +237,60 @@ async function main() {
   console.log(`Uploaded evidence for ${selected.length} scenarios.`);
 }
 
+async function uploadR2Evidence(
+  selected: Array<
+    ScenarioResult & { executedAt: string; evidenceAttachments: NonNullable<ScenarioResult["evidenceAttachments"]> }
+  >,
+  results: Array<ScenarioResult>,
+  resultsPath: string,
+  environment: string | undefined,
+  runId: string | undefined,
+  config: Exclude<ReturnType<typeof resolveR2Config>, { status: "missing" | "invalid" }>,
+): Promise<void> {
+  if (!environment || !runId) throw new Error("R2 evidence uploads require --environment and --run-id.");
+  const storage = createR2Storage(config);
+  if (!storage) throw new Error("Cloudflare R2 is not configured.");
+  try {
+    for (const result of selected) {
+      const target = bddFeatureTargetFromFile(result.file);
+      if (!target) throw new Error(`Unsupported feature path: ${result.file}`);
+      const prefix = r2EvidencePrefix(environment, target.app, target.relPath, result.meta.id);
+      const existing = await storage.list(prefix);
+      const currentAttachments = result.evidenceAttachments.map((attachment, index) => {
+        const data = fs.readFileSync(attachment.path);
+        const extension = path.extname(attachment.path) || extensionForContentType(attachment.contentType);
+        const name = `attachment-${String(index + 1).padStart(3, "0")}${extension}`;
+        return { attachment, data, name, key: `${prefix}${name}` };
+      });
+      const targetKeys = new Set(currentAttachments.map((attachment) => attachment.key));
+      for (const { attachment, data, key } of currentAttachments) {
+        await storage.put({
+          key,
+          body: data,
+          contentType: attachment.contentType,
+          runId,
+          scenarioId: result.meta.id,
+          environment,
+        });
+      }
+      const staleKeys = existing
+        .map((item) => item.Key)
+        .filter((key): key is string => Boolean(key && !targetKeys.has(key)));
+      await storage.remove(staleKeys);
+      for (const example of result.examples ?? []) {
+        example.evidenceNames = currentAttachments
+          .filter((attachment) => attachment.attachment.exampleId === example.id)
+          .map((attachment) => attachment.name);
+      }
+      result.evidenceUrl = r2EvidenceLocation(storage.bucket, prefix);
+    }
+    fs.writeFileSync(resultsPath, JSON.stringify(results, null, 2));
+    console.log(`Uploaded latest evidence for ${selected.length} scenarios to Cloudflare R2.`);
+  } finally {
+    storage.close();
+  }
+}
+
 // Keep in sync with e2e/tests/bdd/utils/e2e-test-data.ts (local DDMMYYYYHHmm).
 function e2eTimestamp(date: Date): string {
   const pad = (value: number) => String(value).padStart(2, "0");
@@ -248,7 +309,10 @@ function extensionForContentType(contentType: string): string {
   if (contentType === "image/webp") return ".webp";
   if (contentType === "video/webm") return ".webm";
   if (contentType === "video/mp4") return ".mp4";
-  throw new Error(`Cannot determine evidence file extension for ${contentType}`);
+  if (contentType === "application/zip") return ".zip";
+  if (contentType === "application/json") return ".json";
+  if (contentType.startsWith("text/")) return ".txt";
+  return ".bin";
 }
 
 function isScenarioEvidenceName(name: string, scenarioId: string): boolean {
