@@ -1,6 +1,6 @@
 ---
 name: write-e2e-code
-description: Implement or technically maintain apps/tenants playwright-bdd steps, Page Objects, Component Objects, fixtures and mocks for reviewed Gherkin scenarios. Use after scenario review or for intent-preserving repairs to existing implementations.
+description: Implement or technically maintain e2e playwright-bdd steps, Page Objects, Component Objects, fixtures and mocks for reviewed Gherkin scenarios. Use after scenario review or for intent-preserving repairs to existing implementations.
 ---
 
 # Write E2E Code (Phase 1)
@@ -15,7 +15,7 @@ For new or changed scenario intent, Phase 0 (`write-e2e-scenarios`) must produce
 
 **Data safety:** Use E2E-owned records for mutations; seed data and shared settings are read-only by default. Follow search → create → skip. If the required E2E data cannot be found or provided within scope, explain the limitation and ask permission to use non-E2E data for that specific scenario under [data-safety.md](../write-e2e-scenarios/references/data-safety.md). Record approval before mutation; restoration alone does not grant permission. Without approval, skip the affected mutation.
 
-For new or changed scenarios using a registry and batches, read the registry file `apps/tenants/tests/bdd/features/<module>/<submodule>.flows.md` (see write-e2e-scenarios, "Registry file"). Implement **approved batches only**, using the exact reviewed scope. Each batch is implemented and verified before the next one starts. Do not implement `written` flows, because they are not approved yet. Intent-preserving technical repairs to an existing implemented or verified flow do not require a new approved batch; preserve its scenario contract and check data safety.
+For new or changed scenarios using a registry and batches, read the registry file `e2e/tests/bdd/features/<module>/<submodule>.flows.md` (see write-e2e-scenarios, "Registry file"). Implement **approved batches only**, using the exact reviewed scope. Each batch is implemented and verified before the next one starts. Do not implement `written` flows, because they are not approved yet. Intent-preserving technical repairs to an existing implemented or verified flow do not require a new approved batch; preserve its scenario contract and check data safety.
 
 Implement the reviewed business journeys and consequential branches in the approved scenarios. Do not expand them into field-by-field or component-level E2E checks; route missing business journeys back to `write-e2e-scenarios` and identify other relevant coverage gaps for unit or integration tests. An approved or verified batch does not prove that the whole business flow or sub-module has been discovered or covered.
 
@@ -35,7 +35,7 @@ After asking any question or confirmation, pause all task work until the user an
 
 Ask only for what you cannot determine:
 
-1. **Module (required)** and **sub-module (required when the module has sub-modules)**. Check for an approved `.feature` at `apps/tenants/tests/bdd/features/<module>/<submodule>.feature` and other evidence-supported matching locations. If several plausible features cover the requested target, list those candidates and ask; do not list unrelated sibling features. If none exists, follow the Phase 0 handoff above.
+1. **Module (required)** and **sub-module (required when the module has sub-modules)**. Check for an approved `.feature` at `e2e/tests/bdd/features/<module>/<submodule>.feature` and other evidence-supported matching locations. If several plausible features cover the requested target, list those candidates and ask; do not list unrelated sibling features. If none exists, follow the Phase 0 handoff above.
 2. **Flow scope**: pick one of these, and ask only if the user has not said:
    - **Batch (for registry-based work)**: implement the exact approved batch recorded in the registry, including its reviewed flow and scenario scope. Batch size follows the approved grouping and has no flow-count limit. If the batch or its approval is unclear, resolve it before implementation; do not combine independently approved batches.
    - **One flow**: a single `@flow:` ID (for example `TEN_USR_CREATE_FLOW`). Add methods to the existing POM and do not recreate the class.
@@ -76,7 +76,7 @@ Rules:
 Do not write a locator from memory. Verify each one in one of two ways:
 
 - Open a named `playwright-cli` session, then `goto` the route and take a `snapshot`. Search the saved snapshot for the role, text or `data-testid`.
-- Read the frontend component source under `apps/tenants/app/` and confirm the attribute.
+- Read the frontend component source under `e2e/app/` and confirm the attribute.
 
 If a locator cannot be verified, say so in the summary and mark the gap. Do not guess.
 
@@ -101,7 +101,7 @@ aligned files and fields in the summary.
 
 ## Step 3 — Write the step definitions
 
-File: `apps/tenants/tests/bdd/steps/<module>/<feature>.steps.ts`
+File: `e2e/tests/bdd/steps/<module>/<feature>.steps.ts`
 
 ```ts
 import { createBdd } from "playwright-bdd";
@@ -131,7 +131,7 @@ Rules:
 
 ## Step 4 — Write or extend the POM
 
-File: `apps/tenants/tests/bdd/pages/<module>/<PageName>.ts`
+File: `e2e/tests/bdd/pages/<module>/<PageName>.ts`
 
 ```ts
 import type { Locator, Page } from "@playwright/test";
@@ -166,7 +166,7 @@ Rules:
 
 Create or reuse a COM when a shared UI component appears in 2 or more features, or has internal state (tabs, modals, dropdowns). Otherwise write steps against the POM directly.
 
-File: `apps/tenants/tests/bdd/components/<ComponentName>Component.ts`. Existing components use either a `Component` suffix or a plain name (`PipelineComponent.ts`, `DataTableComponent.ts`). Follow the naming of the component closest to the one you add.
+File: `e2e/tests/bdd/components/<ComponentName>Component.ts`. Existing components use either a `Component` suffix or a plain name (`PipelineComponent.ts`, `DataTableComponent.ts`). Follow the naming of the component closest to the one you add.
 
 ```ts
 import type { Locator, Page } from "@playwright/test";
@@ -194,12 +194,12 @@ Check `components/ProfileMenuComponent.ts` for the reference structure.
 
 ## Step 6 — Register in the fixture
 
-`apps/tenants/tests/bdd/fixtures/base.fixture.ts`: add the POM or COM to `BddFixtures` and to `test.extend<BddFixtures>({...})`. A POM that is not registered cannot be injected into steps.
+`e2e/tests/bdd/fixtures/base.fixture.ts`: add the POM or COM to `BddFixtures` and to `test.extend<BddFixtures>({...})`. A POM that is not registered cannot be injected into steps.
 
 ## Step 7 — Mutation acceptance criteria
 
 - Dynamic values only. Choose "first available" data. Do not hard-code environment-specific job titles, roles or groups.
-- E2E-owned values follow Rule A: `E2E <relevant words> <DDMMYYYYHHmm>` (`E2E profanity word 271020261108`), built with `e2eValue("<relevant words>")` / `e2eTimestamp()` from `apps/tenants/tests/bdd/utils/e2e-test-data.ts` (add the helper from the snippet in data-safety.md if absent). Never `Date.now()`, never a module code (`E2E-PRF-…`) or random token as the words.
+- E2E-owned values follow Rule A: `E2E <relevant words> <DDMMYYYYHHmm>` (`E2E profanity word 271020261108`), built with `e2eValue("<relevant words>")` / `e2eTimestamp()` from `e2e/tests/bdd/utils/e2e-test-data.ts` (add the helper from the snippet in data-safety.md if absent). Never `Date.now()`, never a module code (`E2E-PRF-…`) or random token as the words.
 - Plain free text follows Rule B: description, comment, remarks and body fields get a realistic domain sentence with no `E2E` flag and no stamp (`Access role for the customer support team.`). See [../write-e2e-scenarios/references/data-safety.md](../write-e2e-scenarios/references/data-safety.md#test-data-values).
 - Assert the backend outcome: success toast text that matches the operation, the row appearing or disappearing, the changed value visible.
 - Data safety: use E2E-owned records; seed mutations require explicit scoped approval recorded in the `.feature` file. Capture, restore and verify original state wherever possible, including after failure; see [data-safety.md](../write-e2e-scenarios/references/data-safety.md). Guard the approved record and current-session authorization before execution; historical approval comments do not authorize later runs.
@@ -208,7 +208,7 @@ Check `components/ProfileMenuComponent.ts` for the reference structure.
 ## Step 8 — Run, catalog, report
 
 ```bash
-cd apps/tenants
+cd e2e
 pnpm test:bdd                   # bddgen + run the BDD suite (needs the live app and .env.local)
 ```
 

@@ -1,9 +1,9 @@
-# E2E conventions (apps/tenants BDD)
+# E2E conventions (e2e BDD)
 
 ## Where things live
 
 ```
-apps/tenants/tests/bdd/
+e2e/tests/bdd/
   features/<module>/<feature>.feature   # _components/ holds reusable master contracts
   steps/<module>/<feature>.steps.ts     # _shared/ holds cross-module steps
   pages/<module>/<PageName>.ts          # one POM per page, grouped by module
@@ -36,7 +36,7 @@ Two rules, decided per field:
 - **Plain free text** (description, comment, remarks, body, notes): a realistic domain sentence with no `E2E` flag and
   no stamp.
 
-Shared helper: `apps/tenants/tests/bdd/utils/e2e-test-data.ts` (`e2eTimestamp()`, `e2eValue("<relevant words>")`),
+Shared helper: `e2e/tests/bdd/utils/e2e-test-data.ts` (`e2eTimestamp()`, `e2eValue("<relevant words>")`),
 added on first use if absent. Full rules and the helper source: [data-safety.md](data-safety.md#test-data-values).
 
 When a workflow touches a step or POM file, align the data values in that file to these rules in the same pass.

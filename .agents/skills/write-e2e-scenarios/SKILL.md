@@ -1,6 +1,6 @@
 ---
 name: write-e2e-scenarios
-description: Explore apps/tenants business flows with playwright-cli and write or maintain Gherkin scenarios, flow registries, stable IDs and reusable references. Use for E2E discovery or scenario-intent changes; stops for review before implementation.
+description: Explore tenants business flows with playwright-cli and write or maintain Gherkin scenarios, flow registries, stable IDs and reusable references. Use for E2E discovery or scenario-intent changes; stops for review before implementation.
 ---
 
 # Write E2E Scenarios (Phase 0 + maintenance)
@@ -50,14 +50,14 @@ For every yes/no confirmation in this workflow, offer explicit **Yes** and **No*
 
 Ask for what you cannot determine yourself. Ask **only** for these:
 
-1. **Module (required)**, the top-level route segment under `_protected+/`. Examples: `case-management`, `user-management`, `iam`. If the user does not know it, list the folders under `apps/tenants/app/routes/_protected+/` and let them pick.
+1. **Module (required)**, the top-level route segment under `_protected+/`. Examples: `case-management`, `user-management`, `iam`. If the user does not know it, list the folders under `e2e/app/routes/_protected+/` and let them pick.
 2. **Sub-module (required when the module has sub-modules)**. Examples: `users`, `user-groups` under `user-management`; `outage-management` under `case-management`. List the sub-module folders under the module route folder and ask which one.
 3. **Requested scope or constraints**: infer the approach from discovery and existing artifacts; ask only when an unresolved decision materially affects the work.
 
 Do **not** ask for these. Derive them, and state what you derived:
 
-- **Routes**: from `apps/tenants/app/routes/_protected+/<module>+/<submodule>+/`. Ask only if the folder layout is ambiguous.
-- **Env file**: `apps/tenants/.env.local` supplies `BASE_URL`, `E2E_USERNAME`, `E2E_PASSWORD`. Only mention it if the file is missing, and then ask the user for the values.
+- **Routes**: from `e2e/app/routes/_protected+/<module>+/<submodule>+/`. Ask only if the folder layout is ambiguous.
+- **Env file**: `e2e/.env.local` supplies `BASE_URL`, `E2E_USERNAME`, `E2E_PASSWORD`. Only mention it if the file is missing, and then ask the user for the values.
 - **Smoke-only**: default is the full pass. Ask only if the user's wording implies a quick or critical-path-only pass.
 
 If the user gives a sub-module outside the module (for example `outage-management` without `case-management`), resolve it by searching the route folders, then confirm the full scope before continuing.
@@ -85,7 +85,7 @@ Use the registry as the source of truth across sessions. Reconcile source, produ
 
 ### Registry file
 
-File: `apps/tenants/tests/bdd/features/<module>/<submodule>.flows.md`. It sits next to the `.feature` file. Playwright and the catalog only load `.feature` files, so this file is never executed.
+File: `e2e/tests/bdd/features/<module>/<submodule>.flows.md`. It sits next to the `.feature` file. Playwright and the catalog only load `.feature` files, so this file is never executed.
 
 ```markdown
 # E2E flow registry: case-management / cases
@@ -141,7 +141,7 @@ Scope tells the agent _where_ to look. Product context tells it _what matters_. 
 1. **Purpose and requirements:** what this sub-module does for the business, and where the spec lives (PRD, Jira keys such as `HYPCRE-123`, or a document path). The agent reads the spec before browsing.
 2. **Business flows:** identify the sub-module's main functions and their release-gating (`@smoke`) happy paths. At minimum, include each supported, in-scope create, read, update and delete happy path; also identify other main business functions from requirements, discovery and context, and recommend their happy paths as smoke. CRUD is a minimum, not the complete smoke list. Do not recommend no smoke merely because P0 is undocumented. Ask only about unresolved priorities or explicit exceptions, and reuse the user's stated decisions.
 3. **Expected rules:** validation rules, duplicate rules, and the exact success and error messages the UI must show.
-4. **Access:** which roles can open this page and which must be denied. Use the test account in `apps/tenants/.env.local` unless told otherwise.
+4. **Access:** which roles can open this page and which must be denied. Use the test account in `e2e/.env.local` unless told otherwise.
 5. **Data and mutations — required for any mutation flow:** which records must exist first, and whether the agent may create and delete `E2E`-prefixed records in this environment. Use E2E-owned data. When unavailable, investigate upstream provisioning; explain any dependency and obtain explicit scoped approval before touching seed data, recording it in the `.feature` file. Without approval, skip (see [references/data-safety.md](references/data-safety.md)).
 6. **Known issues and scope:** bugs or expected-broken behavior with ticket IDs (these become `@fixme @ref:<JIRA-ID>`), and flows to leave out of this pass.
 
@@ -156,7 +156,7 @@ Rules:
 1. Read the target `.feature` file if it exists. List the existing `@<ID>`, `@flow:` and `@fixme` tags.
 2. Read the registry file `<submodule>.flows.md` if it exists (see "Registry file"). Its rows decide what Mode B works on. Do not re-register flows that already have a row.
 3. Trace the scoped routes into their actual feature implementations and reachable UI, following [references/flow-discovery.md](references/flow-discovery.md). Routes are entry points, not a complete flow inventory: include in-page tabs, menus, dialogs, conditional actions and state-dependent journeys.
-4. Read **every** file in `apps/tenants/tests/bdd/features/_components/`. That folder is an open-ended inventory of reusable contracts (pipeline, filter, filter-search, sort, view-detail, and whatever has been added since). Decide which ones apply to this scope before you browse.
+4. Read **every** file in `e2e/tests/bdd/features/_components/`. That folder is an open-ended inventory of reusable contracts (pipeline, filter, filter-search, sort, view-detail, and whatever has been added since). Decide which ones apply to this scope before you browse.
 5. Check the existing step and POM files for the module, so you know which steps already exist.
 6. Use `playwright-cli` to explore accessible scoped UI for possible journeys before flow-list review, following Step 2 and the discovery reference. Reconcile product context, source candidates, UI observations, existing scenarios and registry rows. Record observed entry points, possible outcomes, inaccessible or unverified branches and reasons. Report the count for information only; choose and explain the working approach using the criteria above.
 
@@ -227,7 +227,7 @@ If the real behavior contradicts the spec, PRD or ticket:
 
 ## Step 5 — Write the `.feature` file
 
-File: `apps/tenants/tests/bdd/features/<module>/<submodule>.feature`. One sub-module, one file. The module folder matches the route segment exactly.
+File: `e2e/tests/bdd/features/<module>/<submodule>.feature`. One sub-module, one file. The module folder matches the route segment exactly.
 
 Follow the header and tag order in [references/e2e-conventions.md](references/e2e-conventions.md). Scenario IDs are `TEN_<CODE>_<FLG>_E2E_NNN`, where `NNN` resets for each flow section.
 

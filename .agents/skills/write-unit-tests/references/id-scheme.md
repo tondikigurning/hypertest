@@ -24,7 +24,7 @@ IDs are **permanent**. A removed scenario's ID is retired: never reused, never r
 | `UTL` | `packages/internal/utils` |
 | `TRN` | translation               |
 | `API` | api                       |
-| `TEN` | `apps/tenants`            |
+| `TEN` | `e2e`                 |
 | `ADM` | `apps/admin`              |
 | `SSO` | `apps/sso`                |
 
@@ -39,7 +39,7 @@ Component codes are assigned per package (e.g. `PIP` = pipeline-renderer, `BLN` 
 | `E2E` | End-to-end (Playwright BDD) |
 | `MAN` | Manual (human-only check)   |
 
-E2E IDs for `apps/tenants` use an extended format; see `.agents/skills/write-e2e-scenarios/references/e2e-conventions.md`.
+E2E IDs for `e2e` use an extended format; see `.agents/skills/write-e2e-scenarios/references/e2e-conventions.md`.
 
 ## Picking the next number
 

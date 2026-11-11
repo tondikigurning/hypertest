@@ -85,7 +85,7 @@ keyword still matches. An update/copy value appends the operation: `E2E user gro
 
 ### Helper
 
-Add `apps/tenants/tests/bdd/utils/e2e-test-data.ts` on first use when it does not exist:
+Add `e2e/tests/bdd/utils/e2e-test-data.ts` on first use when it does not exist:
 
 ```ts
 const pad = (value: number): string => String(value).padStart(2, "0");

@@ -1,6 +1,6 @@
-# Network mocking with MSW (apps/tenants BDD)
+# Network mocking with MSW (e2e BDD)
 
-The BDD suite uses `@msw/playwright` (`msw` and `@msw/playwright` v0.6+) for tag-driven interception. It uses `page.route()` under the hood, so no service worker is needed. Both packages are in the `testing` catalog in `pnpm-workspace.yaml` and in `apps/tenants` devDependencies.
+The BDD suite uses `@msw/playwright` (`msw` and `@msw/playwright` v0.6+) for tag-driven interception. It uses `page.route()` under the hood, so no service worker is needed. Both packages are in the `testing` catalog in `pnpm-workspace.yaml` and in `e2e` devDependencies.
 
 ## Three layers
 

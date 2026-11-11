@@ -2,7 +2,7 @@
 
 This reference describes browser mechanics. Project authoring policy and the user's requested scope decide the deliverable.
 
-For `apps/tenants` BDD, apply [write-e2e-scenarios](../../write-e2e-scenarios/SKILL.md) for discovery and Gherkin, then [write-e2e-code](../../write-e2e-code/SKILL.md) for approved scenarios. Keep its flow-list confirmation, scenario review, stable IDs and data-safety rules. Browser exploration does not approve scenarios. Do not create a parallel standalone `.spec.ts` suite, seed test or separate plan unless requested and appropriate to the target project.
+For `e2e` BDD, apply [write-e2e-scenarios](../../write-e2e-scenarios/SKILL.md) for discovery and Gherkin, then [write-e2e-code](../../write-e2e-code/SKILL.md) for approved scenarios. Keep its flow-list confirmation, scenario review, stable IDs and data-safety rules. Browser exploration does not approve scenarios. Do not create a parallel standalone `.spec.ts` suite, seed test or separate plan unless requested and appropriate to the target project.
 
 For other browser-test scopes, inspect their existing runner, fixtures, test files and project conventions first. Use existing setup; introduce new setup only when it is necessary and within the request. Check installed commands and versions with local help rather than assuming a particular debug/attach capability. See [playwright-tests.md](playwright-tests.md).
 

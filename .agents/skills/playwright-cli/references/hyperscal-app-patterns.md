@@ -1,6 +1,6 @@
 # Hyperscal tenant browser patterns
 
-Treat page names, routes, data, labels and locators as environment-dependent. Discover the scoped route and implementation under `apps/tenants/app/`, then confirm current controls with a fresh `playwright-cli snapshot`; do not assume a fixed home page, module list, label or test ID.
+Treat page names, routes, data, labels and locators as environment-dependent. Discover the scoped route and implementation under `e2e/app/`, then confirm current controls with a fresh `playwright-cli snapshot`; do not assume a fixed home page, module list, label or test ID.
 
 Use the configured target environment and existing authentication setup. Read variable names from config without printing credential values. Keep credentials, storage state, snapshots and traces containing sensitive data out of logs and version control.
 
