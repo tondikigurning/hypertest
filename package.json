@@ -1,15 +1,48 @@
 {
-  "name": "hypertest-automation",
+  "name": "automation",
+  "version": "0.0.0",
   "private": true,
+  "type": "module",
   "packageManager": "pnpm@11.1.3",
   "scripts": {
-    "dev": "pnpm --filter automation dev",
-    "build": "pnpm --filter automation build",
-    "typecheck": "pnpm --filter automation typecheck",
+    "dev": "concurrently --kill-others --names api,web \"pnpm dev:api\" \"pnpm dev:web\"",
+    "dev:api": "node --watch server/server.mjs",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:sync-catalog": "node server/modules/catalog/sync-catalog.mjs",
+    "dev:web": "node server/dev-web.mjs",
+    "build": "vite build",
+    "preview": "vite preview --port 3110",
+    "typecheck": "tsc --noEmit",
     "test:evidence": "tsx packages/internal/test-utils/src/export/evidence-cli.ts"
+  },
+  "dependencies": {
+    "@hyperscal/icons": "workspace:*",
+    "@hyperscal/tailwind-config": "workspace:*",
+    "@radix-ui/react-select": "2.1.0",
+    "@tanstack/react-query": "^5.85.0",
+    "dotenv": "^17.2.3",
+    "drizzle-orm": "^0.45.4",
+    "exceljs": "^4.4.0",
+    "express": "^4.21.1",
+    "mammoth": "^1.13.0",
+    "pdfjs-dist": "^6.3.289",
+    "pg": "^8.23.1",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "tailwindcss": "^4.1.11"
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.15",
-    "tsx": "^4.20.3"
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.2.3",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.2.0",
+    "concurrently": "^9.0.1",
+    "drizzle-kit": "^0.31.11",
+    "tsx": "^4.20.3",
+    "typescript": "^5.9.2",
+    "vite": "^8.1.5"
   }
 }

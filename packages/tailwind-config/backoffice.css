@@ -5,15 +5,9 @@
 @import "./src/table.css";
 @import "./src/filter.css";
 
-@source "../../apps/**/*.{ts,tsx}";
-@source "../core/**/*.{ts,tsx}";
-@source "../command/**/*.{ts,tsx}";
-@source "../internal/ui/src/**/*.{ts,tsx}";
+@source "../../src/**/*.{ts,tsx}";
+@source "../../e2e/**/*.{ts,tsx}";
 @source "../internal/icons/src/icon.tsx";
-@source "../internal/form/src/**/*.{ts,tsx}";
-@source "../internal/file-uploader/src/**/*.{ts,tsx}";
-@source "../dataview/src/**/*.{ts,tsx}";
-@source "../filters/src/**/*.{ts,tsx}";
 /*@source "safelist.text";*/
 @source inline("line-clamp-{2..6}");
 @source inline("row-start-{1..100}");

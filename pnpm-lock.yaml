@@ -7,22 +7,13 @@ settings:
 importers:
 
   .:
-    devDependencies:
-      '@biomejs/biome':
-        specifier: 2.4.15
-        version: 2.4.15
-      tsx:
-        specifier: ^4.20.3
-        version: 4.23.15
-
-  apps/automation:
     dependencies:
       '@hyperscal/icons':
         specifier: workspace:*
-        version: link:../../packages/internal/icons
+        version: link:packages/internal/icons
       '@hyperscal/tailwind-config':
         specifier: workspace:*
-        version: link:../../packages/tailwind-config
+        version: link:packages/tailwind-config
       '@radix-ui/react-select':
         specifier: 2.1.0
         version: 2.1.0(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -60,6 +51,9 @@ importers:
         specifier: ^4.1.11
         version: 4.3.5
     devDependencies:
+      '@biomejs/biome':
+        specifier: 2.4.15
+        version: 2.4.15
       '@tailwindcss/vite':
         specifier: ^4.3.3
         version: 4.3.5(vite@8.3.6(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15))
@@ -81,6 +75,9 @@ importers:
       drizzle-kit:
         specifier: ^0.31.11
         version: 0.31.11
+      tsx:
+        specifier: ^4.20.3
+        version: 4.23.15
       typescript:
         specifier: ^5.9.2
         version: 5.9.3
@@ -88,11 +85,11 @@ importers:
         specifier: ^8.1.5
         version: 8.3.6(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)
 
-  apps/tenants:
+  e2e:
     devDependencies:
       '@hyperscal/test-utils':
         specifier: workspace:*
-        version: link:../../packages/internal/test-utils
+        version: link:../packages/internal/test-utils
       '@msw/playwright':
         specifier: ^0.6.7
         version: 0.6.7(msw@2.15.0(@types/node@22.20.5)(typescript@5.9.3))

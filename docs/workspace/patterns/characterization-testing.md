@@ -36,7 +36,7 @@ Use this pattern when:
 This produced real value already: writing these tests for `case-management`'s tab/action
 refactor (PR #3559 / `feature/centralized-case-actions-flags`) caught a genuine silent
 regression (tab-highlight-on-new-message completely stopped working — see
-`apps/tenants/tests/unit-test/features/case-management/components/cases-header-tabs.test.tsx`)
+`e2e/tests/unit-test/features/case-management/components/cases-header-tabs.test.tsx`)
 that had shipped with zero test coverage catching it.
 
 ## The three outcomes this method is designed to distinguish
@@ -320,24 +320,24 @@ the refactor you're protecting against.
 
 ## Where these tests live, as a working example
 
-All of the following exist purely to characterize `apps/tenants/app/features/case-management`
+All of the following exist purely to characterize `e2e/app/features/case-management`
 code as it stood on `release/HYP_V.1.4.0`, ahead of the centralized-case-actions refactor
 (`feature/centralized-case-actions-flags`, PR #3559) — read any of them as a template:
 
-- `apps/tenants/tests/unit-test/features/case-management/components/case-action-kebab-menu.test.tsx`
+- `e2e/tests/unit-test/features/case-management/components/case-action-kebab-menu.test.tsx`
   — permission/visibility rule matrix for case action buttons.
-- `apps/tenants/tests/unit-test/features/case-management/components/workflow-dropdown.test.tsx`
+- `e2e/tests/unit-test/features/case-management/components/workflow-dropdown.test.tsx`
   — enable/disable rules + click→dialog routing.
-- `apps/tenants/tests/unit-test/features/case-management/components/cases-header-tabs.test.tsx`
+- `e2e/tests/unit-test/features/case-management/components/cases-header-tabs.test.tsx`
   — the exact imperative-handle contract whose wiring later silently broke.
-- `apps/tenants/tests/unit-test/features/case-management/cases-page-tab-management.test.tsx` and
+- `e2e/tests/unit-test/features/case-management/cases-page-tab-management.test.tsx` and
   `case-list-subscriptions.test.tsx` — URL/window-event sync and two independent WebSocket
   subscriptions on the same page.
-- `apps/tenants/tests/unit-test/features/case-management/components/case-details-tab-content.test.tsx`
+- `e2e/tests/unit-test/features/case-management/components/case-details-tab-content.test.tsx`
   — scoped-down example (hysteresis pixels deliberately excluded, noted in the file header).
-- `apps/tenants/tests/unit-test/features/case-management/components/case-details-vertical-tab-menu.test.tsx`
+- `e2e/tests/unit-test/features/case-management/components/case-details-vertical-tab-menu.test.tsx`
   — the `activeTab="none"` trick for avoiding lazy-loaded content.
-- `apps/tenants/tests/unit-test/features/case-management/components/case-details-right-bar-feeds.test.tsx`
+- `e2e/tests/unit-test/features/case-management/components/case-details-right-bar-feeds.test.tsx`
   and `feeds-messages.test.tsx` — full-coverage example on genuinely large, heavily-dependent
   components (the OOM crash pitfall above happened while building the second of these).
 

@@ -8,8 +8,14 @@
   "files": {
     "ignoreUnknown": false,
     "includes": [
-      "apps/automation/**",
-      "apps/tenants/app/**",
+      "src/**",
+      "server/**",
+      "drizzle.config.ts",
+      "vite.config.ts",
+      "tsconfig.json",
+      "package.json",
+      "index.html",
+      "e2e/app/**",
       "apps/admin/app/**",
       "apps/sso/**",
       "packages/internal/**",
@@ -19,7 +25,7 @@
       "packages/websocket/**",
       "packages/command/**",
       "!apps/docs",
-      "!apps/tenants/tests",
+      "!e2e/tests",
       "!**/*.test.ts",
       "!**/*.test.tsx",
       "!**/*.spec.ts",
@@ -119,7 +125,7 @@
       "assist": { "enabled": false }
     },
     {
-      "includes": ["apps/tenants/app/routes/**"],
+      "includes": ["e2e/app/routes/**"],
       "linter": {
         "rules": {
           "style": { "useComponentExportOnlyModules": "off" }

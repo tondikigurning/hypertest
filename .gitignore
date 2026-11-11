@@ -5,9 +5,9 @@ temp/
 .env
 .env.*
 !.env.example
-apps/tenants/.features-gen/
-apps/tenants/playwright/.auth/
-apps/tenants/playwright-report/
-apps/tenants/test-results/
-apps/automation/test-results/
-apps/automation/playwright-report/
+e2e/.features-gen/
+e2e/playwright/.auth/
+e2e/playwright-report/
+e2e/test-results/
+test-results/
+playwright-report/
