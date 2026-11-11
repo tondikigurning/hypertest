@@ -1,6 +1,6 @@
 ---
 name: write-prd
-description: Create, import, refresh or review a per-sub-module PRD (Markdown) for the target web app when its frontend source is not available to the agent. Use it when the user uploads or pastes a spec or PRD, asks for a PRD to be written from an interview plus live exploration with playwright-cli, or when write-e2e-scenarios needs product context for a sub-module and no reviewed PRD exists. Make sure to use this skill whenever the user mentions a PRD, spec, requirements, product context, "document how this page works", or starts E2E work on a sub-module that has no reviewed PRD, even if they do not say "PRD". Stops for review before observed behavior is treated as validated.
+description: Create, import, refresh or review a sub-module PRD or product requirements for the tenant app, including when E2E discovery lacks reviewed product context. Review observed behavior before treating it as validated.
 ---
 
 # Write PRD (Phase −1)
@@ -13,7 +13,7 @@ References (read only when the step says so):
 
 - [references/prd-template.md](references/prd-template.md): the exact PRD structure, front matter and requirement-line format.
 - [references/exploration-checklist.md](references/exploration-checklist.md): what to check and how to record it during live exploration.
-- Shared with the scenario skill: [data safety](../write-e2e-scenarios/references/data-safety.md), [playwright-cli exploration](../write-e2e-scenarios/references/playwright-cli-exploration.md) and [flow discovery](../write-e2e-scenarios/references/flow-discovery.md). Use their browser and safety rules; ignore any part that traces frontend source files.
+- Shared with the scenario skill: [data safety](../write-e2e-scenarios/references/data-safety.md) and [playwright-cli exploration](../write-e2e-scenarios/references/playwright-cli-exploration.md). Use their browser and safety rules. PRD exploration can precede the scenario skill's reviewed-PRD prerequisite.
 
 ## Why provenance matters
 
@@ -35,26 +35,21 @@ Exploration touches live environments. Read [data-safety.md](../write-e2e-scenar
 
 ## Step 0 — Interview for scope (required)
 
-For every question and confirmation in this skill, follow the question-presentation and response-handling rules in [write-e2e-scenarios Step 0](../write-e2e-scenarios/SKILL.md#step-0--interview-for-scope-required): one question per turn, numbered options with exactly one recommendation and its reasoning, a free-text fallback, and a full stop until the user answers. Apply only those interaction rules, not that skill's scope or scenario workflow.
+Follow the [shared question and approval guidance](../write-e2e-scenarios/SKILL.md#step-0--interview-for-scope-required). Reuse the request, supplied documents and prior answers; investigate what can be established and ask only for consequential gaps. Preserve provenance and record unresolved assumptions. A scope answer does not approve the PRD or a data mutation.
 
-Before each question, reuse clear answers from the request, the uploaded document or earlier conversation, including answers given under another skill. Ask only for what is missing or genuinely ambiguous. An answer about scope is not approval of a review gate or of a data mutation.
+1. **Module and sub-module**: apply the shared scope guidance. Resolve both from the user's input and available evidence first; ask one combined question only if either remains unclear.
+2. **Reference material**: reuse any document or explanation already supplied in this conversation. If none has been supplied, ask once whether the user can provide a document or explanation as an exploration reference. If none is available or the user declines, continue with exploration and record the gap. Use supplied material as a source of stated requirements and a guide for exploration.
+3. **Environment**: use the environment currently selected in the Automation navbar, as supplied to the agent session. Do not ask the user to choose an environment. If the selection, configuration or browser access is unavailable, report the exact blocker; do not silently choose another environment.
 
-**Completeness gate.** Keep a checklist of every topic in Steps 0 and 0b. Mark each as answered, explicitly delegated or skipped (with the assumption you made), not applicable (with a concrete reason), or pending. Ask pending topics one at a time. Code, silence or an unmentioned topic never counts as an answer. Revisit the list when scope changes and report assumptions and gaps in the final summary.
+Live exploration with `playwright-cli` is required for every PRD create, import, review or refresh. If it is unavailable, preserve any draft and report the blocker; do not present the PRD as fully explored or ready for review until exploration is completed.
 
-Ask only for what you cannot determine yourself:
+Derive the output path, sub-module code and artifact locations from available evidence. Use the configured base URL and credentials without printing their values. If configuration or access is unavailable, explain the missing prerequisite without requesting secrets in chat. State whether a PRD or `.feature` already exists.
 
-1. **Module** (required): the top-level area of the app, as the user names it or as it appears in the navigation. If the user is unsure, explore the navigation and offer the areas you find.
-2. **Sub-module** (required when the module has sub-modules). Offer the ones you observe in the navigation.
-3. **Source mode**: `import` (the user supplies a document), `explore` (interview plus live exploration), or `import then verify` (import, then check it against the live app). Recommend `import then verify` when a document is supplied and `explore` otherwise.
-4. **Environment** for exploration or verification (not needed for a pure `import`). Offer the project's environments and recommend the lowest-risk one the user may use.
-
-Derive and state, do not ask: the output path, the sub-module code, the base URL and credentials from the project's environment configuration, and whether a PRD, `.feature` or `.flows.md` already exists for this sub-module.
-
-The sub-module code (for example `STM`) prefixes requirement IDs. If `<submodule>.flows.md` exists, reuse its `Code:`. Otherwise propose a short code, record it in the front matter, and let `write-e2e-scenarios` reuse it.
+The sub-module code (for example `STM`) prefixes requirement IDs. Reuse the code in existing scenario IDs when one is present. Otherwise propose a short code from the sub-module name, record it in the front matter, and let `write-e2e-scenarios` reuse it.
 
 ## Step 0b — Context interview (required)
 
-Scope says where to look. Context says what matters. These six topics deliberately mirror the context interview in `write-e2e-scenarios`, so that answers recorded here are reused there instead of being asked again. Ask one focused question per turn, split compound topics, and skip anything the uploaded document or earlier answers already settle.
+Scope says where to look. Context says what matters. These six topics deliberately mirror the context interview in `write-e2e-scenarios`, so that answers recorded here are reused there instead of being asked again. Use these topics to identify consequential gaps; skip what the uploaded document, earlier answers or evidence already settle.
 
 1. **Purpose and requirements**: what this sub-module does for the business, and where the spec lives (document path, ticket keys such as `ABC-123`, or none).
 2. **Business flows**: the main functions and their release-gating (`@smoke`) happy paths. At a minimum identify each supported create, read, update and delete happy path, plus other main business functions. Recommend happy paths as smoke candidates; ask only about unresolved priorities.
@@ -67,12 +62,13 @@ Record every answer with its provenance (`spec` for what the user stated, `assum
 
 ## Step 1 — Check existing artifacts
 
-1. Look for `docs/prd/<module>/<submodule>.md`, `<submodule>.feature` and `<submodule>.flows.md`, and for sibling PRDs whose conventions you should match.
+1. Look for `docs/prd/<module>/<submodule>.md` and `<submodule>.feature`, and for sibling PRDs whose conventions you should match.
 2. Choose the mode:
    - **Create**: no PRD exists.
-   - **Import**: the user supplied a document. Normalize it (Step 2A).
-   - **Refresh**: a PRD exists and the user wants it updated or re-verified. Follow "Refresh mode" below and never overwrite validated items silently.
-3. If the sub-module already has scenarios or a registry, read them. They show which flows are known and which IDs exist; the PRD must not contradict them without recording a discrepancy.
+   - **Import**: the user supplied a document. Normalize it (Step 2A), then explore (Step 2B).
+   - **Review**: a matching draft exists and needs review. Check its sources, gaps and provenance, and explore the requested scope before the review gate.
+   - **Refresh**: a PRD exists and the user wants it updated or re-verified, or its coverage is insufficient for the requested scenario scope. Follow "Refresh mode" below and never overwrite validated items silently.
+3. If the sub-module already has scenarios, read them. Their `@flow:` categories and IDs show existing coverage; the PRD must not contradict them without recording a discrepancy.
 
 ## Step 2A — Import a supplied document
 
@@ -83,7 +79,7 @@ Accept PDF, DOCX, Markdown, plain text or pasted content.
 3. Put content that does not fit any section under "Open questions" or the "Source notes" part of the exploration log instead of dropping or rewording it.
 4. Never add behavior the document does not state. Flag contradictions and gaps inside the document as open questions.
 5. Record the source in the front matter (`sources`: type `upload`, original file name, date).
-6. For `import then verify`, continue to Step 2B but only to confirm or contradict what the document says.
+6. Continue to Step 2B. Record any additional observed behavior as observed, not as a requirement.
 
 ## Step 2B — Explore the live app
 
@@ -94,7 +90,7 @@ Use `playwright-cli`, with one named session for the pass:
 1. Log in with the environment's configured credentials. Do not print them.
 2. Navigate from the app's own navigation to the sub-module. Snapshot, then search the saved snapshot for the part you need instead of reading the whole tree.
 3. Drive interactions with the `eNN` refs from the latest snapshot. Use `requests` and `request <n>` to record the real method, path and status of what each action calls.
-4. Take screenshots as evidence of what you saw, never as a locator source. Store evidence through the app's evidence tool and reference it by ID or path. Do not commit large binaries to the repository unless the user asks.
+4. Capture safe screenshots or traces where useful and reference an accessible path; never use screenshots as a locator source. Follow the evidence and sensitive-data rules in the exploration checklist. Do not assume an evidence-upload tool exists or commit large binaries unless the user asks.
 5. Work through the checklist for this sub-module: entry points, list behavior, detail, each create/edit/delete or other action, validation, empty and error states, role-dependent and state-dependent behavior, tabs, menus and conditional actions.
 
 Record what is not reachable (a role you do not have, data that does not exist, a branch that needs a mutation you may not perform) as **unverified with the reason**. Absence from the current account or data is not evidence that a feature does not exist.
@@ -129,21 +125,23 @@ Check the PRD against this list and fix what fails:
 - No credentials, tokens, personal data or real customer records appear anywhere.
 - Messages are exact, and each states where it was observed.
 - Discrepancies, candidate defects, unverified branches and open questions are listed, not buried.
-- Nothing is labeled `validated`; only the review gate does that.
-- The exploration log states the environment, date, account/role used, and what was not covered.
+- New or changed items are `needs-review`; preserve earlier validations for unchanged items. Only the review gate validates items.
+- The exploration log states the environment, date, role used, and what was not covered.
 
 ## Step 6 — Review gate and stop
 
 Present a short summary table (area, number of items by provenance, discrepancies, candidate defects, open questions) and link the PRD file or its diff for review.
 
-Ask: "Is this PRD accurate enough to use as product context for scenarios?" Offer numbered choices, with exactly one recommended and the reasoning:
+Ask: "Is this PRD accurate enough to use as product context for scenarios?" Offer these choices and explain any recommendation:
 
 1. Review item by item (recommend this when there are discrepancies, candidate defects or many unconfirmed `observed` items).
-2. Approve: mark the reviewed `observed` items `validated` and set `status: reviewed` (recommend this only when the user already confirmed the observed behavior during the interview and nothing conflicts).
+2. Approve: mark only the explicitly approved items `validated` and set `status: reviewed` (recommend this only when the user already confirmed the observed behavior during the interview and nothing conflicts).
 3. Request changes.
-4. Type your own answer.
+Allow the user to explain or propose another action.
 
-Pause until the user answers. Silence, a general "continue", or approval of an earlier scope is not approval of this gate. On "request changes", revise and ask again. On approval, update the front matter (`status`, `reviewed_by`, `reviewed_at`, using the identity the app provides) and the item tags, then stop. Do not start `write-e2e-scenarios` in the same step.
+Pause until the user answers. Silence, a general "continue", or approval of an earlier scope is not approval of this gate. On "request changes", revise and ask again. On approval, update the front matter (`status`, `reviewed_by`, `reviewed_at`, using the identity the app provides) and only the approved item tags; retain unresolved items as `needs-review`. A reviewed document may contain unresolved items: stated `spec` remains attributed to its source, but conflicting requirements, unvalidated observations and assumptions do not establish intended behavior. Then stop. Resume `write-e2e-scenarios` on a subsequent turn when the requested scope has reviewed product context.
+
+In the local Automation preview, the visible identity is `Local preview user`; use that value for `reviewed_by`. The preview does not authenticate an individual account.
 
 End with the next step: the PRD is ready as input for `write-e2e-scenarios` for this module and sub-module, which will reuse the recorded answers, treat `validated` items as product context and treat unvalidated `observed` items as unconfirmed.
 
@@ -152,6 +150,7 @@ End with the next step: the PRD is ready as input for `write-e2e-scenarios` for 
 Use it when the app may have changed or the user wants to extend a reviewed PRD.
 
 - Re-explore only the affected areas and compare with the existing items.
+- Set `status: draft` while changes await review; preserve prior review metadata in the change log and clear the current review fields until approval.
 - Keep IDs. Mark changed or conflicting items `needs-review` and list the change in the PRD's change log. Never overwrite a `validated` item silently.
 - Add new items with new IDs. Retire removed behavior instead of deleting it.
 - Update `last_explored` for the areas you actually re-checked, not for the whole PRD.

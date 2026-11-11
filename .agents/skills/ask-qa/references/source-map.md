@@ -6,9 +6,10 @@ Paths are relative to the repository root. Follow callers and imports when the r
 
 | Topic | Start here |
 | --- | --- |
-| Local preview, setup, secrets and runner limits | `README.md`, `docs/automation/README.md`, `SPEC.md` |
+| Local preview, setup, secrets and runner limits | `README.md`, `docs/SPEC.md` |
 | Contributor rules | `AGENTS.md`, `CLAUDE.md` |
-| E2E business-flow discovery, review gates and registry | `.agents/skills/write-e2e-scenarios/SKILL.md`, its `references/flow-discovery.md`, scoped `.feature` and `.flows.md` files |
+| E2E business-flow discovery and review gates | `.agents/skills/write-e2e-scenarios/SKILL.md`, its `references/flow-discovery.md`, matching reviewed `docs/prd/` PRD and scoped `.feature` files |
+| Sub-module PRD authoring and product context | `.agents/skills/write-prd/SKILL.md`, `docs/prd/` |
 | Scenario IDs, tags, data safety and reusable contracts | `.agents/skills/write-e2e-scenarios/references/e2e-conventions.md`, `references/data-safety.md`, `e2e/tests/bdd/features/_components/` |
 | Reviewed step definitions, page objects, fixtures and mocks | `.agents/skills/write-e2e-code/SKILL.md` and its relevant references |
 | Browser inspection and authenticated sessions | `.agents/skills/playwright-cli/SKILL.md` and its relevant references |
@@ -26,6 +27,8 @@ Paths are relative to the repository root. Follow callers and imports when the r
 The README and live implementation describe the local preview. The specification is a draft for a hosted product; verify code before claiming hosted behavior.
 
 ## E2E sources and artifacts
+
+The tenant frontend source is not part of this repository. Use the reviewed PRD and `playwright-cli` observations for tenant product behavior; the paths below are test code and artifacts, not frontend implementation.
 
 | Topic | Start here |
 | --- | --- |

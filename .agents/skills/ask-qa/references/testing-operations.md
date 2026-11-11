@@ -14,7 +14,7 @@ Use this for E2E execution, scenario maintenance, test infrastructure and Automa
 1. Read the selected .feature setup, steps, tags and page/component objects. Follow .agents/skills/write-e2e-scenarios/references/data-safety.md before scenarios that can mutate live data.
 2. Establish the target environment and credentials without printing secret values. A configured fallback URL does not prove that it is the intended environment.
 3. Check the working tree and report the command, selection and material side effects before running.
-4. Run from the e2e package with pnpm test:bdd. This runs BDD generation and Playwright; do not run it concurrently with the Automation local runner because generated files are shared.
+4. Inspect e2e/package.json and its runner script, then select only the authorized scenarios using supported options. pnpm test:bdd runs BDD generation and Playwright and may sync the catalog, import results and upload evidence when configured. Do not run BDD generation concurrently with the Automation local runner because generated files are shared.
 5. Inspect the selected count, failures, skips and generated output paths. A filtered run does not freshly verify scenarios it did not execute.
 
 The runner skips @quarantine scenarios unless RUN_QUARANTINE=1 is set. Inspect the active fixture and filters before interpreting a selection. Do not remove @fixme or quarantine tags to manufacture a pass.
@@ -27,7 +27,7 @@ The runner skips @quarantine scenarios unless RUN_QUARANTINE=1 is set. Inspect t
 
 ## Maintain the Automation app
 
-Read README.md, docs/automation/README.md, SPEC.md, package.json and vite.config.ts before changes to the app or runner. Trace UI, server, catalog, result and evidence consumers as applicable. The local preview is loopback-only and is not a hosted execution service.
+Read README.md, docs/SPEC.md, package.json and vite.config.ts before changes to the app or runner. Trace UI, server, catalog, result and evidence consumers as applicable. The local preview is loopback-only and is not a hosted execution service.
 
 Use the checks appropriate to the changed code: pnpm exec biome check src server vite.config.ts drizzle.config.ts, pnpm typecheck, and pnpm build. Use the browser skill when browser behavior needs inspection. Run BDD scenarios only when requested or needed for the change, after checking data safety.
 

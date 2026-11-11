@@ -1,142 +1,84 @@
 ---
 name: write-e2e-scenarios
-description: Explore tenants business flows with playwright-cli and write or maintain Gherkin scenarios, flow registries, stable IDs and reusable references. Use for E2E discovery or scenario-intent changes; stops for review before implementation.
+description: Use a reviewed sub-module PRD and playwright-cli exploration to discover tenant business flows and write or maintain Gherkin scenarios with stable IDs and reusable references. Use for E2E discovery or scenario-intent changes; stops for review before implementation.
 ---
 
 # Write E2E Scenarios (Phase 0 + maintenance)
 
 **Entity options input:** Select `Converge` by default whenever an Entity options input is encountered, unless the user explicitly requests a different entity. This default does not override data-safety or approval requirements.
 
-Produces a flow inventory or reviewed `.feature` file for one sub-module (or module), according to the selected mode. Step definitions and page objects come next, in `write-e2e-code`, and only after scenario approval.
+Maintains the scoped flow registry from confirmed flow discovery and the `@flow:` categories in `.feature` files, then produces reviewed scenarios. The feature file is the source of truth for catalog categories; the catalog groups scenarios by category and lets users collapse each group. Keep discovery notes and unrepresented candidate flows in the conversation and review output. Do not create a separate `.flows.md` registry file. Step definitions and page objects come next, in `write-e2e-code`, and only after scenario approval.
 
 Conventions (IDs, flow tags, tag order, tag policy) are in [references/e2e-conventions.md](references/e2e-conventions.md). Data-safety rules are in [references/data-safety.md](references/data-safety.md). Browser commands are in [references/playwright-cli-exploration.md](references/playwright-cli-exploration.md).
 
-For discovery in every mode, read [references/flow-discovery.md](references/flow-discovery.md). It defines how to trace the scoped UI, reconcile existing tests, record unknowns and revisit discoveries across batches. A source-only inventory is a draft, not proof of complete coverage.
+For discovery in every mode, read [references/flow-discovery.md](references/flow-discovery.md). It defines how to explore the scoped UI, reconcile the PRD and existing tests, record unknowns and revisit discoveries across batches.
 
 **Data safety:** Use E2E-owned records for mutations; seed data and shared settings are read-only by default. Follow search → create → skip. If the required E2E data cannot be found or provided within scope, explain the limitation and ask permission to use non-E2E data for that specific scenario under [data-safety.md](references/data-safety.md). Record approval before mutation; restoration alone does not grant permission. Without approval, skip the affected mutation.
 
 ## Step 0 — Interview for scope (required)
 
-Conduct Steps 0 and 0b as one conversation: ask exactly one question per turn, wait for the answer, and use it to choose the next question. Do not combine several questions into one message or tool call. Resolve each decision and any necessary follow-up before moving on. Use repository evidence to inform a recommendation when useful, and briefly explain the relevant evidence. Do not repeat answered questions or an unanswered question while waiting.
+Resolve scope and context from the request, prior answers, reviewed PRD and project evidence. Ask only for decisions that materially affect the work and cannot be established or reasonably assumed. Reuse answers across skill handoffs; report assumptions and unresolved gaps. An observation or code alone does not establish product intent or permission.
 
-**Interview completeness gate:** Before dependent work, systematically account for every listed scope and context topic, including each applicable decision within a compound topic. Keep a working checklist across turns: answered (with the relevant answer), explicitly delegated or skipped (with assumptions), not applicable (with a concrete reason), or pending. Ask each pending applicable context decision one at a time; repository evidence alone is not an answer. Scope questions retain their stated conditions. Do not mark a topic not applicable merely because the user has not mentioned it, because the code suggests an answer, or to save time. A partial answer resolves only the part it addresses. Pause all task work while any question is pending, and do not begin dependent work until every applicable decision is resolved or explicitly delegated/skipped. Revisit the checklist if scope changes. Summarize delegated/skipped assumptions and material inapplicability or gaps in the outcome; preserve the checklist across interruptions.
+For questions across these E2E skills, follow the active harness's interaction rules. When choices help, offer meaningful alternatives, explain any recommendation and allow a free-text answer. Ask focused questions and avoid repeating answers. Continue independent work while a response is pending; wait for the answer before dependent work. A preselected option, silence or delegation is not consent.
 
-Apply the following presentation and response rules to **every question and confirmation** in this skill and in skills that reference this section, including follow-ups and review gates. Before asking, identify the single decision, what the user already answered, and whether it is an approval gate. Ask once in the permitted question tool or in the final response, not both; do not echo the same question in a separate status message. A topic containing several decisions (such as validation and duplicate rules) needs separate questions when both answers matter.
+Keep the PRD review, flow-list confirmation, scenario review and scoped live-data approval distinct. Reuse an explicit approval only when it covers the current artifact, scope and session under the applicable gate. Prepare the relevant artifact or safety details before requesting approval. Never infer approval from a general instruction to continue.
 
-**Reuse answers before asking:** For every question, first check the current request and earlier conversation, including answers given under another skill. Record and reuse an applicable, clear answer; do not ask or seek confirmation again just because the question appears in a checklist, a skill was invoked, or work moved to another phase. For partial answers ask only the unresolved part; for materially conflicting or genuinely ambiguous answers, explain the conflict and ask only what resolves it. Carry answers and explicit delegations across skill handoffs and interruptions, subject to their actual scope. Repository evidence may resolve technical scope, but does not by itself establish business intent or permission. A prior answer about scope or intent is not approval of a flow list, scenarios, or a data mutation; reuse explicit approval only when it covers the current artifact, scope and session under the applicable gate, and ask when it does not.
+Resolve these scope decisions from the available evidence; ask when a material ambiguity remains:
 
-**Use the harness's interactive user-question/choice tool for every interview question whenever one is available and permitted.** Invoke the tool with exactly one question; do not merely print a list in commentary or a final message when the tool can present selectable answers. Follow the active harness's tool schema and rules, rather than assuming a particular tool name or interface.
-
-**Number choice labels in both interactive tool calls and plain-text fallback.** Prefix each supplied option label with its actual sequential number, for example `1. Yes, system-settings / profanity (Recommended)` and `2. No, another scope`. Do this even when the harness renders the options as bullets or buttons; do not rely on the UI to add numbers. Tell the user they may select an option or reply with its number, and interpret a typed number as the corresponding pending choice. Do not prefix the question itself. A client-generated free-text/Other control cannot be numbered by the skill; respect the tool schema and do not add a duplicate just to number it.
-
-In Codex, check which user-input tools and mode are actually available in the current session. If permitted, use `functions.request_user_input` in Plan mode for a blocking question, or `functions.request_user_input_async` in Default mode for a question eligible under its tool rules. Submit one question and its selectable options in the tool call, not as a plain-text imitation. The client supplies its own free-text answer option; do not add an `Other` option. A blocking tool returns the answer before continuing. An async tool returns immediately: stop all task work and wait for the user's actual response; do not run commands, browse, inspect files, edit, or start another question, even for independent work. Do not interpret the tool's return or a preselected option as an answer. If the harness cannot wait for an asynchronous response, end the turn without repeating the question and resume on the user's reply. Once an answer arrives, use it and ask the next question without requiring a new invocation of the skill.
-
-For any other harness, use its available and permitted native question or choice mechanism, respecting its schema and lifecycle. If it waits for the answer, continue after the answer returns; if it delivers answers asynchronously or in a later user turn, resume the interview when the answer arrives. Do not assume a tool exists or that it behaves like Codex.
-
-The skill cannot enable tools, change modes, override harness restrictions, or keep an assistant turn open by itself. If no permitted interactive tool exists, ask in plain text and end the turn awaiting a reply; on the user's next message resume the same interview and do not restart or repeat the question. A completed turn while awaiting that reply is not completion of the interview. Do not promise a clickable UI or automatic in-turn continuation when the harness does not provide it.
-
-**Question format decision (mandatory for every question):** First identify the single decision and use conversation and relevant repository evidence to consider whether at least two distinct, meaningful answers can be offered. If so, ask a multiple-choice question with those answers and a free-text fallback, even if the user might prefer to provide details or an alternative. Use open-ended free text only when meaningful alternatives cannot be constructed without inventing product requirements, or the answer itself must be supplied as text (for example a spec path, ticket ID, exact message, or an unknown business-flow description). Do not default to open-ended questions merely because the topic is broad: split it into focused decisions and offer choices where evidence supports them. Never fabricate choices or imply that observed implementation establishes intended behavior.
-
-- For every multiple-choice question, offer relevant, mutually distinguishable options and recommend exactly one: put it first, label it **Recommended**, and briefly explain the reasoning. Use available evidence and the user's goal; when evidence is insufficient, propose a reasonable provisional choice, explicitly state the assumption and uncertainty, and do not present it as an established requirement or policy. For an explicit approval or safety gate, recommend a non-approval or defer/review option when there is no basis to recommend approval; never treat a recommendation or preselection as consent. Provide a final **Type your own answer** fallback through the tool's built-in free-text/Other control; if the tool does not provide one, include it as an option and collect the user's text when selected. Follow the tool's limits on number of options. Examples when applicable: test mode (unit / integration / regression), error handling (throw / fallback / error state), or scope (identified candidate A / candidate B). Construct actual choices from the task, not these examples mechanically.
-- For an open-ended question, ask directly and end with: “If you’re unsure, you can say ‘you decide’ and I’ll make a reasonable assumption.” Include this sentence in the native question itself when using a free-text control. Do not present **You decide** or **Skip** as options for an open-ended question. Use a permitted native free-text question control if available; otherwise ask in plain text. Do not force an extra selection before the user can type. Delegation does not replace explicit approval gates.
-- If no permitted interactive tool can present a **multiple-choice** question, show a numbered list using `1.`, `2.`, and so on, never unnumbered bullets. Number every option, including **Type your own answer** when offered. Tell the user they can reply with a number or type an answer directly. Interpret a number as the corresponding option for the pending question. If they select **Type your own answer** without providing text, ask for the text in the next turn.
-- If no permitted interactive tool can present an **open-ended** question, ask for the answer directly without a list of options, using the sentence above to offer delegation.
-
-Never claim plain text choices are interactive. When a plain-text question is pending, end with the question itself; do not repeat it or add a separate message asking the user to answer the pending question.
-
-Treat **You decide** as delegation for the question pending at the time; if the user explicitly delegates the entire interview, apply it to the remaining interview topics as well. Delegation is not a factual answer: investigate what can be established, and report unknowns and assumptions without asserting that an unlocated spec or other unverified item does not exist. Treat **Skip** as an unanswered topic; record resulting assumptions or gaps. A general “continue” after a recommendation may accept that recommendation when it is a normal interview decision, but does not answer a different pending question. Neither delegation nor “continue” grants approval for a seed mutation or another explicit approval gate, even when restoration is possible. Do not infer intent from source alone: identify source-derived behavior as an assumption and report missing product requirements.
-
-For every yes/no confirmation in this workflow, offer explicit **Yes** and **No** choices, with room for the user to explain or request a change. Use the interactive choice tool when available and permitted; otherwise show numbered choices in the question. A preselected choice, silence, or an unrelated instruction is not an answer. If a tool returns immediately, pause all task work and wait for the user's response.
-
-Ask for what you cannot determine yourself. Ask **only** for these:
-
-1. **Module (required)**, the top-level route segment under `_protected+/`. Examples: `case-management`, `user-management`, `iam`. If the user does not know it, list the folders under `e2e/app/routes/_protected+/` and let them pick.
-2. **Sub-module (required when the module has sub-modules)**. Examples: `users`, `user-groups` under `user-management`; `outage-management` under `case-management`. List the sub-module folders under the module route folder and ask which one.
-3. **Requested scope or constraints**: infer the approach from discovery and existing artifacts; ask only when an unresolved decision materially affects the work.
+1. **Module and sub-module**: resolve both together from the user's input, prior answers, PRD index, existing features and accessible navigation. A sub-module is required when the module has sub-modules. If both are clear, state the resolved scope and do not ask again. If either remains ambiguous, ask one combined question for the missing scope, offering evidenced choices where possible.
+2. **Requested scope or constraints**: infer the approach from discovery and existing artifacts; ask only when an unresolved decision materially affects the work.
 
 Do **not** ask for these. Derive them, and state what you derived:
 
-- **Routes**: from `e2e/app/routes/_protected+/<module>+/<submodule>+/`. Ask only if the folder layout is ambiguous.
-- **Env file**: `e2e/.env.local` supplies `BASE_URL`, `E2E_USERNAME`, `E2E_PASSWORD`. Only mention it if the file is missing, and then ask the user for the values.
+- **Routes**: discover through the app navigation and browser, using the PRD and existing E2E artifacts as leads. Ask only when the target remains ambiguous.
+- **Environment configuration**: use the project's configured base URL and credentials without printing them. If configuration is missing, explain how to configure it locally; never ask for secrets in chat.
 - **Smoke-only**: default is the full pass. Ask only if the user's wording implies a quick or critical-path-only pass.
 
-If the user gives a sub-module outside the module (for example `outage-management` without `case-management`), resolve it by searching the route folders, then confirm the full scope before continuing.
+If only a sub-module is named, resolve its parent using the PRD, existing feature files and app navigation; ask only if the scope remains ambiguous.
 
 ### Choose the working approach
 
-Use product context and requirements, source analysis, existing artifacts and live `playwright-cli` discovery for every scope. Inspect source and existing tests first, then explore accessible UI for candidate journeys before flow-list confirmation. Observe entry points and possible outcomes; follow journeys further where access, data and safety allow. Distinguish UI observations from source-only candidates and blocked branches. Apply data-safety rules from the start.
+First satisfy the mandatory matching reviewed PRD prerequisite in Step 0b. PRD creation and review may use browser exploration before this scenario workflow resumes.
 
-Choose the approach based on journey complexity, breadth of source and UI, roles, data and dependencies, estimated scenario volume, reviewability and whether work must span sessions. Flow count is informational only and never a threshold. Explain the choice and its evidence. Reassess as discovery progresses: if a single pass becomes difficult to manage, create a registry, preserve IDs, evidence and approvals, and continue in batches without repeating valid review gates.
+Use the reviewed PRD, existing E2E artifacts and live `playwright-cli` exploration for every scope. Explore accessible UI for candidate journeys before flow-list confirmation. Observe entry points and possible outcomes; follow journeys further where access, data and safety allow. Distinguish PRD requirements, UI observations and blocked branches. Apply data-safety rules from the start.
 
-- **Single pass (Mode C):** reconcile and confirm the flow list, explore journeys in depth and write the scenarios for review together. Review existing flows against discovered behavior using Mode D rules.
-- **Registry and batches:** persist discovery across manageable source and browser chunks, including reviewed and remaining areas and limitations. Mode A registers the inventory only, with no Gherkin. After flow-list confirmation, choose a coherent batch, explore it in depth, write scenarios and stop for review; implement and verify the approved batch before the next. Mode B authors pending flows and Mode D reviews or extends existing flows. A batch may include both, applying each flow's status rules.
+Choose the approach based on journey complexity, breadth of the PRD and UI, roles, data and dependencies, estimated scenario volume, reviewability and whether work must span sessions. Flow count is informational only and never a threshold. Explain the choice and its evidence. Reassess as discovery progresses: when the scope is too large for one review, split it into coherent batches and keep the exact scope, evidence and unresolved gaps in the flow registry notes in the conversation and review output. The registry is a workflow inventory, not a separate file; existing categories are represented by `@flow:` tags in `.feature` files.
 
-Group related journeys by complexity and reviewability; about 15 scenarios is a planning guide, not a cap. A complex flow may be a batch alone and several simple flows may be grouped. Do not split a flow merely to hit the guide; if needed, partition by meaningful journeys or outcomes while retaining flow identity and recording partial scope. Report the batch scope and rationale.
+- **Mode A — Registry only:** reconcile discovered journeys with existing scenarios, confirm the flow inventory, and report covered, missing, stale and unresolved areas. Do not write Gherkin in this mode.
+- **Mode B — Author confirmed flows:** after flow-list confirmation, choose a coherent batch of missing or approved-to-extend flows, explore it in depth, write scenarios and stop for review. Implement and verify the approved batch before starting the next.
+- **Mode C — Single pass:** reconcile and confirm the flow list, explore journeys in depth and write the scenarios for review together. Compare existing scenarios with discovered behavior and preserve their IDs.
+- **Mode D — Review existing flows:** re-explore affected journeys, compare existing scenarios with business outcomes, and review or extend scenarios while preserving IDs. Report partial coverage and unresolved branches.
+
+Modes may be split into batches when needed. Use the confirmed inventory and exact approved scenario IDs to identify each batch. Keep flow categories and IDs in the `.feature` file; keep unrepresented discovery notes and review progress in the conversation. Never create or update a separate `.flows.md` file.
+
+Track each flow's workflow state in the conversation registry so the scenario and implementation gates remain explicit. These are workflow states, not catalog badges or `.feature` tags:
+
+| State | Meaning | Next action |
+| ----- | ------- | ----------- |
+| `pending` | Confirmed flow with no authored scenario yet | Mode B |
+| `written` | New or changed scenarios are awaiting review | Stop for the scenario review gate |
+| `approved` | The user explicitly approved the current scenario changes | Phase 1 may implement them |
+| `implemented` | Steps and bindings exist and collection/type validation succeeded | Verify in the intended environment |
+| `verified` | All required scenarios in the reviewed scope passed in the intended environment | Report scope and remaining gaps |
+| `fixme` | The reviewed scope is blocked by a real product defect, with `@fixme @ref:<ticket>` on affected scenarios | Re-verify when the defect is fixed |
+| `legacy` | A scenario already existed before this registry review | Mode D to assess coverage |
+| `obsolete` | The journey no longer exists | Retire the scenario and never reuse its ID |
+
+Keep state and evidence per reviewed scenario scope in the conversation, not as a separate per-flow file. A flow split across batches retains one `@flow:` ID; never infer that every branch is implemented or verified from one batch's state. `written` is not approval, `approved` is not implementation, and a passing subset does not make an incomplete scope `verified`.
+
+Group related journeys by complexity and reviewability; about 15 scenarios is a planning guide, not a cap. A complex flow may be a batch alone and several simple flows may be grouped. Do not split a flow merely to hit the guide; if needed, partition by meaningful journeys or outcomes while retaining the same `@flow:` category and recording partial scope in the review summary.
 
 Modifier: `smoke-only` restricts output to `@smoke` scenarios, including the supported CRUD baseline and other release-gating paths. Non-smoke journeys are listed as "for a later pass", not written.
 
-When the user names an existing flow, check its registry status before choosing: use B only for `pending`; use D to review or extend `legacy`, `implemented`, `verified` or `fixme` coverage. A `written` change awaits scenario review; an `approved` change awaits Phase 1. Do not create a new batch over those in-progress changes. If a pass is interrupted, resume from the registry and current artifacts, retain evidence and approvals, and repeat only the specific review gate invalidated by a material change.
+When the user names an existing flow, find its `@flow:` category in the feature file and compare its scenarios with discovered behavior. Review or extend the existing scenarios while preserving IDs. A pass interrupted between turns resumes from the feature file, conversation registry notes and review output; repeat only the review gate invalidated by a material change.
 
-For Mode D, re-explore affected journeys and compare existing scenarios with business outcomes, including partial coverage. Re-verify affected `@fixme` scenarios when possible, update statuses for changed flows, and list scoped step/POM files with test-data values that violate [data-safety.md](references/data-safety.md#test-data-values) for Phase 1.
-
-## Registry workflow
-
-Use the registry as the source of truth across sessions. Reconcile source, product context and browser observations before presenting the draft list for confirmation. Preserve existing flow and scenario IDs and record which areas remain unexplored. After confirmation, review and implement each selected batch before starting the next.
-
-### Registry file
-
-File: `e2e/tests/bdd/features/<module>/<submodule>.flows.md`. It sits next to the `.feature` file. Playwright and the catalog only load `.feature` files, so this file is never executed.
-
-```markdown
-# E2E flow registry: case-management / cases
-
-Feature: tests/bdd/features/case-management/cases.feature
-Code: CAS
-Last source review: 2026-10-26
-
-| Flow ID             | Section | Description                            | Source evidence                                                    | Priority | Batch | Status   | Scenarios                |
-| ------------------- | ------- | -------------------------------------- | ------------------------------------------------------------------ | -------- | ----- | -------- | ------------------------ |
-| TEN_CAS_LIST_FLOW   | LST     | Case list, pipeline tabs, filter, sort | routes/\_protected+/case-management+/\_case-management.\_index.tsx | P0       | 1     | approved | TEN_CAS_LST_E2E_001..006 |
-| TEN_CAS_ASSIGN_FLOW | ASG     | Assign case to agent                   | components/cases/case-assign-dialog-right.tsx                      | P0       | 2     | written  | TEN_CAS_ASG_E2E_001..008 |
-| TEN_CAS_OUTAGE_FLOW | OUT     | Create outage                          | components/outage-management/dialogs/create-outage.tsx             | P1       | 3     | pending  |                          |
-```
-
-Status values:
-
-| Status        | Meaning                                                                                                                     | Set by                    |
-| ------------- | --------------------------------------------------------------------------------------------------------------------------- | ------------------------- |
-| `pending`     | Registered, not written                                                                                                     | Mode A                    |
-| `written`     | Scenarios are in the `.feature` file, waiting for review                                                                    | Mode B                    |
-| `approved`    | User approved the scenarios                                                                                                 | User, after review        |
-| `implemented` | Steps/POM exist and their imports and bindings were validated; record typechecking separately                               | `write-e2e-code`          |
-| `verified`    | All required scenarios in the reviewed scope actually passed in the intended environment; record mocks and backend coverage | `write-e2e-code`          |
-| `fixme`       | The reviewed scope is blocked by a real product defect, tagged `@fixme @ref:<JIRA-ID>`                                      | After review/verification |
-| `legacy`      | Already in the `.feature` file before the registry existed. Not re-reviewed unless Mode D is run                            | Mode A                    |
-| `obsolete`    | Route or journey removed. ID kept, never reused                                                                             | Mode D                    |
-
-Rules:
-
-- Mode A marks flows already covered by the existing `.feature` as `legacy`, based on their `@flow:` tags. It never changes their IDs.
-- A `legacy` tag means existing scenarios were found, not that the whole flow is covered or verified. Record missing variants and uncertainty separately; use Mode D to review and extend that flow while retaining its IDs.
-- For a Mode D change to an existing flow, keep existing IDs and discovery notes, record the changed scenario IDs, and set that flow to `written` for review. After explicit approval, set it to `approved` so Phase 1 can implement the reviewed change. The status applies to that reviewed change; retain evidence and limitations for the rest of the flow.
-- Track defect, skipped and blocked outcomes per scenario in notes even when the registry has one flow-level status. A newly authored or changed scenario, including `@fixme`, stays `written` until reviewed. After approval, use `fixme` for a scope wholly blocked by a known product defect; for mixed scopes preserve the applicable workflow status and record each defect separately. Do not describe a mixed or skipped batch as fully verified.
-- Group batches by related journeys, complexity and reviewability; about 15 scenarios is a guide, not a limit. Order by priority, P0 first, and record the batch scope and rationale.
-- Record a batch identifier, exact flow and scenario IDs, partial-flow scope, approval and verification evidence in registry rows or notes. A flow split across batches retains one flow ID; track each batch's scenario scope and status separately so a flow-level status never implies all branches were verified. After explicit scenario approval, mark the reviewed changes `approved` before Phase 1.
-- Assign flow IDs and section codes in Mode A. Preserve existing scenario IDs; assign new scenario IDs when scenarios are authored in Mode B or D, using the next free number. Never renumber them.
-- Mode B authors `pending` flows in the current batch. Apply Mode D rules to existing flows selected for review; do not overwrite `written` or `approved` changes.
-- Keep the registry in sync with the `.feature` file. Each Mode B run updates the rows it wrote.
-
-### Batch rules for Mode B
-
-- Append the new scenarios to the existing `.feature` file, in the batch's flow section. Do not rewrite sections from earlier batches.
-- Use the next free `NNN` for each `<FLG>` section, as set out in the conventions.
-- Keep the file header and tag order unchanged.
-- The stop message lists the batch, its flow IDs and scenario IDs, and the registry row changes. Then stop.
-- **Undefined steps break the run.** Sub-modules already listed in `playwright.bdd.config.ts` are bundled by `bddgen`, so a written batch with steps that do not exist yet breaks the whole project. Tell the user to run `write-e2e-code` for the batch right after approval, before the next batch. If the sub-module is not yet in the config, do not add it until its batch is `implemented`.
+For review or extension of existing scenarios, compare their observed outcomes with requirements and meaningful alternate paths. Preserve IDs and report any scoped step/POM files with test-data values that violate [data-safety.md](references/data-safety.md#test-data-values) for Phase 1.
 
 ## Step 0b — Context interview (required)
 
-Scope tells the agent _where_ to look. Product context tells it _what matters_. Before starting dependent work, interview the user about the applicable unanswered topics below, one focused question per turn. These are topics to explore, not a script to recite: split compound topics into separate questions, adapt follow-ups to each answer, and probe consequential ambiguities or contradictions until there is a shared understanding. For multiple-choice questions, always recommend one option under the question-format rules above, while allowing a different answer. Read relevant repository evidence and any identified spec to avoid asking questions the agent can answer itself, but do not infer business intent or authorization from code alone. Skip topics already answered or clearly inapplicable. If the user explicitly skips or delegates the interview, proceed and report assumptions. Existing approval and data-safety gates still apply.
+Scope tells the agent _where_ to look. Product context tells it _what matters_. Use the topics below as a checklist for discovery. Consult the PRD, existing scenarios and user context first; ask only consequential unresolved questions. Record unknowns and assumptions without presenting them as confirmed requirements. Explicit review and data-safety gates still apply.
+
+Before scenario discovery in any mode, find and read the matching `docs/prd/<module>/<submodule>.md`. A matching `status: reviewed` PRD covering the requested scope is mandatory. If it is absent, draft, or does not cover the scope, apply [write-prd](../write-prd/SKILL.md) to create, review or refresh it; stop at its review gate and resume this workflow only after the applicable PRD review is explicitly approved. If multiple PRDs match or scope is ambiguous, resolve that ambiguity. Reuse answered context. Treat validated items as confirmed product context and unvalidated `spec` items as stated requirements; keep unvalidated observations and assumptions visibly unconfirmed. Do not use unresolved conflicts or assumptions as intended behavior. Record the PRD path, status, relevant item IDs and gaps in the flow-list review. PRD approval does not approve the flow list or scenarios.
 
 1. **Purpose and requirements:** what this sub-module does for the business, and where the spec lives (PRD, Jira keys such as `HYPCRE-123`, or a document path). The agent reads the spec before browsing.
 2. **Business flows:** identify the sub-module's main functions and their release-gating (`@smoke`) happy paths. At minimum, include each supported, in-scope create, read, update and delete happy path; also identify other main business functions from requirements, discovery and context, and recommend their happy paths as smoke. CRUD is a minimum, not the complete smoke list. Do not recommend no smoke merely because P0 is undocumented. Ask only about unresolved priorities or explicit exceptions, and reuse the user's stated decisions.
@@ -149,24 +91,24 @@ Rules:
 
 - Never re-ask a question the user has already answered, in this message or earlier in the conversation. Reuse the answer. Ask only for what is still missing.
 - If the user answers "skip", "none", or "you decide", continue and record every assumption in the final summary.
-- Answers guide the work. If an answer contradicts the code, say so and ask which one is right.
+- Answers guide the work. If an answer contradicts the PRD or observed UI, record the discrepancy and resolve the intended behavior with the user.
 
-## Step 1 — Source and browser discovery
+## Step 1 — PRD and browser discovery
 
-1. Read the target `.feature` file if it exists. List the existing `@<ID>`, `@flow:` and `@fixme` tags.
-2. Read the registry file `<submodule>.flows.md` if it exists (see "Registry file"). Its rows decide what Mode B works on. Do not re-register flows that already have a row.
-3. Trace the scoped routes into their actual feature implementations and reachable UI, following [references/flow-discovery.md](references/flow-discovery.md). Routes are entry points, not a complete flow inventory: include in-page tabs, menus, dialogs, conditional actions and state-dependent journeys.
+1. Read the target `.feature` file if it exists. List its scenario IDs and `@flow:` categories; these tags are the source of truth for catalog flow categories.
+2. Rebuild the scoped flow registry from the confirmed flow list in the current conversation and existing feature scenarios. Track candidate flows that do not yet have scenarios, review scope and unresolved discovery gaps in the conversation; do not create a separate registry file.
+3. Read the reviewed PRD's requirements, candidate flows, discrepancies and unverified areas. Use them to guide browser exploration, following [references/flow-discovery.md](references/flow-discovery.md). Include in-page tabs, menus, dialogs, conditional actions and state-dependent journeys.
 4. Read **every** file in `e2e/tests/bdd/features/_components/`. That folder is an open-ended inventory of reusable contracts (pipeline, filter, filter-search, sort, view-detail, and whatever has been added since). Decide which ones apply to this scope before you browse.
 5. Check the existing step and POM files for the module, so you know which steps already exist.
-6. Use `playwright-cli` to explore accessible scoped UI for possible journeys before flow-list review, following Step 2 and the discovery reference. Reconcile product context, source candidates, UI observations, existing scenarios and registry rows. Record observed entry points, possible outcomes, inaccessible or unverified branches and reasons. Report the count for information only; choose and explain the working approach using the criteria above.
+6. Use `playwright-cli` to explore accessible scoped UI for possible journeys before flow-list review, following Step 2 and the discovery reference. Reconcile PRD candidates, UI observations and existing scenarios. Record observed entry points, possible outcomes, inaccessible or unverified branches and reasons. Report the count for information only; choose and explain the working approach using the criteria above.
 
-For registry work, persist discovery progress and the draft registry across manageable chunks, including remaining areas. If the browser or environment is unavailable in any approach, preserve the draft and exact blocker; do not present source-only work as complete discovery or proceed to scenario authoring. Resume browser discovery when available.
+For broad work, explore in manageable chunks and keep the exact confirmed scope and remaining discovery gaps in the conversation. If the browser or environment is unavailable, preserve the draft inventory and exact blocker; do not present PRD-only work as complete discovery or proceed to scenario authoring. Resume browser discovery when available.
 
-## Step 1b — Confirm the flow list (required for every mode)
+## Step 1b — Confirm the flow list (required for every authoring scope)
 
-After defining the flows in Step 1, present the discovered in-scope flow list with a short description of each, the total count, explicitly excluded flows and unresolved discovery gaps. Do not claim the list is exhaustive when access, source or environment limitations prevent verification. For Mode A, write the draft registry first and link it for review; for an existing registry, present the relevant rows and any proposed additions, changes or removals. For Mode D, include the affected flows and any proposed scope changes.
+After defining the flows in Step 1, present the discovered in-scope flow list with a short description of each, the total count, explicitly excluded flows and unresolved discovery gaps. Do not claim the list is exhaustive when access, PRD coverage or environment limitations prevent verification. For existing features, include their current `@flow:` categories and any proposed additions, changes or removals.
 
-Ask the user explicitly: "Are these flows exactly right for this scope, with none missing and none extra?" Offer **Yes** and **No**, with optional explanation or requested changes, ordered and numbered under the recommendation rules above. Use an interactive choice tool when available and permitted; otherwise show the numbered choices. Stop and wait for an explicit confirmation. Silence, a general instruction to proceed, or approval of a previous scope or batch is not confirmation of this list. If the user requests changes, revise the list or draft registry and ask again. Discovery browsing happens before this gate. Do not write or update scenarios or proceed to detailed batch work until the user confirms the current list. Mode A remains a registry-only pass.
+Ask the user explicitly: "Are these flows exactly right for this scope, with none missing and none extra?" Offer **Yes** and **No**, with optional explanation or requested changes, with a short explanation of what is being approved. Use an interactive choice tool when available and permitted; otherwise show the numbered choices. Stop and wait for an explicit confirmation. Silence, a general instruction to proceed, or approval of a previous scope or batch is not confirmation of this list. If the user requests changes, revise the list and ask again. Discovery browsing happens before this gate. Do not write or update scenarios or proceed to detailed batch work until the user confirms the current list.
 
 If exploration later reveals a missing, extra or materially changed flow, pause and present the revised flow list for explicit confirmation before continuing with the affected work. Preserve existing flow IDs and the separate scenario review gate in Step 6. Flow-list confirmation does not approve scenarios or authorize Phase 1.
 
@@ -174,7 +116,7 @@ If exploration later reveals a missing, extra or materially changed flow, pause 
 
 Use this loop for initial discovery before flow-list confirmation and again for detailed scenario exploration after confirmation. Initial discovery identifies possible journeys; detailed exploration checks selected journeys and outcomes. Do not author scenarios before the confirmation gate.
 
-Use `playwright-cli`, not Playwright MCP. The full command reference and the exact rules are in [references/playwright-cli-exploration.md](references/playwright-cli-exploration.md).
+Use `playwright-cli` when available. The command reference and availability fallback are in [references/playwright-cli-exploration.md](references/playwright-cli-exploration.md).
 
 Core loop:
 
@@ -185,7 +127,7 @@ Core loop:
 5. Take a screenshot only as a visual sanity check. Never use it as the locator source.
 6. Pull locators (roles, text, `data-testid`) from the snapshot. Do not invent them.
 
-For each batch, check the relevant states, conditional entry points and outcomes in the discovery reference. Record inaccessible or unverified branches with their reason; absence from the current account or data is not evidence that a flow does not exist. Reconcile new discoveries with the registry and the flow-list confirmation gate.
+For each batch, check the relevant states, conditional entry points and outcomes in the discovery reference. Record inaccessible or unverified branches with their reason; absence from the current account or data is not evidence that a flow does not exist. Reconcile new discoveries with the confirmed flow list.
 
 If the UI contradicts the spec, PRD or ticket (a real product bug, not an environment quirk), do not write the scenario to match the broken behavior. See Step 4.
 
@@ -196,7 +138,7 @@ For every journey found, classify it:
 | Status                | Meaning                                                                                                    | Action                                                                   |
 | --------------------- | ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
 | **Covered**           | Existing scenarios were compared with the discovered behavior and cover the relevant journeys and variants | No change; record any unverified branches separately                     |
-| **Partially covered** | A flow has scenarios but discovered journeys or meaningful variants are missing                            | Preserve IDs and use Mode D to review and extend the flow                |
+| **Partially covered** | A flow has scenarios but discovered journeys or meaningful variants are missing                            | Preserve IDs and extend the existing scenarios                           |
 | **Missing**           | No `@flow` covers this journey                                                                             | Add a scenario with a new `@flow:` tag                                   |
 | **Stale**             | `@flow` exists but the title or steps no longer match                                                      | Update in place. Keep the `@ID` and `@flow` stable. Never rename a flow. |
 | **Obsolete**          | `@flow` exists for a route or journey that no longer exists                                                | Retire the scenario. Leave the ID unused forever.                        |
@@ -204,7 +146,7 @@ For every journey found, classify it:
 
 Authoring rules:
 
-- Register the in-scope business journeys supported by evidence, including meaningful alternate outcomes and lifecycle paths. Keep E2E scenarios focused on business outcomes; do not equate every UI action or technical endpoint with a business flow.
+- Group in-scope business journeys supported by evidence with meaningful alternate outcomes and lifecycle paths. Represent each journey with a stable `@flow:` tag in its scenarios. Keep E2E scenarios focused on business outcomes; do not equate every UI action or technical endpoint with a business flow.
 - Treat each supported, in-scope CRUD happy path as a minimum sub-module release-gating smoke baseline, not an exhaustive list. Identify and recommend happy paths for other main business functions of the sub-module as smoke too; use requirements, discovery and user context to assess them, and resolve genuinely unclear priorities in the interview. Apply `@smoke` to the resulting meaningful success scenarios, and use `@regression` for consequential non-smoke variants. Do not invent unsupported CRUD operations or tag every validation, error or exploratory UI check as smoke. Record unavailable or blocked operations and their reasons; existing review, real-backend and data-safety rules still apply. An explicit user exception takes precedence.
 - When a consequential business journey needs an API error, delay, or auth-failure scenario, add `@mock`. Reuse applicable `_components/` step text and add `@ref` to the component master. Never write duplicate mock Gherkin. `@mock` never goes on `@smoke`.
 - Mutations (create, edit, delete, add/remove member, activate/suspend) must assert the **data-changing outcome**: a success toast, a row that appears or disappears, a changed value. Asserting only that a dialog closed is not enough.
@@ -238,13 +180,13 @@ Output a summary table:
 | Journey | Status | Action taken |
 | ------- | ------ | ------------ |
 
-Also report: discovery evidence and unresolved gaps, reusable components linked via `@ref`, components judged not applicable, locator gaps (missing role labels or `data-testid`), and any new product bugs with their `@ref` and evidence path. Do not represent a source-only or blocked inventory as fully explored.
+Also report the flow-registry delta: categories added, retained, extended or retired, linked to their scenario IDs. The `.feature` tags record categories that have scenarios; unrepresented candidates, discovery evidence and unresolved gaps remain in the conversation and review output. Also report reusable components linked via `@ref`, components judged not applicable, locator gaps (missing role labels or `data-testid`), and any new product bugs with their `@ref` and evidence path. Do not represent a PRD-only or blocked inventory as fully explored.
 
-Before stopping, if a registry exists, set each changed flow in this batch to `written` for review, including changes containing `@fixme`; update its `Scenarios` column with existing and new IDs and the IDs changed in this pass. Record scenario-level defects and gaps separately. Preserve discovery notes and leave every other row unchanged.
+Before stopping, update only the affected flow scopes in the conversation registry to `written`, including changes containing `@fixme`. Record existing and new scenario IDs and the IDs changed in this pass. Preserve all other states. After explicit scenario approval, mark the reviewed scope `approved` before Phase 1; approval does not change unrelated batches.
 
-Then **stop**. Do not write step definitions or POM code. Ask the user to review the batch, or the `.feature` file if this is a single-pass run. Offer **Yes, approve** and **No**, with optional explanation or requested changes, ordered and numbered under the recommendation rules above. Use an interactive choice tool when available and permitted; otherwise show the numbered choices. Wait for an explicit response; on No, revise and request review again. Phase 1 (`write-e2e-code`) starts only after approval for that batch, and must not change scenario intent or flow IDs.
+Then **stop**. Do not write step definitions or POM code. Ask the user to review the batch, or the `.feature` file if this is a single-pass run. Offer **Yes, approve** and **No**, with optional explanation or requested changes, with a short explanation of what is being approved. Use an interactive choice tool when available and permitted; otherwise show the numbered choices. Wait for an explicit response; on No, revise and request review again. Phase 1 (`write-e2e-code`) starts only after approval for that batch, and must not change scenario intent or flow IDs.
 
-For a registry batch, end with the next step: "Batch N is written. Approve it, or tell me what to change. After approval, run `write-e2e-code` for this batch before starting the next batch." Do not start the next batch in the same session.
+For a batch, end with the next step: "Batch N is written. Approve it, or tell me what to change. After approval, run `write-e2e-code` for these scenarios before starting the next batch." Do not start the next batch in the same session.
 
 ## Related
 

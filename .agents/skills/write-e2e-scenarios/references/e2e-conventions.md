@@ -66,7 +66,7 @@ Outage management is a sub-module of `case-management` (route `case-management+/
 
 ### Flow tags and flow sections
 
-Use flow tags for meaningful business journeys, not every UI control or endpoint. An existing tag or passing scenario shows coverage of the scenario, not necessarily all branches of the journey. Source-only candidates and unresolved discovery gaps belong in the flow registry; the generated flow-coverage metric uses tags in feature scenarios and does not count registry-only candidates. See [flow-discovery.md](flow-discovery.md).
+Use flow tags for meaningful business journeys, not every UI control or endpoint. The catalog groups scenarios by these tags and shows each group as a collapsible category. An existing tag or passing scenario shows coverage of the scenario, not necessarily all branches of the journey. Report PRD-only candidates and unresolved discovery gaps in the review summary; the generated flow-coverage metric counts only categories represented by feature scenarios. See [flow-discovery.md](flow-discovery.md).
 
 Flow tag convention: `@flow:TEN_<CODE>_<ACTION>_FLOW` (sub-module and module scenarios). Use full readable action names (`LIST`, `CREATE`, `LOGIN`, `FILTER_SEARCH`). The `<FLG>` in the ID is the 3-character abbreviation of the same section.
 

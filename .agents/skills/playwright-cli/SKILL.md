@@ -24,7 +24,7 @@ playwright-cli -s=qa-task console
 playwright-cli -s=qa-task close
 ```
 
-Use role, label or verified test-ID locators from the snapshot or source; do not guess them. Prefer waiting for an observable state over sleeps or blanket network-idle waits. Re-snapshot after navigation or material UI changes. Use `find` or scoped snapshots when the page is large. See [element attributes](references/element-attributes.md).
+Use role, label or verified test-ID locators from the snapshot or live element attributes; do not guess them. Prefer waiting for an observable state over sleeps or blanket network-idle waits. Re-snapshot after navigation or material UI changes. Use `find` or scoped snapshots when the page is large. See [element attributes](references/element-attributes.md).
 
 Use named sessions to avoid interfering with existing browsers. Close or detach only the session started or attached for the task. Do not use `close-all`, `kill-all`, or delete a profile as routine cleanup. Preserve user-owned browser data and sessions. Avoid printing credentials, tokens, or sensitive request bodies; protect snapshots, storage state, traces and recordings as appropriate.
 

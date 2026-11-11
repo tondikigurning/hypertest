@@ -23,7 +23,7 @@ be created or otherwise provisioned within the authorized scope, the agent must 
 explain it and ask whether the user permits non-E2E data for that specific scenario before concluding Tier 3.
 This is an explicit approval gate, not automatic fallback permission. Without approval, skip the mutation.
 
-Apply these tiers to every entity based on capabilities verified in the current UI and source, not a predefined
+Apply these tiers to every entity based on capabilities verified in the current UI and reviewed PRD, not a predefined
 module or entity list. Discover the supported lookup, creation or provisioning flow, required permissions and
 state, and whether it is feasible within the authorized scope. Do not assume a dialog, wizard or upstream flow
 exists based on the module name. If neither Tier 1 nor Tier 2 can produce an E2E-owned record, the mutation
@@ -125,10 +125,12 @@ in the same pass and lists the changed files in the summary. Do not sweep module
 
 ## Explicit approval for non-E2E data
 
-A mutation may touch a non-E2E record **only** when the user explicitly approves the specific record and operation,
-and the approval is recorded in the `.feature` header or applicable flow section before live mutation or authoring
-the affected mutation scenario/implementation. Approval may be requested when the dependency is discovered in
-Phase 0 exploration or Phase 1 implementation; it is not limited to the initial interview.
+A mutation may touch a non-E2E record **only** when the user explicitly approves the specific record and operation.
+During scenario or code work, record the approval in the `.feature` header or applicable flow section before the
+live mutation or authoring the affected scenario or implementation. During PRD-only exploration, record the scoped
+approval in the conversation before mutation; record only a sanitized summary in the PRD exploration log. If the
+scenario is later authored, its current-session approval must also be recorded in the `.feature`. Approval may be
+requested when the dependency is discovered; it is not limited to the initial interview.
 
 During Phase 0 (`write-e2e-scenarios`) or Phase 1 (`write-e2e-code`), explain these facts, then ask one focused
 confirmation question with explicit **Yes** and **No** choices:
@@ -154,7 +156,6 @@ Record the approval in the feature file header (or the flow section it applies t
 # seed-data-mutation-approved: <YYYY-MM-DD> <approver> — <environment> — <scenario ID> — <entity/record ID> — <mutation> — <reason> — <cleanup and irreversible effects>
 ```
 
-If a flow registry (`<submodule>.flows.md`) exists, note the same approval in the flow row.
 The comment records authorization; it does not enforce it at runtime. Before each live execution, ensure that
 approval still applies in the current session and guard the exact target. A historical approval comment is not
 permission for later sessions or unattended runs; skip when current scoped authorization is absent.

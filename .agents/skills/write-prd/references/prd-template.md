@@ -36,8 +36,8 @@ reviewed_at:                  # empty until the review gate passes
 
 Rules:
 
-- `code` reuses the `Code:` from `<submodule>.flows.md` when that file exists. Otherwise propose one and record it here so `write-e2e-scenarios` can reuse it.
-- `status` stays `draft` until the review gate in Step 6 passes. Only then set `reviewed`, `reviewed_by` and `reviewed_at`.
+- `code` reuses the prefix in existing scenario IDs when available. Otherwise propose a short code from the sub-module name and record it here so `write-e2e-scenarios` can reuse it.
+- `status` stays `draft` until the review gate in Step 6 passes. Only then set `reviewed`, `reviewed_by` and `reviewed_at`. A reviewed PRD may retain `needs-review` items: stated `spec` remains attributed to its source, while conflicting requirements, unvalidated observations and assumptions do not establish intended behavior.
 - `sources` lists every origin of content: each uploaded file, the interview, and each exploration pass. Never include credentials or URLs that embed tokens.
 - `last_explored` is updated per area, never for the whole PRD at once, unless every area was re-checked.
 
@@ -177,7 +177,7 @@ Parts, in order:
 3. `[review]`: one of `needs-review`, `validated`.
 4. The statement: one sentence, consumer-visible behavior, present tense.
 5. `_Seen:_` for `observed` items: screen, environment, date.
-6. `_Evidence:_` for `observed` items: an evidence reference.
+6. `_Evidence:_` for `observed` items: an accessible safe artifact path, or a reference to a dated, sanitized factual entry in the exploration log if no artifact can safely be retained. State that limitation; do not imply an artifact exists.
 7. `_Source:_` for `spec` items when it helps: document name and section, or "interview answer".
 8. `_Assumption:_` for `assumed` items: what was assumed and why, so it can be challenged.
 9. `_Retired:_` only for retired items: date and reason. Keep the line and the ID.
@@ -197,7 +197,7 @@ A statement states one behavior. Split compound statements ("shows X and also al
 | `needs-review` | Not yet confirmed by the user, or changed, or in conflict |
 | `validated` | Confirmed by the user at the review gate |
 
-- New items always start as `needs-review`.
+- New and changed items start as `needs-review`; retain validation for unchanged items during refresh.
 - Only the review gate in Step 6 sets `validated`. Never set it while drafting, even when an observation matches a spec.
 - An `observed` item that was `validated` stays `observed`; validation records that the user accepted it as intended, not that the provenance changed.
 - When agreement between spec and observation exists, keep the item with its strongest source (`spec`) and cite the observation as evidence.

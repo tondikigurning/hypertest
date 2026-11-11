@@ -18,11 +18,11 @@ Exploration finds possible journeys. It does not prove the PRD is complete. Ever
 ## Before you start
 
 - [ ] Scope is settled: module, sub-module, environment (Step 0).
-- [ ] Context interview answers are in hand: roles, accounts, data and mutation permission, known issues (Step 0b).
+- [ ] Available context for roles, accounts, data, mutation permission and known issues has been gathered; gaps are recorded (Step 0b).
 - [ ] Credentials come from the environment's configured variables. Never print or echo them.
 - [ ] You know whether E2E-owned records may be created or deleted here. If unknown, stay read-only.
 - [ ] A named `playwright-cli` session exists for this pass, and you can name it in the exploration log.
-- [ ] If an uploaded document exists, you have its statements listed so you can confirm or contradict each one (`import then verify`).
+- [ ] If reference material was supplied, list its statements so you can compare them with the live app.
 
 ## Ground rules
 
@@ -140,7 +140,7 @@ Then write the PRD line in the format from [prd-template.md](prd-template.md). K
 
 ## Evidence
 
-- Store evidence through the app's evidence tool and refer to it by ID or path. Do not commit large binaries to the repository unless the user asks.
+- Save safe evidence to a locally accessible path and refer to that path; use an available evidence tool only if one is actually provided. Do not commit large binaries to the repository unless the user asks. If evidence cannot safely be retained, add a dated, sanitized factual entry to the exploration log, reference it from the observation, and record the limitation without claiming a retained artifact.
 - Name evidence `<CODE>-<area>-<NN>`, for example `STL-create-01`. Names must not contain customer names, emails, tokens or other personal data.
 - One evidence item per observation that matters. Do not screenshot every step.
 - Before saving a screenshot, check it for visible real customer data or secrets. If present, do not store it as evidence; describe the observation in words instead.
@@ -161,7 +161,7 @@ Add what would be needed to verify it: an account, data, or explicit permission.
 
 ## Stop and ask
 
-Stop and ask the user, one question per turn, when:
+Pause the affected interaction and ask the user when:
 
 - A step would change data you are not sure you may change.
 - You need E2E data you cannot find or create within scope.
