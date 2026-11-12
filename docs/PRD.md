@@ -149,7 +149,7 @@ Fitur jadwal ditunda dan belum tersedia di preview lokal. Kebutuhan berikut dica
 
 ### 8.8 Draft, sinkronisasi, dan PR
 
-- FR-40. Satu pengguna dapat memiliki banyak draft; satu draft = satu branch `draft/<user>/<slug>-<id>`.
+- FR-40. Satu pengguna hanya dapat memiliki satu draft yang belum difinalisasi pada satu waktu; setelah draft difinalisasi, pengguna dapat membuat draft berikutnya. Satu draft = satu branch `draft/<user>/<slug>-<id>`.
 - FR-41. Draft hanya tampil di daftar pemilik; tidak tampil bagi pengguna lain di app.
 - FR-42. Sebelum finalize, app menyinkronkan draft dengan branch target. Konflik ditampilkan dan diselesaikan agent atau manual di GitHub.
 - FR-43. Finalize membuat PR dari branch draft ke branch target atas nama pengguna; judul dan deskripsi diambil dari ringkasan perubahan (ID scenario dan kategori flow).
