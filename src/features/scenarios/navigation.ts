@@ -1,56 +1,67 @@
-﻿import type { Scenario } from "./scenario";
-
-const base = "/";
-const featureRoute = `${base}/features/`;
-
-function encodeFeaturePath(file: string) {
-  const bytes = new TextEncoder().encode(file);
-  let binary = "";
-  for (const byte of bytes) binary += String.fromCharCode(byte);
-  return btoa(binary).replaceAll("+", "-").replaceAll("/", "_").replace(/=+$/, "");
+export interface ScenarioFilters {
+  search: string;
+  status: string;
+  priority: string;
+  type: string;
 }
 
-function decodeFeaturePath(value: string) {
-  const normalized = value.replaceAll("-", "+").replaceAll("_", "/");
-  const binary = atob(normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "="));
-  return new TextDecoder().decode(Uint8Array.from(binary, (character) => character.charCodeAt(0)));
+export type ScenarioFilterKey = keyof ScenarioFilters;
+
+const filterQueryKeys: Record<ScenarioFilterKey, string> = {
+  search: "q",
+  status: "status",
+  priority: "priority",
+  type: "type",
+};
+
+const defaultFilters: ScenarioFilters = {
+  search: "",
+  status: "all",
+  priority: "all",
+  type: "all",
+};
+
+export function scenarioPath(module: string, file: string) {
+  const prefix = `${module}/`;
+  const relativeFile = file.startsWith(prefix) ? file.slice(prefix.length) : file;
+  const submodule = relativeFile.replace(/\.feature$/i, "");
+  return `/${encodeURIComponent(module)}/${encodeURIComponent(submodule)}`;
 }
 
-export function navigationFromUrl(url: URL, catalog: Array<Scenario>) {
-  const legacyFile = url.searchParams.get("submodule");
-  const legacyModule = url.searchParams.get("module");
-  let file: string | undefined;
-  if (url.pathname.startsWith(featureRoute)) {
-    const routeValue = url.pathname.slice(featureRoute.length);
-    try {
-      file = decodeFeaturePath(routeValue);
-    } catch {
-      // Accept the earlier readable feature path and migrate it to an extension-free route.
-      try {
-        file = routeValue.split("/").map(decodeURIComponent).join("/");
-      } catch {
-        file = undefined;
-      }
-    }
-  } else if (legacyFile || legacyModule) {
-    file = legacyFile ?? catalog.find((scenario) => scenario.module === legacyModule)?.file;
-  }
-  const feature = catalog.find((scenario) => scenario.file === file);
+export function scenarioSubmodule(module: string, file: string) {
+  const prefix = `${module}/`;
+  if (!file.startsWith(prefix)) return undefined;
+  const submodule = file.slice(prefix.length).replace(/\.feature$/i, "");
+  return submodule.includes("/") ? undefined : submodule;
+}
+
+export function scenarioFiltersFromSearchParams(params: URLSearchParams): ScenarioFilters {
   return {
-    featureFile: feature?.file,
-    module: feature?.module,
-    isHome: !feature,
-    legacy: Boolean(legacyFile || legacyModule),
+    search: params.get(filterQueryKeys.search) ?? defaultFilters.search,
+    status: params.get(filterQueryKeys.status) ?? defaultFilters.status,
+    priority: params.get(filterQueryKeys.priority) ?? defaultFilters.priority,
+    type: params.get(filterQueryKeys.type) ?? defaultFilters.type,
   };
 }
 
-export function writeNavigationUrl(_module?: string, submodule?: string, replace = false) {
-  const url = new URL(window.location.href);
-  url.pathname = submodule ? `${featureRoute}${encodeFeaturePath(submodule)}` : base;
-  url.searchParams.delete("module");
-  url.searchParams.delete("submodule");
-  const next = `${url.pathname}${url.search}${url.hash}`;
-  if (next !== `${window.location.pathname}${window.location.search}${window.location.hash}`) {
-    window.history[replace ? "replaceState" : "pushState"]({}, "", next);
-  }
+export function updateScenarioFilterParams(params: URLSearchParams, key: ScenarioFilterKey, value: string) {
+  const next = new URLSearchParams(params);
+  next.delete("sort");
+  next.delete("tag");
+  next.delete("flow");
+  const queryKey = filterQueryKeys[key];
+  const defaultValue = defaultFilters[key];
+  const normalized = value;
+  if (normalized === defaultValue || (key === "search" && normalized === "")) next.delete(queryKey);
+  else next.set(queryKey, normalized);
+  return next;
+}
+
+export function clearScenarioFilterParams(params: URLSearchParams) {
+  const next = new URLSearchParams(params);
+  next.delete("sort");
+  for (const key of Object.values(filterQueryKeys)) next.delete(key);
+  next.delete("tag");
+  next.delete("flow");
+  return next;
 }

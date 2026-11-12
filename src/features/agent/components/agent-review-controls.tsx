@@ -1,4 +1,12 @@
-import type { ReactNode } from "react";
+import type { ButtonHTMLAttributes, ReactNode } from "react";
+
+export function AgentWorkspaceButton({
+  className,
+  type = "button",
+  ...props
+}: ButtonHTMLAttributes<HTMLButtonElement>) {
+  return <button {...props} type={type} className={["agent-workspace-button", className].filter(Boolean).join(" ")} />;
+}
 
 export function AgentReviewHeading({
   title,
@@ -6,12 +14,14 @@ export function AgentReviewHeading({
   actionLabel,
   disabled = false,
   onAction,
+  badge,
 }: {
   title: string;
   description: string;
-  actionLabel: string;
+  actionLabel?: string;
   disabled?: boolean;
-  onAction: () => void;
+  onAction?: () => void;
+  badge?: ReactNode;
 }) {
   return (
     <div className="agent-review-heading">
@@ -19,9 +29,12 @@ export function AgentReviewHeading({
         <h2>{title}</h2>
         <p>{description}</p>
       </div>
-      <button type="button" disabled={disabled} onClick={onAction}>
-        {actionLabel}
-      </button>
+      {actionLabel && onAction && (
+        <AgentWorkspaceButton disabled={disabled} onClick={onAction}>
+          {actionLabel}
+        </AgentWorkspaceButton>
+      )}
+      {badge && <span className="agent-heading-badge">{badge}</span>}
     </div>
   );
 }

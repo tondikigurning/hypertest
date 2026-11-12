@@ -1,7 +1,11 @@
 import { Icon } from "@hyperscal/icons";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useLocation, useMatches, useNavigate, useNavigationType, useSearchParams } from "react-router";
 import { CollapsibleRegion, SelectInput, TextInput } from "../components";
 import { AgentWidget } from "../features/agent/agent-widget";
+import { PrdDocumentIcon } from "../features/prds/components/prd-document-icon";
+import { PrdCatalog } from "../features/prds/prd-catalog";
+import { usePrds } from "../features/prds/use-prds";
 import { LiveRun } from "../features/runs/components/live-run";
 import { EnvironmentVariables, GroupRun } from "../features/runs/components/local-run";
 import { useActiveRun } from "../features/runs/use-active-run";
@@ -11,19 +15,35 @@ import { ScenarioDetails } from "../features/scenarios/components/scenario-detai
 import { ClearFiltersButton, ScenarioListState } from "../features/scenarios/components/scenario-list-state";
 import { ScenarioMetadata } from "../features/scenarios/components/scenario-metadata";
 import { ScenarioNavigation } from "../features/scenarios/components/scenario-navigation";
-import { navigationFromUrl, writeNavigationUrl } from "../features/scenarios/navigation";
-import { category, featureTitle, label, type Scenario } from "../features/scenarios/scenario";
 import {
-  filterScenarios,
-  groupFlows,
-  groupModules,
-  type ScenarioSort,
-  sortScenarios,
-} from "../features/scenarios/selectors";
+  clearScenarioFilterParams,
+  type ScenarioFilterKey,
+  scenarioFiltersFromSearchParams,
+  scenarioPath,
+  scenarioSubmodule,
+  updateScenarioFilterParams,
+} from "../features/scenarios/navigation";
+import { category, featureTitle, label, type Scenario } from "../features/scenarios/scenario";
+import { filterScenarios, groupFlows, groupModules } from "../features/scenarios/selectors";
 import { useDraftScenarios } from "../features/scenarios/use-draft-scenarios";
 import { useScenarioCatalog } from "../features/scenarios/use-scenario-catalog";
 
 export function App() {
+  const matches = useMatches();
+  const route = matches.at(-1);
+  const routeModule = route?.params.module;
+  const routeSubmodule = route?.params.submodule;
+  const isHome = route?.id === "home";
+  const isSubmodule = route?.id === "scenario";
+  const location = useLocation();
+  const navigate = useNavigate();
+  const navigationType = useNavigationType();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const filters = scenarioFiltersFromSearchParams(searchParams);
+  const { search, status, priority, type } = filters;
+  const isPrdView = isSubmodule && searchParams.get("view") === "prd";
+  const prds = usePrds();
+  const prdButton = useRef<HTMLButtonElement>(null);
   const activeRun = useActiveRun(true);
   const { config, environment, setEnvironment } = useRunEnvironment();
   const target = config?.environments.find((item) => item.id === environment)?.target;
@@ -33,12 +53,6 @@ export function App() {
     if (runningEnvironment) setEnvironment(runningEnvironment.id);
   }, [activeRun, config, setEnvironment]);
   const [previewOpen, setPreviewOpen] = useState(false);
-  const [isHome, setIsHome] = useState(
-    () =>
-      window.location.pathname === "/" &&
-      !new URL(window.location.href).searchParams.has("module") &&
-      !new URL(window.location.href).searchParams.has("submodule"),
-  );
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => window.matchMedia("(max-width: 650px)").matches);
   const isRunning = useCallback(
     (scenario: Scenario) =>
@@ -54,47 +68,39 @@ export function App() {
         : scenario.status,
     [activeRun, isRunning],
   );
-  const [search, setSearch] = useState("");
-  const [featureFile, setFeatureFile] = useState<string>();
   const [openModules, setOpenModules] = useState<Set<string>>(new Set());
   const [closedFlows, setClosedFlows] = useState<Set<string>>(new Set());
   const [selected, setSelected] = useState<string>();
-  const [tag, setTag] = useState("all");
-  const [flow, setFlow] = useState("all");
-  const [status, setStatus] = useState("all");
-  const [priority, setPriority] = useState("all");
-  const [type, setType] = useState("all");
-  const [sort, setSort] = useState<ScenarioSort>("source");
-  const initializeNavigation = useCallback((catalog: Array<Scenario>) => {
-    const navigation = navigationFromUrl(new URL(window.location.href), catalog);
-    setFeatureFile(navigation.featureFile);
-    setIsHome(navigation.isHome);
-    setOpenModules(navigation.module ? new Set([navigation.module]) : new Set());
-    if (navigation.featureFile) writeNavigationUrl(navigation.module, navigation.featureFile, true);
-    else if (window.location.pathname !== "/" || window.location.search) writeNavigationUrl(undefined, undefined, true);
-  }, []);
   const {
     scenarios: officialScenarios,
     error,
     loading,
-  } = useScenarioCatalog(activeRun?.done ? activeRun.id : undefined, initializeNavigation, environment);
+  } = useScenarioCatalog(activeRun?.done ? activeRun.id : undefined, environment);
   const { scenarios, draftError } = useDraftScenarios(officialScenarios);
   useEffect(() => {
-    if (!scenarios.length) return;
-    const restoreNavigation = () => {
-      const navigation = navigationFromUrl(new URL(window.location.href), scenarios);
-      setFeatureFile(navigation.featureFile);
-      setIsHome(navigation.isHome);
+    if (navigationType === "POP") {
       setSelected(undefined);
-      setOpenModules(navigation.module ? new Set([navigation.module]) : new Set());
-      if (navigation.featureFile) writeNavigationUrl(navigation.module, navigation.featureFile, true);
-      else if (window.location.pathname !== "/" || window.location.search)
-        writeNavigationUrl(undefined, undefined, true);
-    };
-    window.addEventListener("popstate", restoreNavigation);
-    return () => window.removeEventListener("popstate", restoreNavigation);
-  }, [scenarios]);
-  const modules = useMemo(() => groupModules(scenarios), [scenarios]);
+      setOpenModules(location.pathname === "/" || !routeModule ? new Set() : new Set([routeModule]));
+    } else if (routeModule) {
+      setOpenModules((previous) => new Set([...previous, routeModule]));
+    }
+  }, [location.pathname, navigationType, routeModule]);
+  const modules = useMemo(() => {
+    const groups = groupModules(scenarios);
+    for (const prd of [...prds.checkout.items, ...prds.draftPrds.items]) {
+      let group = groups.find((item) => item.name === prd.module);
+      if (!group) {
+        group = { name: prd.module, features: [] };
+        groups.push(group);
+      }
+      const file = `${prd.module}/${prd.submodule}.feature`;
+      if (!group.features.some((item) => item.file === file))
+        group.features.push({ file, title: label(prd.submodule), count: 0 });
+    }
+    return groups
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map((group) => ({ ...group, features: group.features.sort((a, b) => a.title.localeCompare(b.title)) }));
+  }, [scenarios, prds.checkout.items, prds.draftPrds.items]);
   const types = useMemo(() => [...new Set(scenarios.map((s) => s.type).filter(Boolean))].sort(), [scenarios]);
   const priorities = useMemo(
     () =>
@@ -103,25 +109,36 @@ export function App() {
       ].sort(),
     [scenarios],
   );
-  const tags = useMemo(
-    () =>
-      [
-        ...new Set(
-          scenarios.flatMap((scenario) =>
-            scenario.tags.filter(
-              (value) =>
-                !/^@(?:flow|expect|type|ref|priority):/.test(value) &&
-                !/^@[A-Z]{2,4}_[A-Z0-9_]+_E2E_\d{3,4}$/.test(value),
-            ),
-          ),
-        ),
-      ].sort(),
-    [scenarios],
-  );
-  const flowOptions = useMemo(() => [...new Set(scenarios.map((scenario) => category(scenario)))].sort(), [scenarios]);
   const statuses = useMemo(
     () => [...new Set(scenarios.map((scenario) => activeStatus(scenario)?.trim() || "Not run"))].sort(),
     [scenarios, activeStatus],
+  );
+  const feature = useMemo(
+    () =>
+      scenarios.find(
+        (scenario) =>
+          scenario.module === routeModule &&
+          routeSubmodule !== undefined &&
+          scenarioSubmodule(scenario.module, scenario.file) === routeSubmodule,
+      ),
+    [scenarios, routeModule, routeSubmodule],
+  );
+  const featureFile = feature?.file;
+  const navigateToScenario = useCallback(
+    (module: string, file: string, params = searchParams, replace = false) => {
+      const next = new URLSearchParams(params);
+      next.delete("module");
+      next.delete("submodule");
+      const query = next.toString();
+      navigate({ pathname: scenarioPath(module, file), search: query ? `?${query}` : "" }, { replace });
+    },
+    [navigate, searchParams],
+  );
+  const updateFilter = useCallback(
+    (key: ScenarioFilterKey, value: string) => {
+      setSearchParams(updateScenarioFilterParams(searchParams, key, value), { replace: true });
+    },
+    [searchParams, setSearchParams],
   );
   const agentContextScenarios = useMemo(
     () =>
@@ -143,12 +160,8 @@ export function App() {
     [scenarios, activeStatus],
   );
   const filtered = useMemo(
-    () =>
-      sortScenarios(
-        filterScenarios(filterableScenarios, { featureFile, tag, flow, status, priority, type, search }),
-        sort,
-      ),
-    [filterableScenarios, featureFile, tag, flow, status, priority, type, search, sort],
+    () => filterScenarios(filterableScenarios, { featureFile, status, priority, type, search }),
+    [filterableScenarios, featureFile, status, priority, type, search],
   );
   const chosen = scenarios.find((s) => s.key === selected);
   const references = useMemo(
@@ -162,49 +175,26 @@ export function App() {
     [chosen, scenarios],
   );
   const openReference = (scenario: Scenario) => {
-    setFeatureFile(scenario.file);
-    setIsHome(false);
     setOpenModules((previous) => new Set([...previous, scenario.module]));
-    writeNavigationUrl(scenario.module, scenario.file);
+    navigateToScenario(scenario.module, scenario.file, clearScenarioFilterParams(searchParams));
     setClosedFlows((previous) => {
       const next = new Set(previous);
       next.delete(`${scenario.file}:${category(scenario)}`);
       return next;
     });
-    setTag("all");
-    setFlow("all");
-    setStatus("all");
-    setPriority("all");
-    setType("all");
-    setSort("source");
-    setSearch("");
     setSelected(scenario.key);
   };
-  const feature = scenarios.find((s) => s.file === featureFile);
   const flows = useMemo(() => groupFlows(filtered), [filtered]);
-  const hasFilters = Boolean(
-    search.trim() ||
-      tag !== "all" ||
-      flow !== "all" ||
-      status !== "all" ||
-      priority !== "all" ||
-      type !== "all" ||
-      sort !== "source",
-  );
+  const hasFilters = Boolean(search.trim() || status !== "all" || priority !== "all" || type !== "all");
   const featureCount = feature ? scenarios.filter((item) => item.file === feature.file).length : 0;
-  const clearFilters = () => {
-    setSearch("");
-    setTag("all");
-    setFlow("all");
-    setStatus("all");
-    setPriority("all");
-    setType("all");
-    setSort("source");
-  };
+  const clearFilters = () => setSearchParams(clearScenarioFilterParams(searchParams), { replace: true });
   const goHome = () => {
-    writeNavigationUrl();
-    setIsHome(true);
-    setFeatureFile(undefined);
+    const params = clearScenarioFilterParams(searchParams);
+    params.delete("module");
+    params.delete("submodule");
+    params.delete("view");
+    const query = params.toString();
+    navigate({ pathname: "/", search: query ? `?${query}` : "" });
     setSelected(undefined);
   };
   const toggleModule = (name: string) => {
@@ -263,17 +253,16 @@ export function App() {
         <ScenarioNavigation
           modules={modules}
           openModules={openModules}
-          featureFile={featureFile}
+          featureFile={routeModule && routeSubmodule ? `${routeModule}/${routeSubmodule}.feature` : featureFile}
           collapsed={sidebarCollapsed}
           onToggleSidebar={() => setSidebarCollapsed((value) => !value)}
           onToggleModule={toggleModule}
           onSelectFeature={(module, file) => {
             if (window.matchMedia("(max-width: 650px)").matches) setSidebarCollapsed(true);
-            setFeatureFile(file);
-            setIsHome(false);
             setOpenModules((previous) => new Set([...previous, module]));
-            writeNavigationUrl(module, file);
-            setSearch("");
+            const next = updateScenarioFilterParams(searchParams, "search", "");
+            next.delete("view");
+            navigateToScenario(module, file, next);
             setSelected(undefined);
           }}
         />
@@ -286,23 +275,51 @@ export function App() {
                     <span className="list-eyebrow">
                       {search.trim() ? "Scenario explorer" : feature ? label(feature.module) : "Scenario explorer"}
                     </span>
-                    <h2>{search.trim() ? "Search results" : feature ? featureTitle(feature) : "Feature not found"}</h2>
+                    <h2>
+                      {search.trim()
+                        ? "Search results"
+                        : feature
+                          ? featureTitle(feature)
+                          : routeSubmodule
+                            ? label(routeSubmodule)
+                            : "Feature not found"}
+                    </h2>
                     <p aria-live="polite">
                       {search.trim()
                         ? `${filtered.length} ${filtered.length === 1 ? "scenario" : "scenarios"} found across all features`
                         : feature
                           ? `${filtered.length} of ${featureCount} ${featureCount === 1 ? "scenario" : "scenarios"} shown`
-                          : "Choose a feature from the sidebar to continue."}
+                          : routeModule && routeSubmodule
+                            ? "No scenarios found for this submodule."
+                            : "Choose a feature from the sidebar to continue."}
                     </p>
                   </div>
-                  {feature && !search.trim() && (
-                    <GroupRun
-                      key={feature.file}
-                      selection={{ kind: "feature", file: feature.file }}
-                      name={featureTitle(feature)}
-                      items={scenarios.filter((s) => s.file === feature.file)}
-                    />
-                  )}
+                  <div className="list-heading-actions">
+                    {isSubmodule && routeModule && routeSubmodule && (
+                      <button
+                        ref={prdButton}
+                        type="button"
+                        className="open-prd-button"
+                        title={`View PRD for ${label(routeModule)} / ${label(routeSubmodule)}`}
+                        onClick={() => {
+                          const next = new URLSearchParams(searchParams);
+                          next.set("view", "prd");
+                          setSearchParams(next);
+                        }}
+                      >
+                        <PrdDocumentIcon />
+                        <span>View PRD</span>
+                      </button>
+                    )}
+                    {feature && !search.trim() && (
+                      <GroupRun
+                        key={feature.file}
+                        selection={{ kind: "feature", file: feature.file }}
+                        name={featureTitle(feature)}
+                        items={scenarios.filter((s) => s.file === feature.file)}
+                      />
+                    )}
+                  </div>
                 </div>
                 <div className="toolbar">
                   <label className="search" htmlFor="scenario-search">
@@ -312,31 +329,13 @@ export function App() {
                       aria-label="Search scenarios"
                       placeholder="Search all scenarios"
                       value={search}
-                      onValueChange={setSearch}
+                      onValueChange={(value) => updateFilter("search", value)}
                     />
                   </label>
                   <SelectInput
-                    label="Filter by tag"
-                    value={tag}
-                    onChange={setTag}
-                    options={[
-                      { value: "all", label: "All tags" },
-                      ...tags.map((value) => ({ value: value.toLowerCase(), label: label(value.slice(1)) })),
-                    ]}
-                  />
-                  <SelectInput
-                    label="Filter by flow"
-                    value={flow}
-                    onChange={setFlow}
-                    options={[
-                      { value: "all", label: "All flows" },
-                      ...flowOptions.map((value) => ({ value, label: value })),
-                    ]}
-                  />
-                  <SelectInput
                     label="Filter by priority"
                     value={priority}
-                    onChange={setPriority}
+                    onChange={(value) => updateFilter("priority", value)}
                     options={[
                       { value: "all", label: "All priorities" },
                       ...priorities.map((p) => ({ value: p, label: p })),
@@ -345,7 +344,7 @@ export function App() {
                   <SelectInput
                     label="Filter by type"
                     value={type}
-                    onChange={setType}
+                    onChange={(value) => updateFilter("type", value)}
                     options={[
                       { value: "all", label: "All types" },
                       ...types.map((t) => ({ value: t, label: label(t) })),
@@ -354,32 +353,16 @@ export function App() {
                   <SelectInput
                     label="Filter by status"
                     value={status}
-                    onChange={setStatus}
+                    onChange={(value) => updateFilter("status", value)}
                     options={[
                       { value: "all", label: "All statuses" },
                       ...statuses.map((value) => ({ value, label: value })),
                     ]}
                   />
-                  <SelectInput
-                    label="Sort scenarios"
-                    value={sort}
-                    onChange={(value) => setSort(value as ScenarioSort)}
-                    options={[
-                      { value: "source", label: "Source order" },
-                      { value: "id", label: "ID" },
-                      { value: "flow", label: "Flow" },
-                      { value: "tag", label: "Tag" },
-                      { value: "title", label: "Title" },
-                      { value: "type", label: "Type" },
-                      { value: "priority", label: "Priority" },
-                      { value: "status", label: "Status" },
-                      { value: "last-run", label: "Last run" },
-                    ]}
-                  />
                 </div>
                 {hasFilters && (
                   <div className="filter-summary">
-                    <span>Filters or sorting applied</span>
+                    <span>Filters applied</span>
                     <ClearFiltersButton onClear={clearFilters}>Clear all</ClearFiltersButton>
                   </div>
                 )}
@@ -432,9 +415,8 @@ export function App() {
                               className={selected === s.key ? "scenario selected" : "scenario"}
                               onClick={() => {
                                 setSelected(s.key);
-                                setFeatureFile(s.file);
                                 setOpenModules((previous) => new Set([...previous, s.module]));
-                                writeNavigationUrl(s.module, s.file);
+                                navigateToScenario(s.module, s.file);
                                 if (window.matchMedia("(max-width: 1100px)").matches)
                                   requestAnimationFrame(() =>
                                     document
@@ -477,6 +459,36 @@ export function App() {
               onOpenReference={openReference}
             />
           </div>
+          {isPrdView && routeModule && routeSubmodule && (
+            <PrdCatalog
+              key={`${routeModule}/${routeSubmodule}`}
+              module={routeModule}
+              submodule={routeSubmodule}
+              checkout={prds.checkout}
+              draftPrds={prds.draftPrds}
+              draft={prds.draft}
+              returnFocus={prdButton}
+              onClose={() => {
+                const next = new URLSearchParams(searchParams);
+                next.delete("view");
+                setSearchParams(next, { replace: true });
+              }}
+              onCreate={() => {
+                sessionStorage.setItem(
+                  "automation-prd-start",
+                  `Help me create or import a PRD for ${routeModule} / ${routeSubmodule}`,
+                );
+                goHome();
+              }}
+              onEdit={() => {
+                sessionStorage.setItem(
+                  "automation-prd-start",
+                  `Help me edit or refresh the active PRD for ${routeModule} / ${routeSubmodule}`,
+                );
+                goHome();
+              }}
+            />
+          )}
           {activeRun && !activeRun.done && (
             <button
               type="button"

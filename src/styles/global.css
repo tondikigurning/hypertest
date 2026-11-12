@@ -2174,12 +2174,12 @@ select:focus-visible {
 .group-run-button span {
   font-size: 9px;
 }
-.list-heading > .group-run-button {
+.list-heading-actions > .group-run-button {
   background: #5839ad;
   border-color: #5839ad;
   color: #fff;
 }
-.list-heading > .group-run-button:hover {
+.list-heading-actions > .group-run-button:hover {
   background: #684ac0;
   border-color: #684ac0;
 }
@@ -2472,7 +2472,7 @@ select:focus-visible {
   .flow-title-row > .group-run-button {
     margin-right: 12px;
   }
-  .list-heading > .group-run-button {
+  .list-heading-actions > .group-run-button {
     white-space: nowrap;
   }
 }
@@ -2506,14 +2506,14 @@ select:focus-visible {
   height: 17px;
   margin-left: 1px;
 }
-.list-heading > .group-run-button,
+.list-heading-actions > .group-run-button,
 .flow-title-row > .group-run-button {
   background: #f6f3fd;
   border-color: #e6e0f4;
   color: #6d52b7;
 }
 .group-run-button:hover,
-.list-heading > .group-run-button:hover,
+.list-heading-actions > .group-run-button:hover,
 .flow-title-row > .group-run-button:hover,
 .local-run form .scenario-play-button:not(:disabled):hover {
   background: #ece5fa;
@@ -2609,7 +2609,7 @@ select:focus-visible {
   width: auto;
   padding-right: 0;
 }
-.list-heading > .group-run-button,
+.list-heading-actions > .group-run-button,
 .flow-title-row > .group-run-button {
   width: 36px;
   height: 36px;
@@ -3214,7 +3214,7 @@ body:has(dialog[open]) .floating-run {
   font-weight: 600;
   color: #344054;
 }
-.environment-dialog label span {
+.environment-dialog .form-field-label {
   color: #667085;
   font-size: 12px;
   font-weight: 400;
@@ -3311,10 +3311,15 @@ body:has(dialog[open]) .floating-run {
 .environment-dialog form {
   gap: 16px;
 }
-.environment-dialog label {
+.environment-dialog .form-field {
+  display: grid;
+  gap: 7px;
+}
+.environment-dialog .form-field-label {
   gap: 7px;
   color: #526178;
   font-size: 12px;
+  font-weight: 600;
 }
 .environment-dialog input {
   height: 40px;
@@ -4034,4 +4039,54 @@ body:has(dialog[open]) .floating-run {
   .list-heading h2 {
     font-size: 19px;
   }
+}
+
+/* Single-choice controls with native radio keyboard behavior. */
+.segmented-control {
+  display: inline-flex;
+  min-inline-size: 0;
+  gap: 3px;
+  margin: 0;
+  padding: 3px;
+  border: 0;
+  border-radius: 9px;
+  background: #f2f3f7;
+}
+.segmented-control-option {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 11px;
+  border-radius: 7px;
+  color: #728095;
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+  transition:
+    color 0.16s ease,
+    background-color 0.16s ease,
+    box-shadow 0.16s ease;
+}
+.segmented-control-option input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.segmented-control-option:has(input:checked) {
+  background: #fff;
+  color: #554080;
+  box-shadow: 0 1px 4px #24324a18;
+}
+.segmented-control-option:has(input:focus-visible) {
+  outline: 2px solid #8065c5;
+  outline-offset: 2px;
+}
+.segmented-control-option:has(input:disabled) {
+  opacity: 0.5;
+  cursor: not-allowed;
 }

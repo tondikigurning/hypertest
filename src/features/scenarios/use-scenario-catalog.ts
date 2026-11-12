@@ -15,11 +15,7 @@ async function readCatalog(response: Response | null): Promise<Array<Scenario> |
 }
 
 /** Load the snapshot when the development API is unavailable; refresh after each completed run. */
-export function useScenarioCatalog(
-  completedRunId: string | undefined,
-  onInitialLoad: (catalog: Array<Scenario>) => void,
-  environment: string,
-) {
+export function useScenarioCatalog(completedRunId: string | undefined, environment: string) {
   const [scenarios, setScenarios] = useState<Array<Scenario>>([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -45,7 +41,6 @@ export function useScenarioCatalog(
         catalog = catalog.map((scenario) => ({ ...scenario, status: "", lastRun: "", duration: "", evidenceUrl: "" }));
       if (controller.signal.aborted) return;
       setScenarios(catalog);
-      onInitialLoad(catalog);
     };
     load()
       .catch(() => {
@@ -55,7 +50,7 @@ export function useScenarioCatalog(
         if (!controller.signal.aborted) setLoading(false);
       });
     return () => controller.abort();
-  }, [onInitialLoad, environment]);
+  }, [environment]);
 
   useEffect(() => {
     if (!completedRunId || loading) return;

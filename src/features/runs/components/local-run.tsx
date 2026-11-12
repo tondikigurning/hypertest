@@ -1,7 +1,7 @@
 import { Icon } from "@hyperscal/icons";
 import { useQueryClient } from "@tanstack/react-query";
 import { type ReactNode, useEffect, useRef, useState } from "react";
-import { Modal, PrimaryButton, Spinner, TextInput } from "../../../components";
+import { FormField, Modal, PrimaryButton, Spinner, TextInput } from "../../../components";
 import { readVariables, storageKey } from "../run-variables";
 import type { Run, RunSelection } from "../types";
 import { activeRunKey, useActiveRun } from "../use-active-run";
@@ -62,8 +62,13 @@ export function EnvironmentVariables({ disabled = false }: { disabled?: boolean 
             }}
           >
             {config.variables.map((variable) => (
-              <label key={variable.name} htmlFor={variable.name}>
-                {variable.label.replace(/^E2E\s+/i, "").replace(/^\p{L}/u, (letter) => letter.toLocaleUpperCase())}
+              <FormField
+                key={variable.name}
+                htmlFor={variable.name}
+                label={variable.label
+                  .replace(/^E2E\s+/i, "")
+                  .replace(/^\p{L}/u, (letter) => letter.toLocaleUpperCase())}
+              >
                 <TextInput
                   id={variable.name}
                   required
@@ -72,7 +77,7 @@ export function EnvironmentVariables({ disabled = false }: { disabled?: boolean 
                   value={values[variable.name] || ""}
                   onValueChange={(value) => setValues({ ...values, [variable.name]: value })}
                 />
-              </label>
+              </FormField>
             ))}
             <PrimaryButton type="submit">Save variables</PrimaryButton>
           </form>
