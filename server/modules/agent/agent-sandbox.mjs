@@ -3,9 +3,10 @@ import { createHash, randomUUID } from "node:crypto";
 import { lstatSync, readdirSync } from "node:fs";
 import { copyFile, lstat, mkdir, mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { dirname, isAbsolute, join, posix, relative, resolve } from "node:path";
+import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { promisify } from "node:util";
 import { createRunEventReader } from "../runs/run-event-reader.mjs";
+import { draftArtifactPath } from "./draft-artifacts.mjs";
 
 const execFileAsync = promisify(execFile);
 const root = resolve(import.meta.dirname, "../../../");
@@ -64,8 +65,13 @@ async function docker(args, timeout = 30000, signal) {
       windowsHide: true,
       maxBuffer: 8 * 1024 * 1024,
     });
-  } catch {
-    throw new Error("Docker is required to run draft scenarios in the isolated agent sandbox.");
+  } catch (cause) {
+    throw new Error(
+      args[0] === "info"
+        ? "Docker is required to run draft scenarios in the isolated agent sandbox."
+        : "The Docker sandbox command failed. Check container resources and registry access.",
+      { cause },
+    );
   }
 }
 
@@ -84,8 +90,9 @@ async function buildSandboxImage(baseCommit, image, signal) {
       windowsHide: true,
       maxBuffer: 1024 * 1024,
     });
-    await execFileAsync("tar", ["-xf", archive, "-C", context], {
-      cwd: root,
+    // GNU tar on Windows treats the colon in an absolute drive path as a remote host.
+    await execFileAsync("tar", ["-xf", "source.tar", "-C", "context"], {
+      cwd: tempRoot,
       timeout: 60000,
       windowsHide: true,
       maxBuffer: 1024 * 1024,
@@ -461,13 +468,8 @@ export async function startIsolatedDraftRun({ workspace, scenarioId, target, var
       const directory = artifactRunDirectory();
       if (!directory || typeof attachment?.path !== "string" || !/^(image|video)\//.test(attachment.contentType || ""))
         return undefined;
-      const runName = directory.split(/[\\/]/).at(-1);
-      if (!runName) return undefined;
-      const containerOutput = `/run-data/tmp/${runName}/output`;
-      const relativeAttachment = posix.relative(containerOutput, posix.resolve(attachment.path));
-      if (!relativeAttachment || relativeAttachment.startsWith("..") || posix.isAbsolute(relativeAttachment))
-        return undefined;
-      return { ...attachment, path: resolve(directory, "output", ...relativeAttachment.split("/")) };
+      const path = draftArtifactPath(directory, attachment.path);
+      return path ? { ...attachment, path } : undefined;
     },
     async cancel() {
       if (run.done) return publicRun(run);

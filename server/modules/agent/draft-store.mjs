@@ -83,6 +83,24 @@ function archiveInactive(data, now = Date.now()) {
   return changed;
 }
 
+function keepSingleActiveDraft(data, now = Date.now()) {
+  const activeDrafts = data.drafts.filter((draft) => draft.status === "active");
+  if (activeDrafts.length < 2) return false;
+
+  activeDrafts.sort((left, right) => {
+    const leftActivity = Date.parse(left.lastActivityAt || left.createdAt || "");
+    const rightActivity = Date.parse(right.lastActivityAt || right.createdAt || "");
+    return (Number.isFinite(rightActivity) ? rightActivity : 0) - (Number.isFinite(leftActivity) ? leftActivity : 0);
+  });
+
+  const archivedAt = new Date(now).toISOString();
+  for (const draft of activeDrafts.slice(1)) {
+    draft.status = "archived";
+    draft.archivedAt = archivedAt;
+  }
+  return true;
+}
+
 function saveIfChanged(userId, data, changed) {
   if (changed) saveData(userId, data);
 }
@@ -90,7 +108,8 @@ function saveIfChanged(userId, data, changed) {
 export function listLocalDrafts(userId) {
   const { data, changed } = readData(userId);
   const archived = archiveInactive(data);
-  saveIfChanged(userId, data, changed || archived);
+  const limited = keepSingleActiveDraft(data);
+  saveIfChanged(userId, data, changed || archived || limited);
   return data.drafts.filter((draft) => draft.status !== "finalized");
 }
 
@@ -98,7 +117,8 @@ export function getLocalDraft(userId, draftId) {
   if (draftId !== legacyDraftId && !draftIdPattern.test(draftId || "")) return undefined;
   const { data, changed } = readData(userId);
   const archived = archiveInactive(data);
-  saveIfChanged(userId, data, changed || archived);
+  const limited = keepSingleActiveDraft(data);
+  saveIfChanged(userId, data, changed || archived || limited);
   return data.drafts.find((draft) => draft.id === draftId);
 }
 
@@ -108,8 +128,13 @@ export function createLocalDraft(userId, { title, targetBranch }) {
   if (typeof targetBranch !== "string" || !targetBranch.trim() || targetBranch.length > 160)
     throw new Error("Choose a target branch.");
 
-  const { data } = readData(userId);
-  archiveInactive(data);
+  const { data, changed } = readData(userId);
+  const archived = archiveInactive(data);
+  const limited = keepSingleActiveDraft(data);
+  if (data.drafts.some((draft) => draft.status !== "finalized")) {
+    saveIfChanged(userId, data, changed || archived || limited);
+    throw new Error("Finalize the current draft before creating another.");
+  }
   const now = new Date().toISOString();
   const id = randomUUID();
   const slug =
@@ -134,20 +159,32 @@ export function createLocalDraft(userId, { title, targetBranch }) {
 }
 
 export function touchLocalDraft(userId, draftId) {
-  const { data } = readData(userId);
-  archiveInactive(data);
+  const { data, changed } = readData(userId);
+  const archived = archiveInactive(data);
+  const limited = keepSingleActiveDraft(data);
   const draft = data.drafts.find((item) => item.id === draftId);
-  if (!draft || draft.status !== "active") throw new Error("This draft is unavailable or archived.");
+  if (!draft || draft.status !== "active") {
+    saveIfChanged(userId, data, changed || archived || limited);
+    throw new Error("This draft is unavailable or archived.");
+  }
   draft.lastActivityAt = new Date().toISOString();
   saveData(userId, data);
   return draft;
 }
 
 export function restoreLocalDraft(userId, draftId) {
-  const { data } = readData(userId);
-  archiveInactive(data);
+  const { data, changed } = readData(userId);
+  const archived = archiveInactive(data);
+  const limited = keepSingleActiveDraft(data);
   const draft = data.drafts.find((item) => item.id === draftId);
-  if (!draft || draft.status !== "archived") throw new Error("This archived draft could not be found.");
+  if (!draft || draft.status !== "archived") {
+    saveIfChanged(userId, data, changed || archived || limited);
+    throw new Error("This archived draft could not be found.");
+  }
+  if (data.drafts.some((item) => item.id !== draftId && item.status === "active")) {
+    saveIfChanged(userId, data, changed || archived || limited);
+    throw new Error("Finalize the current draft before restoring another.");
+  }
   draft.status = "active";
   draft.lastActivityAt = new Date().toISOString();
   delete draft.archivedAt;
@@ -156,9 +193,14 @@ export function restoreLocalDraft(userId, draftId) {
 }
 
 export function finalizeLocalDraft(userId, draftId, pullRequest) {
-  const { data } = readData(userId);
+  const { data, changed } = readData(userId);
+  const archived = archiveInactive(data);
+  const limited = keepSingleActiveDraft(data);
   const draft = data.drafts.find((item) => item.id === draftId);
-  if (!draft || draft.status !== "active") throw new Error("This draft is unavailable or already finalized.");
+  if (!draft || draft.status !== "active") {
+    saveIfChanged(userId, data, changed || archived || limited);
+    throw new Error("This draft is unavailable or already finalized.");
+  }
   const existing = data.pullRequests.find((item) => item.url === pullRequest.url);
   const record = {
     title: pullRequest.title,

@@ -4,20 +4,29 @@ import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { promisify } from "node:util";
 import { tool } from "ai";
 import { z } from "zod";
+import { agentSkillNames } from "./agent-skills.mjs";
 
 const execFileAsync = promisify(execFile);
 const blockedPath =
   /(?:^|\/)(?:\.env(?:\.[^/]*)?|\.npmrc|\.netrc|\.git-credentials|\.ssh|\.aws|\.kube|id_(?:rsa|ed25519)|[^/]*\.(?:pem|key|p12|pfx)|secrets?|credentials?|auth\.json|storage[-_.]?state|node_modules|\.git)(?:\/|$)/i;
 const mutatingBrowserActions = new Set(["click", "fill", "press", "check", "uncheck", "select"]);
 
-async function safeWorkspacePath(workspace, input) {
+export async function safeWorkspacePath(workspace, input) {
   if (typeof input !== "string" || !input.trim() || input.length > 512)
     throw new Error("Choose a relative workspace file path.");
   const normalized = input.replaceAll("\\", "/");
   const segments = normalized.split("/");
   if (
     normalized.startsWith("/") ||
-    segments.some((segment) => !segment || segment === "." || segment === "..") ||
+    segments.some(
+      (segment) =>
+        !segment ||
+        segment === "." ||
+        segment === ".." ||
+        /[. ]$/.test(segment) ||
+        segment.includes(":") ||
+        /^(?:con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\..*)?$/i.test(segment),
+    ) ||
     blockedPath.test(normalized)
   )
     throw new Error("This file is outside the agent's allowed workspace files.");
@@ -49,7 +58,7 @@ async function safeWorkspacePath(workspace, input) {
 
 function redact(value, variables = {}) {
   let text = String(value);
-  for (const secret of [variables.E2E_USERNAME, variables.E2E_PASSWORD]) {
+  for (const secret of [variables.E2E_USERNAME, variables.E2E_PASSWORD, variables.providerApiKey]) {
     if (typeof secret === "string" && secret) text = text.replaceAll(secret, "[redacted]");
   }
   return text
@@ -74,6 +83,18 @@ async function listWorkspaceFiles(workspace, directory = "", output = []) {
   return output;
 }
 
+async function readExistingForWrite(path) {
+  try {
+    const info = await lstat(path);
+    if (!info.isFile() || info.nlink > 1 || info.size > 262144)
+      throw new Error("The existing file is unavailable or too large to replace.");
+    return await readFile(path, "utf8");
+  } catch (error) {
+    if (error.code === "ENOENT") return undefined;
+    throw error;
+  }
+}
+
 export function createAgentTools({
   workspace,
   requestUserInput,
@@ -81,29 +102,62 @@ export function createAgentTools({
   runBrowserCommand,
   getDiff,
   browserName,
+  ensureBrowser,
+  closeBrowser,
   target,
   scenarioId,
   variables,
   signal,
   runDraftScenario,
   onBrowserUse,
+  authorizeFileWrite,
+  onFileWritten,
+  confirmFlows,
+  useSkill,
 }) {
   const pathSchema = z.object({ path: z.string().describe("Relative path inside this draft workspace.") });
   const agentTools = {
+    ...(useSkill
+      ? {
+          use_skill: tool({
+            description:
+              "Activate a QA specialist workflow and load its complete instructions. Preserve scope and all review gates; this does not grant approval or start the next batch.",
+            inputSchema: z.object({ skill: z.enum(agentSkillNames) }),
+            execute: async ({ skill }) => useSkill(skill),
+          }),
+        }
+      : {}),
     list_files: tool({
       description: "List source files available in this draft workspace. Secret files and dependencies are omitted.",
       inputSchema: z.object({ directory: z.string().optional().describe("Optional relative directory to list.") }),
       execute: async ({ directory }) => (await listWorkspaceFiles(workspace, directory || "")).slice(0, 400),
     }),
     read_file: tool({
-      description: "Read a text file from the draft workspace. Secret files and dependency folders are blocked.",
-      inputSchema: pathSchema,
-      execute: async ({ path }) => {
+      description:
+        "Read a text file from the draft workspace. For large files, request a bounded page with startLine and lineCount. Secret files and dependency folders are blocked.",
+      inputSchema: pathSchema.extend({
+        startLine: z.number().int().min(1).optional().describe("First line to read, starting at 1."),
+        lineCount: z
+          .number()
+          .int()
+          .min(1)
+          .max(500)
+          .optional()
+          .describe("Number of lines, up to 500. Defaults to 200 when paging."),
+      }),
+      execute: async ({ path, startLine, lineCount }) => {
         const absolute = await safeWorkspacePath(workspace, path);
         const info = await lstat(absolute);
-        if (!info.isFile() || info.size > 64000) throw new Error("The file is unavailable or larger than 64 KB.");
+        if (!info.isFile() || info.nlink > 1 || info.size > 2 * 1024 * 1024)
+          throw new Error("The file is unavailable or larger than 2 MB.");
         const content = await readFile(absolute, "utf8");
-        return redact(content, variables);
+        if (startLine === undefined && lineCount === undefined && info.size <= 64000) return redact(content, variables);
+        const lines = content.split(/\r?\n/);
+        const first = startLine ?? 1;
+        const selected = lines.slice(first - 1, first - 1 + (lineCount ?? 200));
+        const page = selected.join("\n");
+        if (Buffer.byteLength(page) > 64000) throw new Error("This page exceeds 64 KB. Request fewer lines.");
+        return redact(`Lines ${first}-${first + selected.length - 1} of ${lines.length}\n${page}`, variables);
       },
     }),
     write_file: tool({
@@ -115,8 +169,15 @@ export function createAgentTools({
       }),
       execute: async ({ path, content }) => {
         const absolute = await safeWorkspacePath(workspace, path);
+        const before = await readExistingForWrite(absolute);
+        await authorizeFileWrite?.(path, content);
+        await safeWorkspacePath(workspace, path);
         await mkdir(dirname(absolute), { recursive: true });
+        await safeWorkspacePath(workspace, path);
+        if ((await readExistingForWrite(absolute)) !== before)
+          throw new Error("The file changed while awaiting approval. Read the latest file and try again.");
         await writeFile(absolute, content, { encoding: "utf8", flag: "w", mode: 0o600 });
+        await onFileWritten?.(path, content);
         return { path, bytesWritten: Buffer.byteLength(content) };
       },
     }),
@@ -130,15 +191,22 @@ export function createAgentTools({
       execute: async ({ path, oldText, newText }) => {
         const absolute = await safeWorkspacePath(workspace, path);
         const info = await lstat(absolute);
-        if (!info.isFile() || info.size > 262144) throw new Error("The file is unavailable or too large to edit.");
+        if (!info.isFile() || info.nlink > 1 || info.size > 262144)
+          throw new Error("The file is unavailable or too large to edit.");
         const content = await readFile(absolute, "utf8");
         const first = content.indexOf(oldText);
         if (first < 0 || content.indexOf(oldText, first + oldText.length) >= 0)
           throw new Error("The exact old text must occur once. Read the latest file and retry with a narrower edit.");
-        await writeFile(absolute, content.slice(0, first) + newText + content.slice(first + oldText.length), {
+        const updated = content.slice(0, first) + newText + content.slice(first + oldText.length);
+        await authorizeFileWrite?.(path, updated);
+        await safeWorkspacePath(workspace, path);
+        if ((await readFile(absolute, "utf8")) !== content)
+          throw new Error("The file changed while awaiting approval. Read the latest file and try again.");
+        await writeFile(absolute, updated, {
           encoding: "utf8",
           mode: 0o600,
         });
+        await onFileWritten?.(path, updated);
         return { path, updated: true };
       },
     }),
@@ -181,6 +249,27 @@ export function createAgentTools({
         return requestUserInput(question, options, isSecret, signal);
       },
     }),
+    ...(confirmFlows
+      ? {
+          confirm_flows: tool({
+            description:
+              "Present discovered business flows for explicit confirmation before writing scenarios. Supply the target feature path, a matching reviewed PRD path, and flow IDs without the @flow: prefix with descriptions. For an existing scenario without a flow tag, use '(no flow tag)'. This does not approve scenarios or live-data actions.",
+            inputSchema: z.object({
+              featurePath: z.string().min(1).max(512),
+              prdPath: z.string().min(1).max(512),
+              flows: z
+                .array(z.object({ id: z.string().min(1).max(160), description: z.string().min(1).max(500) }))
+                .min(1)
+                .max(100),
+            }),
+            execute: async ({ featurePath, prdPath, flows }) => {
+              await safeWorkspacePath(workspace, featurePath);
+              await safeWorkspacePath(workspace, prdPath);
+              return confirmFlows({ featurePath, prdPath, flows });
+            },
+          }),
+        }
+      : {}),
     playwright_cli: tool({
       description:
         "Inspect or interact with the authenticated browser for the selected target environment. Mutating actions require a separate data-safety approval scoped to the selected environment and scenario.",
@@ -197,6 +286,7 @@ export function createAgentTools({
           "check",
           "uncheck",
           "select",
+          "generate-locator",
           "close",
         ]),
         target: z.string().max(500).optional().describe("Current snapshot reference or text to find."),
@@ -207,11 +297,16 @@ export function createAgentTools({
           .describe("Data ownership for a mutating browser action."),
       }),
       execute: async ({ action, target: locator, value, dataOwner }) => {
-        if (!browserName || !target)
+        if ((!browserName && !ensureBrowser) || !target)
           throw new Error("Select an environment and configure E2E Variables before browser exploration.");
-        onBrowserUse?.();
+        if (action === "close" && closeBrowser) {
+          await closeBrowser();
+          return "Exploration browser closed.";
+        }
+        if ([locator, value].some((argument) => argument?.startsWith("--")))
+          throw new Error("Browser arguments cannot override CLI options.");
+        let destination;
         if (action === "goto") {
-          let destination;
           try {
             destination = new URL(value || "", target);
           } catch {
@@ -232,17 +327,22 @@ export function createAgentTools({
             throw new Error(
               "State whether this action uses E2E-owned data or shared/unknown data before requesting approval.",
             );
+          const details = [target, scenarioId || "scenario not selected", action];
+          if (locator) details.push(`target: ${redact(locator, variables)}`);
+          if (value && ["fill", "select", "press"].includes(action)) details.push(`value: ${redact(value, variables)}`);
           const allowed = await requestApproval({
             kind: "data-safety",
             reason: `Browser action '${action}' will interact with ${dataOwner} data in the selected environment. Review the scenario and data ownership before allowing it.`,
-            command: `${target}${scenarioId ? ` · ${scenarioId}` : " · scenario not selected"}${locator ? ` · ${locator}` : ""}`,
+            command: details.join(" · "),
             signal,
           });
           if (!allowed) return { denied: true, message: "The user declined this environment interaction." };
         }
+        if (ensureBrowser) await ensureBrowser();
+        onBrowserUse?.();
         const args =
           action === "goto"
-            ? ["goto", value]
+            ? ["goto", destination.href]
             : action === "find"
               ? ["find", locator || ""]
               : action === "fill" || action === "select"
@@ -258,13 +358,20 @@ export function createAgentTools({
   if (runDraftScenario) {
     agentTools.run_draft_scenario = tool({
       description:
-        "Run only the selected, uniquely identified scenario from this reviewed draft worktree. The isolated runner uses only E2E-owned data, the selected environment, browser Variables outside chat, and a separate explicit data-safety approval. Returns draft-only test outcomes; it never saves official results or uploads evidence.",
+        "Run one uniquely identified scenario from this reviewed draft worktree, including a newly authored scenario. Supply its exact scenarioId and source file, or omit both to use the attached selection. The isolated runner requires separate explicit data-safety approval. Returns draft-only outcomes; it never saves official results or uploads evidence.",
       inputSchema: z.object({
+        scenarioId: z.string().min(1).max(160).optional(),
+        file: z
+          .string()
+          .min(1)
+          .max(512)
+          .optional()
+          .describe("Source path relative to e2e/tests/bdd/features, for example user-management/users.feature."),
         dataOwner: z
           .enum(["e2e-owned", "shared-seed", "unknown"])
           .describe("Confirm this scenario uses E2E-owned data."),
       }),
-      execute: async ({ dataOwner }) => runDraftScenario(dataOwner, signal),
+      execute: async (input) => runDraftScenario(input, signal),
     });
   }
   return agentTools;

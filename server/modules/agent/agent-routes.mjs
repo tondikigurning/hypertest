@@ -3,14 +3,21 @@ import { join, resolve } from "node:path";
 import { Router } from "express";
 import { isLocalRequest } from "../../shared/local-request.mjs";
 import { resolveAgentEnvironment, sendRunEvidence } from "../runs/run-controller.mjs";
-import { isAgentEncryptionConfigured } from "./agent-crypto.mjs";
+import { initializeAgentEncryption, isAgentEncryptionConfigured } from "./agent-crypto.mjs";
 import { resolveLocalPreviewIdentity } from "./agent-identity.mjs";
-import { agentProviders, createAgentLanguageModel, modelIsListed, verifyToolCalling } from "./agent-provider.mjs";
+import {
+  agentProviders,
+  createAgentLanguageModel,
+  discoverAgentModels,
+  modelIsListed,
+  verifyToolCalling,
+} from "./agent-provider.mjs";
 import { agentSession, createSession } from "./agent-session.mjs";
 import {
   deleteProviderCredential,
   getProviderCredential,
   getUsageSummary,
+  hasAnyProviderCredentials,
   isModelVerified,
   listProviderCredentials,
   listVerifiedModels,
@@ -29,6 +36,7 @@ import {
   updateLocalPullRequests,
 } from "./draft-store.mjs";
 import { createDraftWorkspace, listDraftTargets } from "./draft-workspace.mjs";
+import { listPrds } from "./prd-catalog.mjs";
 import { refreshPullRequests } from "./publish-draft.mjs";
 
 const sessions = new Map();
@@ -135,6 +143,13 @@ export function createAgentRouter({ resolveSession = sessionFor, resolveIdentity
       });
     }),
   );
+  router.get("/checkout-prds", async (_req, res) => {
+    try {
+      res.json(await listPrds(resolve(import.meta.dirname, "../../../")));
+    } catch {
+      res.status(503).json({ error: "Could not read checkout PRDs." });
+    }
+  });
   router.get("/draft-targets", async (_req, res) => {
     try {
       res.json(await listDraftTargets());
@@ -174,8 +189,8 @@ export function createAgentRouter({ resolveSession = sessionFor, resolveIdentity
     try {
       const draftId = req.get("X-Automation-Draft-Id") || "default";
       const draft = getLocalDraft(req.agentIdentity.userId, draftId);
-      if (!draft) return res.status(404).json({ error: "Select or create a local draft first." });
-      if (req.method === "POST" && draft.status !== "active")
+      if (!draft) return res.status(404).json({ error: "Create a local draft first." });
+      if (req.method !== "GET" && draft.status !== "active")
         return res
           .status(409)
           .json({ error: "This draft is archived or finalized. Restore an archived draft to continue." });
@@ -186,6 +201,72 @@ export function createAgentRouter({ resolveSession = sessionFor, resolveIdentity
       return next();
     } catch (error) {
       return res.status(400).json({ error: error.message });
+    }
+  });
+  router.get("/prds", async (req, res) => {
+    try {
+      res.json(await req.agentSession.prds());
+    } catch {
+      res.status(503).json({ error: "Could not read draft PRDs." });
+    }
+  });
+  router.get("/prd-versions", async (req, res) => {
+    try {
+      const module = new URL(req.url, "http://localhost").searchParams.get("module") || "";
+      const submodule = new URL(req.url, "http://localhost").searchParams.get("submodule") || "";
+      res.json(await req.agentSession.prdVersions(module, submodule));
+    } catch (error) {
+      res.status(400).json({ error: error.message || "Could not read PRD versions." });
+    }
+  });
+  router.post("/prd-versions", async (req, res) => {
+    try {
+      res.status(201).json(await req.agentSession.createPrdVersion(req.body || {}));
+    } catch (error) {
+      res.status(400).json({ error: error.message || "Could not create a PRD version." });
+    }
+  });
+  router.put("/prd-versions/:versionId", async (req, res) => {
+    try {
+      res.json(
+        await req.agentSession.updatePrdVersion({
+          module: req.body?.module,
+          submodule: req.body?.submodule,
+          versionId: req.params.versionId,
+          name: req.body?.name,
+          content: req.body?.content,
+        }),
+      );
+    } catch (error) {
+      res.status(400).json({ error: error.message || "Could not update the PRD version." });
+    }
+  });
+  router.post("/prd-versions/:versionId/activate", async (req, res) => {
+    try {
+      res.json(
+        await req.agentSession.activatePrdVersion({
+          module: req.body?.module,
+          submodule: req.body?.submodule,
+          versionId: req.params.versionId,
+        }),
+      );
+    } catch (error) {
+      res.status(400).json({ error: error.message || "Could not activate the PRD version." });
+    }
+  });
+  router.delete("/prd-versions/:versionId", async (req, res) => {
+    try {
+      const module = new URL(req.url, "http://localhost").searchParams.get("module") || "";
+      const submodule = new URL(req.url, "http://localhost").searchParams.get("submodule") || "";
+      res.json(
+        await req.agentSession.deletePrdVersion({
+          module,
+          submodule,
+          versionId: req.params.versionId,
+        }),
+      );
+    } catch (error) {
+      res.status(400).json({ error: error.message || "Could not delete the PRD version." });
     }
   });
   router.get("/session", (req, res) => res.json({ ...req.agentSession.snapshot(), draft: req.agentDraft }));
@@ -231,7 +312,7 @@ export function createAgentRouter({ resolveSession = sessionFor, resolveIdentity
     try {
       const snapshot = req.agentSession.snapshot();
       const [credentials, usage] = await Promise.all([
-        listProviderCredentials(req.agentIdentity.userId),
+        listProviderCredentials(req.agentIdentity.userId, { includeApiKeys: true }),
         getUsageSummary(req.agentIdentity.userId, snapshot.taskId),
       ]);
       res.json({
@@ -246,13 +327,28 @@ export function createAgentRouter({ resolveSession = sessionFor, resolveIdentity
       res.status(503).json({ error: "Provider settings are unavailable. Run the database migrations first." });
     }
   });
+  router.post("/encryption", async (_req, res) => {
+    try {
+      if (!isAgentEncryptionConfigured() && (await hasAnyProviderCredentials()))
+        return res.status(409).json({
+          error:
+            "Previously saved provider keys exist but their encryption key is missing. Restore the original key before continuing.",
+        });
+      initializeAgentEncryption();
+      return res.json({ encryptionConfigured: true });
+    } catch {
+      return res.status(500).json({
+        error: "Could not set up local key encryption. Check the configured encryption key and local file permissions.",
+      });
+    }
+  });
   router.put("/credentials", async (req, res) => {
     try {
       await saveProviderCredential(req.agentIdentity.userId, req.body || {});
       const session = await req.agentSession.clearProvider(req.body?.provider);
       res.json({
         encryptionConfigured: isAgentEncryptionConfigured(),
-        credentials: await listProviderCredentials(req.agentIdentity.userId),
+        credentials: await listProviderCredentials(req.agentIdentity.userId, { includeApiKeys: true }),
         session,
       });
     } catch (error) {
@@ -302,6 +398,19 @@ export function createAgentRouter({ resolveSession = sessionFor, resolveIdentity
         error: knownSetupError
           ? error.message
           : "The model check failed. Confirm the provider key, endpoint, model access, and tool-calling support.",
+      });
+    }
+  });
+  router.post("/discover-models", async (req, res) => {
+    try {
+      const provider = req.body?.provider;
+      const credential = await getProviderCredential(req.agentIdentity.userId, provider);
+      if (!credential) return res.status(400).json({ error: "Save this provider before loading models." });
+      const models = await discoverAgentModels({ provider, ...credential });
+      res.json({ models });
+    } catch {
+      res.status(400).json({
+        error: "Could not load models. Check the provider settings, credentials, and model-list support.",
       });
     }
   });

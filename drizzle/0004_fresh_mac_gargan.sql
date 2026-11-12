@@ -1,0 +1,2 @@
+ALTER TABLE "automation_agent_provider_credentials" DROP CONSTRAINT "automation_agent_provider_check";--> statement-breakpoint
+ALTER TABLE "automation_agent_provider_credentials" ADD CONSTRAINT "automation_agent_provider_check" CHECK ("automation_agent_provider_credentials"."provider" in ('openai', 'anthropic', 'google', 'openrouter', 'groq', 'deepseek', 'xai', 'mistral', '9router', 'ollama', 'openai-compatible'));

@@ -58,11 +58,17 @@ export async function startExplorationBrowser({ workspace, target, variables }, 
   const runCli =
     dependencies.runCli ||
     (async (args) => {
-      await execFileAsync(process.execPath, [cliScript(), `--config=${configPath}`, `-s=${name}`, ...args], {
-        cwd: workspace,
-        timeout: 120000,
-        windowsHide: true,
-      });
+      // The CLI accepts --config on open, not on state-load/goto or subsequent commands.
+      // The named session retains the proxy and context options from open.
+      await execFileAsync(
+        process.execPath,
+        [cliScript(), `-s=${name}`, ...args, ...(args[0] === "open" ? [`--config=${configPath}`] : [])],
+        {
+          cwd: workspace,
+          timeout: 120000,
+          windowsHide: true,
+        },
+      );
     });
   let browser;
   let opened = false;
@@ -101,10 +107,11 @@ export async function startExplorationBrowser({ workspace, target, variables }, 
     await runCli(["goto", target]);
     activeBrowsers.set(name, { workspace, directory, configPath, egressProxy, runCli });
     return name;
-  } catch {
+  } catch (cause) {
     if (opened) await runCli(["close"]).catch(() => {});
     throw new Error(
       "Could not start the exploration browser. Check Variables, target access, Playwright and playwright-cli.",
+      { cause },
     );
   } finally {
     await browser?.close().catch(() => {});
@@ -144,7 +151,7 @@ export async function runExplorationBrowserCommand(workspace, name, args) {
   const browser = activeBrowsers.get(name);
   if (!browser || browser.workspace !== workspace)
     throw new Error("The exploration browser has expired. Start a new scoped browser session.");
-  return execFileAsync(process.execPath, [cliScript(), `--config=${browser.configPath}`, `-s=${name}`, ...args], {
+  return execFileAsync(process.execPath, [cliScript(), `-s=${name}`, ...args], {
     cwd: workspace,
     timeout: 60000,
     maxBuffer: 256 * 1024,

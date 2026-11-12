@@ -1,20 +1,40 @@
 import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
-import { existsSync, readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
 import dotenv from "dotenv";
 
 const root = resolve(import.meta.dirname, "../../../");
 const localEnv = existsSync(resolve(root, ".env.local")) ? dotenv.parse(readFileSync(resolve(root, ".env.local"))) : {};
+const generatedKeyFile = resolve(root, ".cache", "automation-agent", "encryption.key");
 const aad = Buffer.from("hypertest-automation-agent-key:v1");
 
-function encryptionKey() {
-  const encoded = process.env.AUTOMATION_AGENT_ENCRYPTION_KEY || localEnv.AUTOMATION_AGENT_ENCRYPTION_KEY;
+function encryptionKey({ keyFile = generatedKeyFile, environment = process.env, fileEnvironment = localEnv } = {}) {
+  const encoded =
+    environment.AUTOMATION_AGENT_ENCRYPTION_KEY ||
+    fileEnvironment.AUTOMATION_AGENT_ENCRYPTION_KEY ||
+    (existsSync(keyFile) ? readFileSync(keyFile, "utf8").trim() : undefined);
   if (typeof encoded !== "string" || !encoded) return undefined;
   if (!/^[A-Za-z0-9_-]+={0,2}$/.test(encoded))
     throw new Error("AUTOMATION_AGENT_ENCRYPTION_KEY must be a base64-encoded 32-byte key.");
   const key = Buffer.from(encoded, "base64url");
   if (key.length !== 32) throw new Error("AUTOMATION_AGENT_ENCRYPTION_KEY must be a base64-encoded 32-byte key.");
   return key;
+}
+
+export function initializeAgentEncryption(options = {}) {
+  if (encryptionKey(options)) return;
+  const keyFile = options.keyFile || generatedKeyFile;
+  mkdirSync(dirname(keyFile), { recursive: true, mode: 0o700 });
+  try {
+    writeFileSync(keyFile, `${randomBytes(32).toString("base64url")}\n`, {
+      encoding: "utf8",
+      flag: "wx",
+      mode: 0o600,
+    });
+  } catch (error) {
+    if (error.code !== "EEXIST") throw error;
+  }
+  if (!encryptionKey(options)) throw new Error("Could not initialize local provider-key encryption.");
 }
 
 export function isAgentEncryptionConfigured() {

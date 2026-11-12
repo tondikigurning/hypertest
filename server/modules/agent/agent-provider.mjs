@@ -33,12 +33,53 @@ export const agentProviders = [
       { id: "gemini-3.1-pro-preview", label: "Gemini 3.1 Pro Preview" },
     ],
   },
-  { id: "openai-compatible", label: "OpenAI-compatible endpoint", models: [] },
+  {
+    id: "openrouter",
+    label: "OpenRouter",
+    compatibleEndpoint: true,
+    defaultBaseUrl: "https://openrouter.ai/api/v1",
+    models: [],
+  },
+  { id: "groq", label: "Groq", compatibleEndpoint: true, defaultBaseUrl: "https://api.groq.com/openai/v1", models: [] },
+  {
+    id: "deepseek",
+    label: "DeepSeek",
+    compatibleEndpoint: true,
+    defaultBaseUrl: "https://api.deepseek.com/v1",
+    models: [],
+  },
+  { id: "xai", label: "xAI", compatibleEndpoint: true, defaultBaseUrl: "https://api.x.ai/v1", models: [] },
+  {
+    id: "mistral",
+    label: "Mistral",
+    compatibleEndpoint: true,
+    defaultBaseUrl: "https://api.mistral.ai/v1",
+    models: [],
+  },
+  {
+    id: "9router",
+    label: "9Router (local)",
+    compatibleEndpoint: true,
+    defaultBaseUrl: "http://127.0.0.1:20128/v1",
+    models: [],
+  },
+  {
+    id: "ollama",
+    label: "Ollama (local)",
+    compatibleEndpoint: true,
+    defaultBaseUrl: "http://127.0.0.1:11434/v1",
+    models: [],
+  },
+  { id: "openai-compatible", label: "Other OpenAI-compatible endpoint", compatibleEndpoint: true, models: [] },
 ];
 
 const providerIds = new Set(agentProviders.map((provider) => provider.id));
-const modelIdPattern = /^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$/;
+const modelIdPattern = /^[A-Za-z0-9@_][A-Za-z0-9._:/@+-]{0,191}$/;
 const customModelAgents = new WeakMap();
+
+export function isLocalProviderEndpoint(url) {
+  return ["localhost", "127.0.0.1", "::1"].includes(url.hostname.toLowerCase().replace(/^\[|\]$/g, ""));
+}
 
 function isPrivateAddress(address) {
   const version = isIP(address);
@@ -81,9 +122,13 @@ function isPrivateAddress(address) {
 }
 
 async function assertPublicEndpoint(url) {
-  if (url.protocol !== "https:") throw new Error("OpenAI-compatible endpoints must use HTTPS.");
   if (url.username || url.password || url.search || url.hash)
     throw new Error("The endpoint URL contains unsupported parts.");
+  if (isLocalProviderEndpoint(url)) {
+    if (!["http:", "https:"].includes(url.protocol)) throw new Error("Local endpoints must use HTTP or HTTPS.");
+    return [];
+  }
+  if (url.protocol !== "https:") throw new Error("Remote OpenAI-compatible endpoints must use HTTPS.");
   const hostname = url.hostname.toLowerCase();
   if (!hostname.includes(".") || hostname.endsWith(".localhost") || hostname.endsWith(".local"))
     throw new Error("The endpoint must use a public DNS hostname.");
@@ -97,12 +142,12 @@ async function assertPublicEndpoint(url) {
 }
 
 export async function normalizeOpenAICompatibleBaseUrl(value) {
-  if (typeof value !== "string" || value.length > 512) throw new Error("Enter a valid HTTPS endpoint URL.");
+  if (typeof value !== "string" || value.length > 512) throw new Error("Enter a valid endpoint URL.");
   let url;
   try {
     url = new URL(value.trim());
   } catch {
-    throw new Error("Enter a valid HTTPS endpoint URL.");
+    throw new Error("Enter a valid endpoint URL.");
   }
   await assertPublicEndpoint(url);
   return url.toString().replace(/\/$/, "");
@@ -112,26 +157,41 @@ export function isAgentProvider(value) {
   return providerIds.has(value);
 }
 
-export function modelIsListed(provider, modelId) {
-  if (!modelIdPattern.test(modelId || "")) return false;
-  if (provider === "openai-compatible") return true;
-  return agentProviders.find((entry) => entry.id === provider)?.models.some((model) => model.id === modelId) ?? false;
+export function isCompatibleAgentProvider(value) {
+  return agentProviders.some((provider) => provider.id === value && provider.compatibleEndpoint === true);
 }
 
-export function createAgentLanguageModel({ provider, modelId, apiKey, baseUrl }) {
-  if (!isAgentProvider(provider) || !modelIsListed(provider, modelId))
-    throw new Error("Choose a supported provider and model.");
-  if (typeof apiKey !== "string" || !apiKey) throw new Error("Save an API key for this provider first.");
-  if (provider === "openai") return createOpenAI({ apiKey })(modelId);
-  if (provider === "anthropic") return createAnthropic({ apiKey })(modelId);
-  if (provider === "google") return createGoogleGenerativeAI({ apiKey })(modelId);
+export function modelIsListed(provider, modelId) {
+  if (!modelIdPattern.test(modelId || "")) return false;
+  return isAgentProvider(provider);
+}
+
+function compatibleConnection({ apiKey, baseUrl }) {
   if (typeof baseUrl !== "string" || !baseUrl) throw new Error("Save an endpoint URL for this provider first.");
   const endpoint = new URL(baseUrl);
+  const local = isLocalProviderEndpoint(endpoint);
+  const hostname = endpoint.hostname.replace(/^\[|\]$/g, "");
+  if (
+    endpoint.username ||
+    endpoint.password ||
+    endpoint.search ||
+    endpoint.hash ||
+    (local ? !["http:", "https:"].includes(endpoint.protocol) : endpoint.protocol !== "https:") ||
+    (!local && isIP(hostname) && isPrivateAddress(hostname))
+  )
+    throw new Error("The configured endpoint URL is invalid.");
+  if (!apiKey && !local) throw new Error("Save an API key for this provider first.");
   const agent = new Agent({
     connect: {
       lookup(hostname, options, callback) {
         if (hostname.toLowerCase() !== endpoint.hostname.toLowerCase()) {
           callback(new Error("The provider attempted to contact an unconfigured endpoint."));
+          return;
+        }
+        if (local) {
+          const address = options?.family === 6 ? "::1" : "127.0.0.1";
+          if (options?.all) callback(null, [{ address, family: isIP(address) }]);
+          else callback(null, address, isIP(address));
           return;
         }
         void lookup(hostname, { all: true, verbatim: true })
@@ -147,20 +207,133 @@ export function createAgentLanguageModel({ provider, modelId, apiKey, baseUrl })
       },
     },
   });
+  const safeFetch = async (input, init) => {
+    const requestUrl = new URL(typeof input === "string" ? input : input instanceof URL ? input.href : input.url);
+    if (requestUrl.origin !== endpoint.origin || requestUrl.username || requestUrl.password)
+      throw new Error("The provider attempted to contact an unconfigured endpoint.");
+    return fetch(input, { ...init, dispatcher: agent, redirect: "error" });
+  };
+  return { agent, safeFetch };
+}
+
+export function createAgentLanguageModel({ provider, modelId, apiKey, baseUrl }) {
+  if (!isAgentProvider(provider) || !modelIsListed(provider, modelId))
+    throw new Error("Choose a supported provider and model.");
+  if ((!apiKey || typeof apiKey !== "string") && !isCompatibleAgentProvider(provider))
+    throw new Error("Save an API key for this provider first.");
+  if (provider === "openai") return createOpenAI({ apiKey })(modelId);
+  if (provider === "anthropic") return createAnthropic({ apiKey })(modelId);
+  if (provider === "google") return createGoogleGenerativeAI({ apiKey })(modelId);
+  const { agent, safeFetch } = compatibleConnection({ apiKey, baseUrl });
   const model = createOpenAICompatible({
     name: "automationOpenAICompatible",
     apiKey,
     baseURL: baseUrl,
     includeUsage: true,
-    fetch: async (input, init) => {
-      const requestUrl = new URL(typeof input === "string" ? input : input instanceof URL ? input.href : input.url);
-      if (requestUrl.origin !== endpoint.origin || requestUrl.username || requestUrl.password)
-        throw new Error("The provider attempted to contact an unconfigured endpoint.");
-      return fetch(input, { ...init, dispatcher: agent, redirect: "error" });
-    },
+    fetch: safeFetch,
   })(modelId);
   customModelAgents.set(model, agent);
   return model;
+}
+
+export async function discoverCompatibleModels({ provider, apiKey, baseUrl }) {
+  if (!isCompatibleAgentProvider(provider)) throw new Error("Model discovery is not available for this provider.");
+  const { agent, safeFetch } = compatibleConnection({ apiKey, baseUrl });
+  try {
+    const headers = apiKey ? { authorization: `Bearer ${apiKey}` } : {};
+    const response = await safeFetch(`${baseUrl.replace(/\/$/, "")}/models`, {
+      headers,
+      signal: AbortSignal.timeout(15000),
+    });
+    if (!response.ok || !response.body) {
+      await response.body?.cancel();
+      throw new Error("Could not retrieve models from this endpoint.");
+    }
+    const reader = response.body.getReader();
+    const chunks = [];
+    let size = 0;
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      size += value.byteLength;
+      if (size > 1024 * 1024) {
+        await reader.cancel();
+        throw new Error("The provider model list is too large.");
+      }
+      chunks.push(value);
+    }
+    const data = JSON.parse(Buffer.concat(chunks).toString("utf8"));
+    if (!Array.isArray(data?.data)) throw new Error("The provider did not return a compatible model list.");
+    return [
+      ...new Set(
+        data.data.map((item) => item?.id).filter((id) => typeof id === "string" && modelIsListed(provider, id)),
+      ),
+    ].slice(0, 1000);
+  } finally {
+    await agent.close().catch(() => {});
+  }
+}
+
+async function readProviderModels(url, headers) {
+  const response = await fetch(url, {
+    headers,
+    redirect: "error",
+    signal: AbortSignal.timeout(15000),
+  });
+  if (!response.ok || !response.body) {
+    await response.body?.cancel();
+    throw new Error("Could not retrieve models from this provider.");
+  }
+
+  const reader = response.body.getReader();
+  const chunks = [];
+  let size = 0;
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    size += value.byteLength;
+    if (size > 1024 * 1024) {
+      await reader.cancel();
+      throw new Error("The provider model list is too large.");
+    }
+    chunks.push(value);
+  }
+
+  try {
+    return JSON.parse(Buffer.concat(chunks).toString("utf8"));
+  } catch {
+    throw new Error("The provider returned an invalid model list.");
+  }
+}
+
+export async function discoverAgentModels({ provider, apiKey, baseUrl }) {
+  if (isCompatibleAgentProvider(provider)) return discoverCompatibleModels({ provider, apiKey, baseUrl });
+  if (typeof apiKey !== "string" || !apiKey) throw new Error("Save an API key for this provider first.");
+
+  let url;
+  let headers;
+  if (provider === "openai") {
+    url = "https://api.openai.com/v1/models";
+    headers = { authorization: `Bearer ${apiKey}` };
+  } else if (provider === "anthropic") {
+    url = "https://api.anthropic.com/v1/models?limit=1000";
+    headers = { "anthropic-version": "2023-06-01", "x-api-key": apiKey };
+  } else if (provider === "google") {
+    url = "https://generativelanguage.googleapis.com/v1beta/models?pageSize=1000";
+    headers = { "x-goog-api-key": apiKey };
+  } else {
+    throw new Error("Model discovery is not available for this provider.");
+  }
+
+  const data = await readProviderModels(url, headers);
+  const models =
+    provider === "google"
+      ? (Array.isArray(data?.models) ? data.models : [])
+          .filter((model) => model?.supportedGenerationMethods?.includes("generateContent"))
+          .map((model) => model.name?.replace(/^models\//, ""))
+      : (Array.isArray(data?.data) ? data.data : []).map((model) => model?.id);
+
+  return [...new Set(models.filter((modelId) => typeof modelId === "string" && modelIsListed(provider, modelId)))];
 }
 
 export async function closeAgentLanguageModel(model) {
@@ -191,7 +364,7 @@ export async function verifyToolCalling(model) {
         }),
       },
       toolChoice: "required",
-      stopWhen: stepCountIs(2),
+      stopWhen: stepCountIs(1),
       maxRetries: 0,
       timeout: 30000,
     });

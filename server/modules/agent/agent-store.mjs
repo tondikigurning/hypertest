@@ -2,14 +2,41 @@ import { and, eq, sql } from "drizzle-orm";
 import { database } from "../../database.mjs";
 import { agentModelChecks, agentProviderCredentials, agentUsage } from "../results/schema.mjs";
 import { decryptAgentSecret, encryptAgentSecret } from "./agent-crypto.mjs";
-import { isAgentProvider, normalizeOpenAICompatibleBaseUrl } from "./agent-provider.mjs";
+import {
+  isAgentProvider,
+  isCompatibleAgentProvider,
+  isLocalProviderEndpoint,
+  normalizeOpenAICompatibleBaseUrl,
+} from "./agent-provider.mjs";
 
-export async function listProviderCredentials(userId) {
+const noLocalApiKey = "\u0000hypertest-local-provider-without-api-key";
+
+export async function hasAnyProviderCredentials() {
   const rows = await database()
-    .select({ provider: agentProviderCredentials.provider, baseUrl: agentProviderCredentials.baseUrl })
+    .select({ provider: agentProviderCredentials.provider })
+    .from(agentProviderCredentials)
+    .limit(1);
+  return rows.length > 0;
+}
+
+export async function listProviderCredentials(userId, { includeApiKeys = false } = {}) {
+  const rows = await database()
+    .select({
+      provider: agentProviderCredentials.provider,
+      baseUrl: agentProviderCredentials.baseUrl,
+      encryptedApiKey: agentProviderCredentials.encryptedApiKey,
+    })
     .from(agentProviderCredentials)
     .where(eq(agentProviderCredentials.userId, userId));
-  return rows.map(({ provider, baseUrl }) => ({ provider, baseUrl, configured: true }));
+  return rows.map(({ provider, baseUrl, encryptedApiKey }) => {
+    const apiKey = includeApiKeys ? decryptAgentSecret(encryptedApiKey) : undefined;
+    return {
+      provider,
+      baseUrl,
+      configured: true,
+      ...(includeApiKeys ? { apiKey: apiKey === noLocalApiKey ? "" : apiKey } : {}),
+    };
+  });
 }
 
 export async function getProviderCredential(userId, provider) {
@@ -20,15 +47,26 @@ export async function getProviderCredential(userId, provider) {
     .where(and(eq(agentProviderCredentials.userId, userId), eq(agentProviderCredentials.provider, provider)))
     .limit(1);
   if (!row) return undefined;
-  return { apiKey: decryptAgentSecret(row.encryptedApiKey), baseUrl: row.baseUrl || undefined };
+  const apiKey = decryptAgentSecret(row.encryptedApiKey);
+  return { apiKey: apiKey === noLocalApiKey ? undefined : apiKey, baseUrl: row.baseUrl || undefined };
 }
 
 export async function saveProviderCredential(userId, { provider, apiKey, baseUrl }) {
   if (!isAgentProvider(provider)) throw new Error("Choose a supported provider.");
-  if (typeof apiKey !== "string" || !apiKey.trim() || apiKey.length > 4096)
-    throw new Error("Enter a provider API key of up to 4096 characters.");
-  const normalizedBaseUrl = provider === "openai-compatible" ? await normalizeOpenAICompatibleBaseUrl(baseUrl) : null;
-  const encryptedApiKey = encryptAgentSecret(apiKey);
+  const normalizedBaseUrl = isCompatibleAgentProvider(provider)
+    ? await normalizeOpenAICompatibleBaseUrl(baseUrl)
+    : null;
+  const localEndpoint = normalizedBaseUrl && isLocalProviderEndpoint(new URL(normalizedBaseUrl));
+  if (
+    typeof apiKey !== "string" ||
+    apiKey.length > 4096 ||
+    apiKey.includes("\u0000") ||
+    (!apiKey.trim() && !localEndpoint)
+  )
+    throw new Error("Enter a provider API key of up to 4096 characters; it is optional for local endpoints.");
+  const existing = !apiKey.trim() && localEndpoint ? await getProviderCredential(userId, provider) : undefined;
+  const retainedKey = existing?.baseUrl === normalizedBaseUrl ? existing.apiKey : undefined;
+  const encryptedApiKey = encryptAgentSecret(apiKey.trim() || retainedKey || noLocalApiKey);
   await database()
     .insert(agentProviderCredentials)
     .values({

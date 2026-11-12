@@ -67,7 +67,7 @@ export const agentProviderCredentials = pgTable(
     primaryKey({ columns: [table.userId, table.provider] }),
     check(
       "automation_agent_provider_check",
-      sql`${table.provider} in ('openai', 'anthropic', 'google', 'openai-compatible')`,
+      sql`${table.provider} in ('openai', 'anthropic', 'google', 'openrouter', 'groq', 'deepseek', 'xai', 'mistral', '9router', 'ollama', 'openai-compatible')`,
     ),
   ],
 );
