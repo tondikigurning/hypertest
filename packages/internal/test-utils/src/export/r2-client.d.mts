@@ -41,6 +41,18 @@ export function r2EvidencePrefix(
   relativeFeaturePath: string,
   scenarioId: string,
 ): string;
+export function intermediateR2EvidencePrefix(
+  environment: string,
+  app: string,
+  relativeFeaturePath: string,
+  scenarioId: string,
+): string;
+export function legacyR2EvidencePrefix(
+  environment: string,
+  app: string,
+  relativeFeaturePath: string,
+  scenarioId: string,
+): string;
 export function r2EvidenceLocation(bucket: string, prefix: string): string;
 export function parseR2EvidenceLocation(location: string): { bucket: string; prefix: string } | null;
 export function createR2Storage(configResult?: R2ConfigResult): R2Storage | null;

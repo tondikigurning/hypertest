@@ -54,6 +54,24 @@ export function resolveR2Config() {
 }
 
 export function r2EvidencePrefix(environment, app, relativeFeaturePath, scenarioId) {
+  const appSegment = app === "scenarios" ? [] : [app];
+  const segments = [environment, ...appSegment, ...relativeFeaturePath.split("/"), scenarioId];
+  if (segments.some((segment) => !segment || segment === "." || segment === "..")) {
+    throw new Error("Invalid evidence path.");
+  }
+  return `${segments.map((segment) => encodeURIComponent(segment)).join("/")}/`;
+}
+
+export function intermediateR2EvidencePrefix(environment, app, relativeFeaturePath, scenarioId) {
+  const appSegment = app === "scenarios" ? [] : [app];
+  const segments = [environment, ...appSegment, ...relativeFeaturePath.split("/"), scenarioId, "latest"];
+  if (segments.some((segment) => !segment || segment === "." || segment === "..")) {
+    throw new Error("Invalid evidence path.");
+  }
+  return `${segments.map((segment) => encodeURIComponent(segment)).join("/")}/`;
+}
+
+export function legacyR2EvidencePrefix(environment, app, relativeFeaturePath, scenarioId) {
   const segments = [environment, app, ...relativeFeaturePath.split("/"), scenarioId, "latest"];
   if (segments.some((segment) => !segment || segment === "." || segment === "..")) {
     throw new Error("Invalid evidence path.");
@@ -62,7 +80,10 @@ export function r2EvidencePrefix(environment, app, relativeFeaturePath, scenario
 }
 
 export function r2EvidenceLocation(bucket, prefix) {
-  return `r2://${bucket}/${prefix}`;
+  const separator = prefix.indexOf("/");
+  const root = separator < 0 ? prefix : prefix.slice(0, separator);
+  const path = separator < 0 ? "" : prefix.slice(separator);
+  return `r2://${bucket}/${encodeURIComponent(root)}${path}`;
 }
 
 export function parseR2EvidenceLocation(location) {
@@ -73,7 +94,17 @@ export function parseR2EvidenceLocation(location) {
     return null;
   }
   if (parsed.protocol !== "r2:" || !parsed.hostname || !parsed.pathname.startsWith("/")) return null;
-  const prefix = parsed.pathname.slice(1);
+  const path = parsed.pathname.slice(1);
+  const separator = path.indexOf("/");
+  if (separator < 1) return null;
+  let root;
+  try {
+    // Decode only the root; the remaining path segments are already encoded storage key parts.
+    root = decodeURIComponent(path.slice(0, separator));
+  } catch {
+    return null;
+  }
+  const prefix = `${root}${path.slice(separator)}`;
   return prefix.endsWith("/") ? { bucket: parsed.hostname, prefix } : null;
 }
 

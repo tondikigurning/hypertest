@@ -1,6 +1,8 @@
 import { Readable } from "node:stream";
 import {
   createR2Storage,
+  intermediateR2EvidencePrefix,
+  legacyR2EvidencePrefix,
   parseR2EvidenceLocation,
   r2EvidencePrefix,
 } from "../../../packages/internal/test-utils/src/export/r2-client.mjs";
@@ -58,27 +60,25 @@ export function createDriveEvidenceHandler({
       try {
         storage = r2();
         if (!storage || storage.bucket !== r2Location.bucket) return fail(503, "R2 credentials are not configured.");
-        const expectedPrefix = r2EvidencePrefix(
-          environment,
-          "scenarios",
-          scenario.file.replace(/\.feature$/i, ""),
-          scenario.id,
-        );
-        if (r2Location.prefix !== expectedPrefix) return fail(404, "Evidence folder is unavailable.");
+        const expectedPrefixes = [
+          r2EvidencePrefix(environment, "scenarios", scenario.file.replace(/\.feature$/i, ""), scenario.id),
+          intermediateR2EvidencePrefix(environment, "scenarios", scenario.file.replace(/\.feature$/i, ""), scenario.id),
+          legacyR2EvidencePrefix(environment, "scenarios", scenario.file.replace(/\.feature$/i, ""), scenario.id),
+        ];
+        if (!expectedPrefixes.includes(r2Location.prefix)) return fail(404, "Evidence folder is unavailable.");
+        const prefix = r2Location.prefix;
         const exampleNames = new Map(
           (latest.examples ?? []).flatMap((example) =>
             (example.evidenceNames ?? []).map((name) => [name, example.title]),
           ),
         );
-        const objects = await storage.list(expectedPrefix);
+        const objects = await storage.list(prefix);
         const files = await Promise.all(
           objects
-            .filter(
-              (item) => item.Key && (!exampleNames.size || exampleNames.has(item.Key.slice(expectedPrefix.length))),
-            )
+            .filter((item) => item.Key && (!exampleNames.size || exampleNames.has(item.Key.slice(prefix.length))))
             .map(async (item) => {
               const id = item.Key;
-              const name = id.slice(expectedPrefix.length);
+              const name = id.slice(prefix.length);
               const mimeType = mimeTypeForEvidenceName(name);
               return {
                 id,
