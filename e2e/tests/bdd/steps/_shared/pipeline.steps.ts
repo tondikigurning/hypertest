@@ -68,7 +68,6 @@ function resolvePipelinePage(fixtures: {
     userGroupsPage: unknown;
     casesPage?: PipelinePage;
     workOrdersPage?: unknown;
-    knowledgeManagementPage?: unknown;
     currentUrl?: string;
 }): PipelinePage {
     const userGroupsPipelinePage = hasPipeline(fixtures.userGroupsPage)
@@ -79,23 +78,18 @@ function resolvePipelinePage(fixtures: {
         ? fixtures.workOrdersPage
         : userGroupsPipelinePage;
 
-    const knowledgeManagementPipelinePage = hasPipeline(fixtures.knowledgeManagementPage)
-        ? fixtures.knowledgeManagementPage
-        : workOrdersPipelinePage;
-
     return resolvePage({
         pageContext: fixtures.pageContext,
         usersPage: fixtures.usersPage,
         userGroupsPage: userGroupsPipelinePage,
         casesPage: fixtures.casesPage,
         workOrdersPage: workOrdersPipelinePage,
-        knowledgeManagementPage: knowledgeManagementPipelinePage,
         currentUrl: fixtures.currentUrl,
     });
 }
 
-When("the user selects the {string} pipeline tab", async ({ page, pageContext, usersPage, userGroupsPage, casesPage, workOrdersPage, knowledgeManagementPage, $testInfo }, tab: string) => {
-    const listPage = resolvePipelinePage({ pageContext, usersPage, userGroupsPage, casesPage, workOrdersPage, knowledgeManagementPage, currentUrl: page.url() });
+When("the user selects the {string} pipeline tab", async ({ page, pageContext, usersPage, userGroupsPage, casesPage, workOrdersPage, $testInfo }, tab: string) => {
+    const listPage = resolvePipelinePage({ pageContext, usersPage, userGroupsPage, casesPage, workOrdersPage, currentUrl: page.url() });
     const targetTab = listPage.pipeline.tab(tab);
     const tabVisible = await targetTab.isVisible().catch(() => false);
     const isMockScenario = $testInfo.tags.includes("@mock");
@@ -131,7 +125,7 @@ When("the user selects the {string} pipeline tab", async ({ page, pageContext, u
     await selectTab(tab);
 });
 
-Then("the {string} pipeline tab is active", async ({ page, pageContext, usersPage, userGroupsPage, casesPage, workOrdersPage, knowledgeManagementPage }, tab: string) => {
-    const listPage = resolvePipelinePage({ pageContext, usersPage, userGroupsPage, casesPage, workOrdersPage, knowledgeManagementPage, currentUrl: page.url() });
+Then("the {string} pipeline tab is active", async ({ page, pageContext, usersPage, userGroupsPage, casesPage, workOrdersPage }, tab: string) => {
+    const listPage = resolvePipelinePage({ pageContext, usersPage, userGroupsPage, casesPage, workOrdersPage, currentUrl: page.url() });
     await listPage.pipeline.expectTabActive(tab);
 });

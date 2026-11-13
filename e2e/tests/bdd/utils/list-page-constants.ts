@@ -27,21 +27,6 @@ export const WORK_ORDERS_FILTER_API = "/workforcemgmt/tenant/work-orders/filter"
 export const WORK_ORDERS_CREATE_API = "/workforcemgmt/tenant/work-orders";
 export const WORK_ORDERS_TABS_API = /\/workforcemgmt\/tenant\/work-orders\/list\/status\/count/;
 
-// ─── Knowledge Management ────────────────────────────────────────────────
-export const KNOWLEDGE_MANAGEMENT_LIST_PATH = "/knowledge-management";
-export const KNOWLEDGE_MANAGEMENT_FILTER_API = "/knowledge/tenant/articles/filter";
-export const KNOWLEDGE_MANAGEMENT_CREATE_API = /\/knowledge\/tenant\/articles(?:\?|$)/;
-export const KNOWLEDGE_MANAGEMENT_DELETE_API =
-    /\/knowledge\/tenant\/articles\/[^/]+\/locales\/[^/]+\/versions\/[^/]+(?:\?|$)/;
-export const KNOWLEDGE_MANAGEMENT_UPDATE_API =
-    /\/knowledge\/tenant\/articles\/[^/]+\/locales\/[^/]+\/versions\/[^/]+(?:\?|$)/;
-export const KNOWLEDGE_MANAGEMENT_PUBLISH_API =
-    /\/knowledge\/tenant\/articles\/[^/]+\/locales\/[^/]+\/versions\/[^/]+\/publish/;
-export const KNOWLEDGE_MANAGEMENT_SUBMIT_APPROVAL_API =
-    /\/knowledge\/tenant\/articles\/[^/]+\/locales\/[^/]+\/versions\/[^/]+\/submit-for-approval/;
-export const KNOWLEDGE_MANAGEMENT_REQUEST_REVISION_API =
-    /\/knowledge\/tenant\/articles\/[^/]+\/locales\/[^/]+\/versions\/[^/]+\/request-revision/;
-
 // ─── System Settings / Profanity ─────────────────────────────────────────
 export const PROFANITY_SETTINGS_PATH = "/system-settings/profanity";
 export const PROFANITY_WORDS_FILTER_API = "/organization/tenant/profanity-words/filter";

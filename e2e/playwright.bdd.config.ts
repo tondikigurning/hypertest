@@ -117,7 +117,6 @@ export default defineConfig({
                     "tests/bdd/features/case-management/survey-template-manager.feature",
                     "tests/bdd/features/case-management/dashboard.feature",
                     "tests/bdd/features/workforce-management/**/*.feature",
-                    "tests/bdd/features/knowledge-management/**/*.feature",
                     "tests/bdd/features/system-settings/**/*.feature",
                     // Organization Management runs as its own project (below) with a longer
                     // per-test timeout — its list/detail flows are heavy and time out at 180s.

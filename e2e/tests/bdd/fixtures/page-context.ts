@@ -4,7 +4,6 @@ export type ActivePage =
     | "access-roles"
     | "permission-sets"
     | "work-orders"
-    | "knowledge-management"
     | "cases"
     | "survey-template-manager"
     | "organizations"
@@ -15,11 +14,8 @@ export type ListSurface = "list" | "create-wizard-entity";
 export type PageContext = {
     currentPage: ActivePage;
     listSurface: ListSurface;
-    /** Name of the article created by the "Given the user has created a knowledge article" step. */
-    createdArticleName?: string | null;
     setCurrentPage: (nextPage: ActivePage) => void;
     setListSurface: (surface: ListSurface) => void;
-    setCreatedArticleName: (name: string | null) => void;
 };
 
 /**
@@ -47,10 +43,6 @@ export function inferActivePageFromPath(pathname: string): ActivePage | null {
 
     if (pathname.startsWith("/workforce-management/work-orders")) {
         return "work-orders";
-    }
-
-    if (pathname.startsWith("/knowledge-management")) {
-        return "knowledge-management";
     }
 
     if (pathname.startsWith("/case-management/cases")) {
@@ -131,16 +123,6 @@ export function inferActivePageFromTags(tags: readonly string[]): ActivePage | n
         )
     ) {
         return "work-orders";
-    }
-
-    if (
-        normalized.some(
-            (tag) =>
-                tag.startsWith("@TEN_KNM_")
-                || tag.startsWith("@FLOW:TEN_KNM_"),
-        )
-    ) {
-        return "knowledge-management";
     }
 
     if (
@@ -233,7 +215,6 @@ export function resolvePage<
     TAccessRolesPage = never,
     TPermissionSetsPage = never,
     TWorkOrdersPage = never,
-    TKnowledgeManagementPage = never,
     TCasesPage = never,
     TSurveyTemplateManagerPage = never,
     TOrganizationsPage = never,
@@ -245,13 +226,12 @@ export function resolvePage<
     accessRolesPage?: TAccessRolesPage;
     permissionSetsPage?: TPermissionSetsPage;
     workOrdersPage?: TWorkOrdersPage;
-    knowledgeManagementPage?: TKnowledgeManagementPage;
     casesPage?: TCasesPage;
     surveyTemplateManagerPage?: TSurveyTemplateManagerPage;
     organizationsPage?: TOrganizationsPage;
     entitiesPage?: TEntitiesPage;
     currentUrl?: string;
-}): TUsersPage | TUserGroupsPage | TAccessRolesPage | TPermissionSetsPage | TWorkOrdersPage | TKnowledgeManagementPage | TCasesPage | TSurveyTemplateManagerPage | TOrganizationsPage | TEntitiesPage {
+}): TUsersPage | TUserGroupsPage | TAccessRolesPage | TPermissionSetsPage | TWorkOrdersPage | TCasesPage | TSurveyTemplateManagerPage | TOrganizationsPage | TEntitiesPage {
     if (fixtures.currentUrl) {
         syncPageContextFromUrl(fixtures.pageContext, fixtures.currentUrl);
     }
@@ -267,9 +247,6 @@ export function resolvePage<
     }
     if (fixtures.pageContext.currentPage === "work-orders") {
         return fixtures.workOrdersPage as TWorkOrdersPage;
-    }
-    if (fixtures.pageContext.currentPage === "knowledge-management") {
-        return fixtures.knowledgeManagementPage as TKnowledgeManagementPage;
     }
     if (fixtures.pageContext.currentPage === "cases") {
         return fixtures.casesPage as TCasesPage;
@@ -293,7 +270,6 @@ export function resolveFilterablePage<
     TPermissionSetsPage = never,
     TUsersCreatePage = never,
     TWorkOrdersPage = never,
-    TKnowledgeManagementPage = never,
     TCasesPage = never,
     TSurveyTemplateManagerPage = never,
 >(fixtures: {
@@ -303,12 +279,11 @@ export function resolveFilterablePage<
     accessRolesPage?: TAccessRolesPage;
     permissionSetsPage?: TPermissionSetsPage;
     workOrdersPage?: TWorkOrdersPage;
-    knowledgeManagementPage?: TKnowledgeManagementPage;
     usersCreatePage: TUsersCreatePage;
     casesPage?: TCasesPage;
     surveyTemplateManagerPage?: TSurveyTemplateManagerPage;
     currentUrl?: string;
-}): TUsersPage | TUserGroupsPage | TAccessRolesPage | TPermissionSetsPage | TUsersCreatePage | TWorkOrdersPage | TKnowledgeManagementPage | TCasesPage | TSurveyTemplateManagerPage {
+}): TUsersPage | TUserGroupsPage | TAccessRolesPage | TPermissionSetsPage | TUsersCreatePage | TWorkOrdersPage | TCasesPage | TSurveyTemplateManagerPage {
     if (fixtures.pageContext.listSurface === "create-wizard-entity") {
         return fixtures.usersCreatePage;
     }

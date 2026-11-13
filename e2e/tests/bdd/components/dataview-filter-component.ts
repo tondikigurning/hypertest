@@ -82,7 +82,7 @@ export class DataviewFilterComponent {
                 (res) => {
                     const url = res.url();
                     // Wizard uses the configured `endpointUrl` (units filter). List surfaces
-                    // (e.g. Knowledge Management) pass their own endpoint regex here.
+                    // List pages can pass their own endpoint regex here.
                     const matchesConfigUrl = this.endpointUrl.test(url);
                     const matchesEndpoint = endpoint ? url.includes(endpoint) : false;
                     return (matchesEndpoint || matchesConfigUrl) && !url.includes("filter-options");
@@ -598,7 +598,7 @@ export class DataviewFilterComponent {
         return results;
     }
 
-    /** List-surface variant (e.g. Knowledge Management): iterates the configured labels,
+    /** List-surface variant: iterates the configured labels,
      *  opens the sort popover via `sortTrigger`, and only runs date-order checks on date fields. */
     private async applyAllSortsGeneric(endpoint: string): Promise<SortResult[]> {
         const SORT_TIMEOUT = 10_000;

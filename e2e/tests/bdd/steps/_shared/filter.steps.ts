@@ -62,17 +62,8 @@ When("the user applies the first available filter option", async ({
     accessRolesPage,
     permissionSetsPage,
     workOrdersPage,
-    knowledgeManagementPage,
     usersCreatePage,
 }) => {
-    if (pageContext.currentPage === "knowledge-management") {
-        // Arm before the request fires so the 500-error-state step can consume it even
-        // though the response has already settled by the time the Then runs.
-        armListResponseProbe(page, pageContext);
-        await knowledgeManagementPage.applyFirstAvailableFilterOption();
-        return;
-    }
-
     ensureListResponseTracking(page, pageContext);
 
     // Create-user wizard entity picker uses @hyperscal/dataview Filter.Content
@@ -146,7 +137,6 @@ When("the user applies each available filter option", async ({
     accessRolesPage,
     permissionSetsPage,
     workOrdersPage,
-    knowledgeManagementPage,
     usersCreatePage,
     surveyTemplateManagerPage,
     $testInfo,
@@ -159,7 +149,6 @@ When("the user applies each available filter option", async ({
         permissionSetsPage,
         workOrdersPage,
         usersCreatePage,
-        knowledgeManagementPage,
         surveyTemplateManagerPage,
         currentUrl: page.url(),
     });
@@ -181,7 +170,6 @@ When("the user applies the {string} filter option", async ({
     accessRolesPage,
     permissionSetsPage,
     workOrdersPage,
-    knowledgeManagementPage,
     usersCreatePage,
     surveyTemplateManagerPage,
 }, filterOption) => {
@@ -193,7 +181,6 @@ When("the user applies the {string} filter option", async ({
         permissionSetsPage,
         workOrdersPage,
         usersCreatePage,
-        knowledgeManagementPage,
         surveyTemplateManagerPage,
         currentUrl: page.url(),
     });
@@ -209,7 +196,6 @@ Then("each filter triggers an API call that returns HTTP 200", async ({
     accessRolesPage,
     permissionSetsPage,
     workOrdersPage,
-    knowledgeManagementPage,
     usersCreatePage,
     surveyTemplateManagerPage,
 }) => {
@@ -221,7 +207,6 @@ Then("each filter triggers an API call that returns HTTP 200", async ({
         permissionSetsPage,
         workOrdersPage,
         usersCreatePage,
-        knowledgeManagementPage,
         surveyTemplateManagerPage,
         currentUrl: page.url(),
     });
@@ -239,7 +224,6 @@ Then("the filter triggers an API call that returns HTTP 200", async ({
     accessRolesPage,
     permissionSetsPage,
     workOrdersPage,
-    knowledgeManagementPage,
     usersCreatePage,
     surveyTemplateManagerPage,
 }) => {
@@ -251,7 +235,6 @@ Then("the filter triggers an API call that returns HTTP 200", async ({
         permissionSetsPage,
         workOrdersPage,
         usersCreatePage,
-        knowledgeManagementPage,
         surveyTemplateManagerPage,
         currentUrl: page.url(),
     });
@@ -267,7 +250,6 @@ Then("each filter response includes rows that match the selected value", async (
     accessRolesPage,
     permissionSetsPage,
     workOrdersPage,
-    knowledgeManagementPage,
     usersCreatePage,
     surveyTemplateManagerPage,
 }) => {
@@ -279,7 +261,6 @@ Then("each filter response includes rows that match the selected value", async (
         permissionSetsPage,
         workOrdersPage,
         usersCreatePage,
-        knowledgeManagementPage,
         surveyTemplateManagerPage,
         currentUrl: page.url(),
     });
@@ -302,7 +283,6 @@ Then("the filter response includes rows that match the selected value", async ({
     accessRolesPage,
     permissionSetsPage,
     workOrdersPage,
-    knowledgeManagementPage,
     usersCreatePage,
     surveyTemplateManagerPage,
 }) => {
@@ -314,7 +294,6 @@ Then("the filter response includes rows that match the selected value", async ({
         permissionSetsPage,
         workOrdersPage,
         usersCreatePage,
-        knowledgeManagementPage,
         surveyTemplateManagerPage,
         currentUrl: page.url(),
     });

@@ -60,7 +60,6 @@ When("the user searches for the first visible row {string}", async ({
     permissionSetsPage,
     usersCreatePage,
     workOrdersPage,
-    knowledgeManagementPage,
     casesPage,
     surveyTemplateManagerPage,
 }, field: string) => {
@@ -72,7 +71,6 @@ When("the user searches for the first visible row {string}", async ({
         permissionSetsPage,
         usersCreatePage,
         workOrdersPage,
-        knowledgeManagementPage,
         casesPage,
         surveyTemplateManagerPage,
         currentUrl: page.url(),
@@ -83,7 +81,7 @@ When("the user searches for the first visible row {string}", async ({
     await listPage.searchFilterKeep(keyword);
 });
 
-Then("the search returns matching rows", async ({ page, pageContext, usersPage, userGroupsPage, accessRolesPage, permissionSetsPage, usersCreatePage, workOrdersPage, knowledgeManagementPage, casesPage, surveyTemplateManagerPage }) => {
+Then("the search returns matching rows", async ({ page, pageContext, usersPage, userGroupsPage, accessRolesPage, permissionSetsPage, usersCreatePage, workOrdersPage, casesPage, surveyTemplateManagerPage }) => {
     const listPage = resolveFilterablePage({
         pageContext,
         usersPage,
@@ -92,7 +90,6 @@ Then("the search returns matching rows", async ({ page, pageContext, usersPage, 
         permissionSetsPage,
         usersCreatePage,
         workOrdersPage,
-        knowledgeManagementPage,
         casesPage,
         surveyTemplateManagerPage,
         currentUrl: page.url(),

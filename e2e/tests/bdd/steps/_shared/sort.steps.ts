@@ -40,13 +40,7 @@ Given("the sort API response is delayed by 4 seconds", async ({ network, pageCon
     });
 });
 
-When("the user applies the first available sort option", async ({ page, pageContext, knowledgeManagementPage }) => {
-    if (pageContext.currentPage === "knowledge-management") {
-        armListResponseProbe(page, pageContext);
-        await knowledgeManagementPage.applyFirstAvailableSortOption();
-        return;
-    }
-
+When("the user applies the first available sort option", async ({ page, pageContext }) => {
     ensureListResponseTracking(page, pageContext);
     armListResponseProbe(page, pageContext);
 
@@ -95,7 +89,6 @@ When("the user applies each sort option in ascending and descending direction", 
     accessRolesPage,
     permissionSetsPage,
     workOrdersPage,
-    knowledgeManagementPage,
     usersCreatePage,
     casesPage,
     surveyTemplateManagerPage,
@@ -109,7 +102,6 @@ When("the user applies each sort option in ascending and descending direction", 
         permissionSetsPage,
         workOrdersPage,
         usersCreatePage,
-        knowledgeManagementPage,
         casesPage,
         surveyTemplateManagerPage,
         currentUrl: page.url(),
@@ -126,7 +118,6 @@ Then("each sort triggers an API call that returns HTTP 200", async ({
     accessRolesPage,
     permissionSetsPage,
     workOrdersPage,
-    knowledgeManagementPage,
     usersCreatePage,
     casesPage,
     surveyTemplateManagerPage,
@@ -139,7 +130,6 @@ Then("each sort triggers an API call that returns HTTP 200", async ({
         permissionSetsPage,
         workOrdersPage,
         usersCreatePage,
-        knowledgeManagementPage,
         casesPage,
         surveyTemplateManagerPage,
         currentUrl: page.url(),
@@ -159,7 +149,6 @@ Then("each sort response includes rows in the correct order", async ({
     accessRolesPage,
     permissionSetsPage,
     workOrdersPage,
-    knowledgeManagementPage,
     usersCreatePage,
     casesPage,
     surveyTemplateManagerPage,
@@ -172,7 +161,6 @@ Then("each sort response includes rows in the correct order", async ({
         permissionSetsPage,
         workOrdersPage,
         usersCreatePage,
-        knowledgeManagementPage,
         casesPage,
         surveyTemplateManagerPage,
         currentUrl: page.url(),

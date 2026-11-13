@@ -14,7 +14,6 @@ import { UsersCreatePage } from "../pages/user-management/UsersCreatePage";
 import { UsersPage } from "../pages/user-management/UsersPage";
 import { WorkOrdersCreatePage } from "../pages/workforce-management/WorkOrdersCreatePage";
 import { WorkOrdersPage } from "../pages/workforce-management/WorkOrdersPage";
-import { KnowledgeManagementPage } from "../pages/knowledge-management/KnowledgeManagementPage";
 import { OrganizationsPage } from "../pages/organization-management/OrganizationsPage";
 import { EntitiesPage } from "../pages/organization-management/EntitiesPage";
 import { EntityDetailPage } from "../pages/organization-management/EntityDetailPage";
@@ -36,7 +35,6 @@ type BddFixtures = {
     caseDashboardPage: CaseDashboardPage;
     workOrdersPage: WorkOrdersPage;
     workOrdersCreatePage: WorkOrdersCreatePage;
-    knowledgeManagementPage: KnowledgeManagementPage;
     organizationsPage: OrganizationsPage;
     entitiesPage: EntitiesPage;
     entityDetailPage: EntityDetailPage;
@@ -135,9 +133,6 @@ export const test = base.extend<BddFixtures>({
     workOrdersCreatePage: async ({ page }, use) => {
         await use(new WorkOrdersCreatePage(page));
     },
-    knowledgeManagementPage: async ({ page }, use) => {
-        await use(new KnowledgeManagementPage(page));
-    },
     organizationsPage: async ({ page }, use) => {
         await use(new OrganizationsPage(page));
     },
@@ -162,15 +157,11 @@ export const test = base.extend<BddFixtures>({
         const state: PageContext = {
             currentPage: "users",
             listSurface: "list",
-            createdArticleName: null,
             setCurrentPage(nextPage: ActivePage) {
                 state.currentPage = nextPage;
             },
             setListSurface(surface) {
                 state.listSurface = surface;
-            },
-            setCreatedArticleName(name: string | null) {
-                state.createdArticleName = name;
             },
         };
         await use(state);

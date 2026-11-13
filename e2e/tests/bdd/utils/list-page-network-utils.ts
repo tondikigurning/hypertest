@@ -14,8 +14,6 @@ import {
     CASES_LIST_PATH,
     ENTITIES_UNITS_FILTER_API,
     ENTITIES_UNITS_FILTER_URL,
-    KNOWLEDGE_MANAGEMENT_FILTER_API,
-    KNOWLEDGE_MANAGEMENT_LIST_PATH,
     PERMISSION_SETS_FILTER_API,
     PERMISSION_SETS_LIST_PATH,
     SURVEY_TEMPLATE_MANAGER_FILTER_API,
@@ -71,12 +69,6 @@ const LIST_CONFIG: Record<
         filterApi: WORK_ORDERS_FILTER_API,
         filterUrl: /\/workforcemgmt\/tenant\/work-orders\/filter/,
         detailUrl: /\/workforcemgmt\/tenant\/work-orders\/(?!filter(?:\?|$))[^/?#]+(?:\?.*)?$/,
-    },
-    "knowledge-management": {
-        listPath: KNOWLEDGE_MANAGEMENT_LIST_PATH,
-        filterApi: KNOWLEDGE_MANAGEMENT_FILTER_API,
-        filterUrl: /\/knowledge\/tenant\/articles\/filter/,
-        detailUrl: /\/knowledge\/tenant\/articles\/[^/]+\/locales\/[^/]+\/versions\/[^/]+(?:\?.*)?$/,
     },
     "cases": {
         listPath: CASES_LIST_PATH,

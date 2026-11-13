@@ -81,7 +81,7 @@ export class DataTableComponent {
                 return;
             }
 
-            // Dataview modules (e.g. Knowledge Management) open the detail panel via a
+            // Dataview modules can open the detail panel via a
             // clickable title span (class `cursor-pointer`), not a link. Click that element
             // directly — a click on the parent <td> does NOT bubble to the child's React
             // onClick, so the panel would otherwise never open.
