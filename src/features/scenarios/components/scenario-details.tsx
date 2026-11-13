@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
 import { CloseButton } from "../../../components";
 import { EvidenceViewer } from "../../evidence/components/evidence-viewer";
-import { DraftRun } from "../../runs/components/draft-run";
 import { LocalRun } from "../../runs/components/local-run";
 import { hasDistinctExpectedResult, type Scenario } from "../scenario";
 import { RunStatus } from "./run-status";
@@ -133,7 +132,7 @@ export function ScenarioDetails({
                     .join(" ")}
                 </ExecutionState>
               )}
-              <DraftRun key={scenario.key} scenario={scenario} />
+              <ExecutionState>Running scenarios from the agent workspace is unavailable.</ExecutionState>
             </>
           ) : scenario.availability === "unavailable" ? (
             <ExecutionState>Execution unavailable: {scenario.availabilityReasons.join(" ")}</ExecutionState>

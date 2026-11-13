@@ -104,13 +104,7 @@ export async function refreshPullRequests(pullRequests, run = execute) {
     try {
       result = await run(
         "gh",
-        [
-          "pr",
-          "view",
-          String(item.number),
-          "--json",
-          "number,title,url,state,mergedAt,closedAt,headRefName,baseRefName",
-        ],
+        ["pr", "view", item.url, "--json", "number,title,url,state,mergedAt,closedAt,headRefName,baseRefName"],
         options,
       );
     } catch {

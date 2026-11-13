@@ -120,7 +120,7 @@ async function workflow(t, responses, runtime = {}, files = {}) {
   return { session, workspace, requests };
 }
 
-test("chat hands off skills, reviews artifacts, and runs a newly authored draft scenario", async (t) => {
+test("chat hands off skills and reviews artifacts without running workspace scenarios", async (t) => {
   const prd = "---\nstatus: reviewed\n---\n# Orders\n- [validated] Users can list orders.\n";
   const feature = `Feature: Orders\n  @${scenarioId} @flow:LIST\n  Scenario: List orders\n    Given the orders page is open\n    Then the orders are visible\n`;
   const implementation = "e2e/tests/bdd/steps/example/orders.steps.ts";
@@ -202,8 +202,7 @@ test("chat hands off skills, reviews artifacts, and runs a newly authored draft 
       },
     },
     { tool: "write_file", input: { path: implementation, content: "// reviewed implementation\n" } },
-    { tool: "run_draft_scenario", input: { scenarioId, file: "example/orders.feature", dataOwner: "e2e-owned" } },
-    { text: "The isolated draft scenario passed; official results are unchanged." },
+    { text: "Implementation complete; workspace execution is unavailable." },
   );
   await session.send(
     "Implement and verify the approved scenario.",
@@ -214,25 +213,15 @@ test("chat hands off skills, reviews artifacts, and runs a newly authored draft 
     { label: "Test", target: "https://example.invalid" },
     { E2E_USERNAME: "test-user", E2E_PASSWORD: "test-password" },
   );
-  const safety = await waitFor(session, (state) => state.approvalRequest || !state.busy);
-  assert.equal(safety.approvalRequest?.kind, "data-safety");
-  assert.equal(runs, 0, "execution must wait for a separate data-safety decision");
-  session.decideApproval(safety.approvalRequest.id, "accept");
   await waitFor(session, (state) => !state.busy);
   assert.equal(session.snapshot().error, "");
-  assert.equal(runs, 1);
+  assert.equal(runs, 0);
+  assert.ok(requests.every((request) => !request.tools?.some((item) => item.function?.name === "run_draft_scenario")));
   assert.equal(
     await readFile(join(workspace, featurePath), "utf8"),
     feature,
     "Implementation cannot rewrite approved scenario intent",
   );
-  assert.equal(session.draftRun().status, "passed");
-  const runResult = requests
-    .at(-1)
-    .messages.filter((message) => message.role === "tool")
-    .at(-1);
-  assert.equal(JSON.parse(runResult.content).isolated, true);
-  await session.discardDraftRun();
 });
 
 test("allow all resolves pending review and permits subsequent flow and implementation without manual approval", async (t) => {
@@ -247,7 +236,6 @@ test("allow all resolves pending review and permits subsequent flow and implemen
     { tool: "write_file", input: { path: featurePath, content: feature } },
     { tool: "use_skill", input: { skill: "write-e2e-code" } },
     { tool: "write_file", input: { path: implementation, content: "// implementation\n" } },
-    { tool: "run_draft_scenario", input: { scenarioId, file: "example/orders.feature", dataOwner: "e2e-owned" } },
     { text: "Finished." },
   ];
   let runs = 0;
@@ -276,7 +264,7 @@ test("allow all resolves pending review and permits subsequent flow and implemen
   await waitFor(session, (state) => !state.busy);
   assert.equal(session.snapshot().allowAll, true);
   assert.equal(await readFile(join(workspace, implementation), "utf8"), "// implementation\n");
-  assert.equal(runs, 1);
+  assert.equal(runs, 0);
   assert.equal((await session.diff()).scenarioApproved, false);
   await session.discardDraftRun();
   session.setAllowAll(false);
@@ -322,70 +310,23 @@ test("large feature files can be read in bounded pages", async (t) => {
   assert.match(await tools.read_file.execute({ path: "large.feature", startLine: 2500, lineCount: 2 }), /line 2500:/);
 });
 
-test("declined and stale data-safety approval never launch a draft runner", async (t) => {
-  const implementation = "e2e/tests/bdd/steps/example/orders.steps.ts";
-  const feature = `Feature: Orders\n  @${scenarioId}\n  Scenario: List orders\n    Given the orders page is open\n`;
-  const run = {
-    tool: "run_draft_scenario",
-    input: { scenarioId, file: "example/orders.feature", dataOwner: "e2e-owned" },
-  };
-  const responses = [
-    { tool: "write_file", input: { path: implementation, content: "// implementation\n" } },
-    run,
-    { text: "The draft was not run." },
-  ];
+test("agent cannot invoke workspace scenario execution", async (t) => {
   let runs = 0;
-  const { session, workspace, requests } = await workflow(
-    t,
-    responses,
-    {
-      startIsolatedDraftRun: async () => {
-        runs++;
-        throw new Error("Runner must not start");
-      },
+  const responses = [
+    { tool: "run_draft_scenario", input: { scenarioId, file: "example/orders.feature", dataOwner: "e2e-owned" } },
+    { text: "The scenario was not run." },
+  ];
+  const { session, requests } = await workflow(t, responses, {
+    startIsolatedDraftRun: async () => {
+      runs++;
+      throw new Error("Runner must not start");
     },
-    { [featurePath]: feature },
-  );
-  const environment = { label: "Fixture", target: "https://example.invalid" };
-  const variables = { E2E_USERNAME: "synthetic-user", E2E_PASSWORD: "synthetic-password" };
-  const send = () =>
-    session.send(
-      "/write-e2e-code Verify this existing scenario.",
-      undefined,
-      undefined,
-      [],
-      undefined,
-      environment,
-      variables,
-    );
-  await send();
-  const declined = await waitFor(session, (state) => state.approvalRequest || !state.busy);
-  assert.equal(declined.approvalRequest?.kind, "data-safety");
-  session.decideApproval(declined.approvalRequest.id, "decline");
-  await waitFor(session, (state) => !state.busy);
-  const declineResult = requests
-    .at(-1)
-    .messages.filter((message) => message.role === "tool")
-    .at(-1);
-  assert.equal(JSON.parse(declineResult.content).status, "not run");
-  assert.equal(runs, 0);
-
-  responses.push(run, { text: "The draft changed during review; review it again." });
-  await send();
-  const stale = await waitFor(session, (state) => state.approvalRequest || !state.busy);
-  assert.equal(stale.approvalRequest?.kind, "data-safety");
-  await writeFile(join(workspace, implementation), "// edited during approval\n");
-  session.decideApproval(stale.approvalRequest.id, "accept");
+  });
+  await session.send("Run the scenario.");
   await waitFor(session, (state) => !state.busy);
   assert.equal(runs, 0);
   assert.equal(session.draftRun(), null);
-  assert.match(
-    requests
-      .at(-1)
-      .messages.filter((message) => message.role === "tool")
-      .at(-1).content,
-    /changed since review/,
-  );
+  assert.ok(requests.every((request) => !request.tools?.some((item) => item.function?.name === "run_draft_scenario")));
 });
 
 test("browser locator inspection stays read-only and CLI option overrides are rejected", async () => {

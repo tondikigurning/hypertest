@@ -1574,6 +1574,7 @@ export function createSession({
         signal: controller.signal,
         onBrowserUse: scheduleExplorationBrowserClose,
       });
+      delete agentTools.run_draft_scenario;
       const currentContent = [
         { type: "text", text: `${safeInput}${context}` },
         ...imageInputs.map((image) => ({ type: "image", image: image.url })),

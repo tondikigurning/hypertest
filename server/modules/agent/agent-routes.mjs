@@ -159,6 +159,37 @@ export function createAgentRouter({ resolveSession = sessionFor, resolveIdentity
     }
   });
   router.get("/drafts", (req, res) => res.json(listLocalDrafts(req.agentIdentity.userId)));
+  router.post("/workspace", async (req, res) => {
+    try {
+      const existing = listLocalDrafts(req.agentIdentity.userId);
+      if (existing.length > 1)
+        return res.status(409).json({
+          error: "Multiple previous workspaces exist. They have been preserved; resolve them before continuing.",
+        });
+      if (existing.length === 1) {
+        const workspace =
+          existing[0].status === "archived" ? restoreLocalDraft(req.agentIdentity.userId, existing[0].id) : existing[0];
+        return res.json(workspace);
+      }
+      const targets = await listDraftTargets();
+      if (!targets.defaultBranch) throw new Error("Create a local target branch before starting Q-Rex.");
+      // Another request may have created the workspace while branches were loading.
+      const current = listLocalDrafts(req.agentIdentity.userId);
+      if (current.length) {
+        if (current.length !== 1 || current[0].status !== "active")
+          throw new Error("Previous workspaces need attention before continuing.");
+        return res.json(current[0]);
+      }
+      return res.status(201).json(
+        createLocalDraft(req.agentIdentity.userId, {
+          title: "Q-Rex workspace",
+          targetBranch: targets.defaultBranch,
+        }),
+      );
+    } catch (error) {
+      return res.status(400).json({ error: error.message });
+    }
+  });
   router.post("/drafts", async (req, res) => {
     try {
       const targets = await listDraftTargets();
@@ -437,15 +468,8 @@ export function createAgentRouter({ resolveSession = sessionFor, resolveIdentity
     if (!service) return res.status(404).json({ error: "Evidence unavailable." });
     return sendRunEvidence(service, req, res);
   });
-  router.post("/draft-run", async (req, res) => {
-    try {
-      const target = resolveAgentEnvironment(req.body?.environment);
-      const run = await req.agentSession.runDraft(req.body, target, resolveAgentVariables(req.body?.variables));
-      touchLocalDraft(req.agentIdentity.userId, req.agentDraftId);
-      res.status(202).json(run);
-    } catch (error) {
-      res.status(400).json({ error: error.message });
-    }
+  router.post("/draft-run", (_req, res) => {
+    res.status(403).json({ error: "Running scenarios from the agent workspace is unavailable." });
   });
   router.post("/draft-run/cancel", (req, res) => {
     try {

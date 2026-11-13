@@ -89,3 +89,18 @@ test("PR history accepts GitHub's MERGED state", async () => {
   }));
   assert.equal(result[0].status, "MERGED");
 });
+
+test("PR history looks up the recorded PR in its original repository and clears old closing dates", async () => {
+  const item = {
+    number: 42,
+    url: "https://github.com/example/other-repo/pull/42",
+    status: "CLOSED",
+    closedAt: "2026-01-01T00:00:00Z",
+  };
+  const result = await refreshPullRequests([item], async (_command, args) => {
+    assert.equal(args[2], item.url);
+    return { stdout: JSON.stringify({ ...item, state: "OPEN", mergedAt: null, closedAt: null }) };
+  });
+  assert.equal(result[0].status, "OPEN");
+  assert.equal(result[0].closedAt, undefined);
+});
