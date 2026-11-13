@@ -39,6 +39,10 @@ with the target-origin restriction. Separate SSO, asset or API origins are block
 4. Q-Rex writes one scenario batch and stops for review. Open **Changes**, inspect its preview and
    diff, then **Approve scenarios**. Chat answers, PRD review and flow confirmation do not replace
    this approval. A changed scenario snapshot invalidates approval for implementation and execution.
+   **Reset draft changes** discards the reviewed draft diff, including commits created by synchronization,
+   and returns the worktree to its current target baseline. It clears scenario and flow approvals;
+   chat and PR history remain. The action requires a fresh review and confirmation. After a PR publication
+   attempt, retry finalization to reconcile its history instead of resetting the draft.
 5. On a subsequent turn, `write-e2e-code` implements the approved batch and preserves its IDs and
    intent. Existing implemented scenarios may receive intent-preserving technical repairs without
    creating a new scenario-design gate. Browser snapshots and `generate-locator` support locator

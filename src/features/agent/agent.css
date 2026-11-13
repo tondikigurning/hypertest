@@ -1004,7 +1004,7 @@ body:has(.floating-run) .agent-widget {
 body:has(.floating-run) .agent-panel {
   max-height: calc(100dvh - 200px);
 }
-body:has(dialog[open]) .agent-widget {
+body:has(dialog[open]) .agent-widget:not(:has(.agent-confirm-dialog[open])) {
   display: none;
 }
 @keyframes agent-pulse {
@@ -2740,11 +2740,71 @@ body:has(dialog[open]) .agent-widget {
   text-wrap: pretty;
 }
 .agent-branch {
-  padding: 16px 20px;
-  background: #fafbfc;
-  overflow-wrap: anywhere;
+  display: grid;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid var(--agent-border);
+  border-radius: 10px;
+  background: #fff;
+  overflow: hidden;
 }
-.agent-branch > span {
+.agent-branch-heading {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+}
+.agent-branch-label {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 7px;
+  color: var(--agent-muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+}
+.agent-branch-label::before {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #498b67;
+  content: "";
+}
+.agent-branch-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+}
+.agent-branch-name,
+.agent-branch-detail code {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  color: var(--agent-ink);
+  font-family: var(--font-mono, ui-monospace, monospace);
+}
+.agent-branch-name {
+  min-width: 0;
+  font-size: 12px;
+  font-weight: 600;
+}
+.agent-branch-detail {
+  display: inline-flex;
+  min-width: 0;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 7px;
+  padding: 5px 8px;
+  border: 1px solid #e8ebef;
+  border-radius: 6px;
+  background: #f7f8fa;
+  color: var(--agent-muted);
+  font-size: 10px;
+  line-height: 1.4;
+}
+.agent-branch-detail code {
   font-size: 10px;
   font-weight: 600;
 }
@@ -2781,6 +2841,33 @@ body:has(dialog[open]) .agent-widget {
 .agent-commit .agent-section-heading {
   gap: 6px;
   margin-bottom: 4px;
+}
+.agent-changes-notice {
+  margin: 0;
+  padding: 12px 16px;
+  border: 1px solid #c9dfd2;
+  border-radius: 9px;
+  background: #f3faf5;
+  color: #286345;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.agent-diff-help,
+.agent-delete-draft-section p {
+  margin: 8px 0 12px;
+  color: var(--agent-muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.agent-delete-draft-section button {
+  width: auto;
+  border-color: #f1d8d7;
+  color: #a84e4a;
+}
+.agent-delete-draft-section button:hover:not(:disabled) {
+  border-color: #e8b8b5;
+  background: #fff5f4;
+  color: #a84e4a;
 }
 @container (max-width: 560px) {
   .agent-settings-card,

@@ -1,7 +1,7 @@
-import { execFile, execFileSync } from "node:child_process";
+﻿import { execFile, execFileSync } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, renameSync, symlinkSync, writeFileSync } from "node:fs";
-import { lstat, mkdtemp, readdir, readFile, realpath } from "node:fs/promises";
+import { lstat, mkdtemp, readdir, readFile, realpath, unlink } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, extname, isAbsolute, join, relative, resolve } from "node:path";
 import { promisify } from "node:util";
@@ -409,10 +409,12 @@ export function createSession({
     baseBranch,
     expectedHead,
     branch,
+    branchCandidate,
     syncConflicts = [],
     taskId,
     approvalRequest,
     approvedScenarioDigest,
+    publicationAttempted = false,
     confirmedFlows = {},
     requestedSkill,
     provider,
@@ -472,6 +474,7 @@ export function createSession({
     ) {
       workspace = savedPath;
       branch = saved.branch;
+      branchCandidate = saved.branchCandidate || saved.branch;
       syncConflicts = Array.isArray(saved.syncConflicts) ? saved.syncConflicts : [];
       taskId = saved.taskId || randomUUID();
       baseCommit = saved.baseCommit;
@@ -480,6 +483,7 @@ export function createSession({
       messages = saved.messages;
       if (Array.isArray(saved.modelMessages)) modelMessages = saved.modelMessages;
       approvedScenarioDigest = saved.approvedScenarioDigest;
+      publicationAttempted = saved.publicationAttempted === true || history.some((item) => item.taskId === taskId);
       if (saved.confirmedFlows && typeof saved.confirmedFlows === "object" && !Array.isArray(saved.confirmedFlows))
         confirmedFlows = saved.confirmedFlows;
       if (skills.has(saved.requestedSkill)) requestedSkill = saved.requestedSkill;
@@ -506,6 +510,7 @@ export function createSession({
         JSON.stringify({
           workspace,
           branch,
+          branchCandidate,
           syncConflicts,
           taskId,
           baseCommit,
@@ -518,6 +523,7 @@ export function createSession({
           error,
           pendingRequest: userRequest ? "question" : approvalRequest ? "permission" : undefined,
           approvedScenarioDigest,
+          publicationAttempted,
           confirmedFlows,
           requestedSkill,
           runtime: "ai-sdk",
@@ -649,6 +655,7 @@ export function createSession({
         if (current !== generation) throw new Error("Session was reset while preparing the workspace.");
         workspace = prepared.workspace;
         branch = prepared.branch;
+        branchCandidate = prepared.branchCandidate || prepared.branch;
         baseCommit = prepared.baseCommit;
         baseBranch = prepared.baseBranch;
         expectedHead = prepared.expectedHead || prepared.baseCommit;
@@ -676,6 +683,7 @@ export function createSession({
         if (current !== generation) throw new Error("Session was reset while preparing the workspace.");
         workspace = candidate;
         branch = undefined;
+        branchCandidate ||= `draft/local/recovered-${randomUUID().slice(0, 8)}`;
         baseCommit = head.stdout.trim();
         baseBranch = currentBranch.stdout.trim() || undefined;
         expectedHead = baseCommit;
@@ -685,14 +693,16 @@ export function createSession({
     const currentBranch = (
       await execFileAsync("git", ["branch", "--show-current"], { cwd: workspace, timeout: 30000 })
     ).stdout.trim();
-    if (!currentBranch) {
-      branch ||= `draft/local/recovered-${randomUUID().slice(0, 8)}`;
-      await execFileAsync("git", ["check-ref-format", "--branch", branch], { cwd: workspace, timeout: 30000 });
-      await execFileAsync("git", ["switch", "-c", branch], { cwd: workspace, timeout: 30000 });
-    } else if (branch && branch !== currentBranch) {
-      throw new Error("The draft worktree branch changed outside the review flow. Inspect it before continuing.");
-    } else {
+    if (currentBranch && branch && branch !== currentBranch) {
+      throw new Error(
+        "The draft worktree branch changed outside the review flow. Inspect the worktree before continuing.",
+      );
+    } else if (currentBranch) {
       branch = currentBranch;
+      branchCandidate = currentBranch;
+    } else {
+      branch = undefined;
+      branchCandidate ||= `draft/local/recovered-${randomUUID().slice(0, 8)}`;
     }
     taskId ||= randomUUID();
     linkWorkspaceDependencies(workspace);
@@ -735,14 +745,31 @@ export function createSession({
     if (busy || committing) throw new Error("Wait for the current operation to stop before reviewing changes.");
     await verifyHead();
     const patch = await workspaceDiff(workspace, baseCommit);
+    if (patch && !branch) {
+      const nextBranch = branchCandidate || `draft/local/recovered-${randomUUID().slice(0, 8)}`;
+      await execFileAsync("git", ["check-ref-format", "--branch", nextBranch], { cwd: workspace, timeout: 30000 });
+      await execFileAsync("git", ["switch", "-c", nextBranch], { cwd: workspace, timeout: 30000 });
+      branch = nextBranch;
+      branchCandidate = nextBranch;
+      save();
+    } else if (!patch && branch && /^draft\/local\/[a-z0-9-]+-[a-f0-9]{8}$/.test(branch)) {
+      const emptyBranch = branch;
+      await execFileAsync("git", ["switch", "--detach", baseCommit], { cwd: workspace, timeout: 30000 });
+      await execFileAsync("git", ["branch", "-D", emptyBranch], { cwd: workspace, timeout: 30000 });
+      branch = undefined;
+      branchCandidate = emptyBranch;
+      save();
+    }
     const digest = createHash("sha256").update(patch).digest("hex");
     const changes = await scenarioChanges(workspace, baseCommit);
+    const pendingChanges = await scenarioChanges(workspace);
     return {
       patch,
       digest,
       branch,
       baseCommit,
       ...changes,
+      hasImplementation: pendingChanges.hasImplementation,
       scenarioApproved: Boolean(changes.scenarioDigest && changes.scenarioDigest === approvedScenarioDigest),
     };
   }
@@ -788,6 +815,54 @@ export function createSession({
     }
   }
 
+  async function resetChanges(digest) {
+    if (!workspace || busy || committing || draftStarting || draftRunner)
+      throw new Error("The workspace is unavailable or busy.");
+    if (publicationAttempted)
+      throw new Error(
+        "A PR publication was attempted. Retry finalization to reconcile its history before making further changes.",
+      );
+    committing = true;
+    try {
+      await verifyHead();
+      const mergePath = (
+        await execFileAsync("git", ["rev-parse", "--git-path", "MERGE_HEAD"], { cwd: workspace, timeout: 30000 })
+      ).stdout.trim();
+      if (syncConflicts.length || existsSync(resolve(workspace, mergePath)))
+        throw new Error("Resolve the target-branch conflicts before resetting changes.");
+      const patch = await workspaceDiff(workspace, baseCommit);
+      if (!patch || createHash("sha256").update(patch).digest("hex") !== digest)
+        throw new Error("Changes have changed since review. Review them again.");
+      const options = { cwd: workspace, maxBuffer: 2 * 1024 * 1024, timeout: 30000 };
+      const untracked = (
+        await execFileAsync("git", ["ls-files", "--others", "--exclude-standard", "-z"], options)
+      ).stdout
+        .split("\0")
+        .filter(Boolean);
+      await execFileAsync("git", ["reset", "--hard", baseCommit], options);
+      expectedHead = baseCommit;
+      approvedScenarioDigest = undefined;
+      confirmedFlows = {};
+      for (const file of untracked) await unlink(resolve(workspace, file));
+      if (branch && /^draft\/local\/[a-z0-9-]+-[a-f0-9]{8}$/.test(branch)) {
+        const emptiedBranch = branch;
+        await execFileAsync("git", ["switch", "--detach", baseCommit], options);
+        await execFileAsync("git", ["branch", "-D", emptiedBranch], options);
+        branch = undefined;
+        branchCandidate = emptiedBranch;
+      }
+      syncConflicts = [];
+      messages.push({
+        id: randomUUID(),
+        role: "user",
+        text: "Deleted the reviewed draft changes and local branch. The chat is ready for new changes.",
+      });
+      save();
+    } finally {
+      committing = false;
+    }
+  }
+
   async function commitChanges(message, digest) {
     if (!workspace || busy || committing || draftStarting || draftRunner)
       throw new Error("The workspace is unavailable or busy.");
@@ -813,9 +888,10 @@ export function createSession({
             .replace(/[^a-z0-9]+/g, "-")
             .replace(/^-|-$/g, "")
             .slice(0, 48) || "draft";
-        const branchName = `draft/local/${slug}-${randomUUID().slice(0, 8)}`;
+        const branchName = branchCandidate || `draft/local/${slug}-${randomUUID().slice(0, 8)}`;
         await execFileAsync("git", ["switch", "-c", branchName], options);
         branch = branchName;
+        branchCandidate = branchName;
         save();
       }
       await execFileAsync("git", ["add", "--all", "--"], options);
@@ -1120,6 +1196,8 @@ export function createSession({
       await verifyHead();
       if (await workspaceDiff(workspace)) throw new Error("Changes have changed since review. Review them again.");
       const changes = await draftScenarios(workspace, baseCommit);
+      publicationAttempted = true;
+      if (!save()) throw new Error("Could not save publication state. Your draft is retained.");
       result = await publish({
         workspace,
         branch,
@@ -1129,6 +1207,7 @@ export function createSession({
       });
       if (!result || typeof result.url !== "string" || !Number.isInteger(result.number))
         throw new Error("The pull request could not be confirmed. Your draft is retained.");
+      history = history.filter((item) => item.url !== result.url);
       history.unshift({
         title: message.trim(),
         url: result.url,
@@ -1773,6 +1852,7 @@ export function createSession({
     diff,
     draft,
     approveScenarios,
+    resetChanges,
     commitChanges,
     syncWithTarget,
     finalize,

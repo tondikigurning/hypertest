@@ -549,6 +549,15 @@ export function createAgentRouter({ resolveSession = sessionFor, resolveIdentity
       res.status(409).json({ error: error.message, sync: error.sync });
     }
   });
+  router.post("/reset-changes", async (req, res) => {
+    try {
+      await req.agentSession.resetChanges(req.body?.digest);
+      touchLocalDraft(req.agentIdentity.userId, req.agentDraftId);
+      res.json(req.agentSession.snapshot());
+    } catch (error) {
+      res.status(409).json({ error: error.message });
+    }
+  });
   router.post("/finalize", async (req, res) => {
     try {
       const result = await req.agentSession.finalize(req.body?.message, req.body?.digest);

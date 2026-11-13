@@ -1,7 +1,7 @@
 ﻿import { Icon } from "@hyperscal/icons";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router";
-import { SelectInput, TextAreaInput, TextInput } from "../../components";
+import { Modal, SelectInput, TextAreaInput, TextInput } from "../../components";
 import { readVariables } from "../runs/run-variables";
 import { useActiveRun } from "../runs/use-active-run";
 import { useDraftRuns } from "../runs/use-draft-runs";
@@ -20,7 +20,6 @@ import {
   AgentAlert,
   AgentModelButton,
   AgentReviewHeading,
-  AgentReviewNote,
   AgentReviewStatus,
   AgentWorkspaceButton,
   PullRequestLink,
@@ -330,11 +329,13 @@ export function AgentWidget({
   const [sending, setSending] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [reviewing, setReviewing] = useState(false);
+  const [reviewConfirmation, setReviewConfirmation] = useState<"reset" | "finalize">();
   const [confirmReset, setConfirmReset] = useState(false);
   const [connectionError, setConnectionError] = useState(false);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [patch, setPatch] = useState<string>();
   const [reviewDigest, setReviewDigest] = useState<string>();
+  const [reviewNotice, setReviewNotice] = useState("");
   const [scenarioReview, setScenarioReview] = useState<{
     hasChanges: boolean;
     approved: boolean;
@@ -483,7 +484,7 @@ export function AgentWidget({
       const [draftResult, targetResult] = await Promise.all([draftResponse.json(), targetResponse.json()]);
       if (!draftResponse.ok) throw new Error(draftResult.error || "Could not load local drafts.");
       if (!targetResponse.ok) throw new Error(targetResult.error || "Could not load target branches.");
-      let nextDrafts = draftResult as Array<LocalDraft>;
+      const nextDrafts = draftResult as Array<LocalDraft>;
       const targets = targetResult as { branches?: Array<string>; defaultBranch?: string };
       setDrafts(nextDrafts);
       setDraftTargets(targets.branches || []);
@@ -494,18 +495,6 @@ export function AgentWidget({
       if (!preferred) preferred = nextDrafts.find((draft) => draft.status === "active");
       if (!preferred) preferred = nextDrafts.find((draft) => draft.id === activeDraftId);
       if (!preferred) preferred = nextDrafts[0];
-      if (!preferred && nextDrafts.length === 0 && targets.defaultBranch) {
-        const createResponse = await agentFetch(`${endpoint}/drafts`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ title: "Local draft", targetBranch: targets.defaultBranch }),
-        });
-        const created = (await createResponse.json()) as LocalDraft & { error?: string };
-        if (!createResponse.ok) throw new Error(created.error || "Could not create a local draft.");
-        nextDrafts = [created];
-        setDrafts(nextDrafts);
-        preferred = created;
-      }
       if (preferred && preferred.id !== activeDraftId) {
         setActiveDraftId(preferred.id);
         setDraftIdState(preferred.id);
@@ -579,13 +568,12 @@ export function AgentWidget({
     }
   };
 
-  const loadPullRequests = useCallback(async (refresh = false) => {
+  const loadPullRequests = useCallback(async () => {
     setHistoryLoading(true);
     setHistoryError("");
     try {
-      const response = await agentFetch(`${endpoint}/pull-requests${refresh ? "/refresh" : ""}`, {
-        method: refresh ? "POST" : "GET",
-        ...(refresh ? { headers: { "Content-Type": "application/json" }, body: "{}" } : {}),
+      const response = await agentFetch(`${endpoint}/pull-requests`, {
+        method: "GET",
         cache: "no-store",
       });
       const result = (await response.json()) as Array<PullRequestRecord> & { error?: string };
@@ -840,6 +828,7 @@ export function AgentWidget({
     if (reviewing || (sending && !force)) return;
     setView("changes");
     setReviewing(true);
+    setReviewNotice("");
     setError("");
     try {
       const response = await agentFetch(`${endpoint}/diff`, { cache: "no-store" });
@@ -847,12 +836,24 @@ export function AgentWidget({
         patch?: string;
         digest?: string;
         scenarioDigest?: string;
+        branch?: string;
+        baseCommit?: string;
+        baseBranch?: string;
         scenarioApproved?: boolean;
         hasImplementation?: boolean;
         preview?: Array<DraftFeature>;
         error?: string;
       };
       if (!response.ok) throw new Error(result.error);
+      setSession(
+        (current) =>
+          current && {
+            ...current,
+            branch: result.branch,
+            baseCommit: result.baseCommit || current.baseCommit,
+            baseBranch: result.baseBranch || current.baseBranch,
+          },
+      );
       setPatch(result.patch || "No changes in this workspace.");
       setReviewDigest(result.patch ? result.digest : undefined);
       setScenarioReview({
@@ -892,6 +893,28 @@ export function AgentWidget({
     }
   };
 
+  const resetChanges = async () => {
+    if (!reviewDigest || sending) return;
+    setSending(true);
+    setError("");
+    try {
+      const response = await agentFetch(`${endpoint}/reset-changes`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ digest: reviewDigest }),
+      });
+      const result = (await response.json()) as Session & { error?: string };
+      if (!response.ok) throw new Error(result.error || "Could not reset changes.");
+      applySnapshot(result, ++requestNumber.current);
+      setSending(false);
+      await reviewDiff(true);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Could not reset changes.");
+    } finally {
+      setSending(false);
+    }
+  };
+
   const syncDraft = async () => {
     if (!reviewDigest || !commitMessage.trim() || sending) return;
     setSending(true);
@@ -922,7 +945,7 @@ export function AgentWidget({
       }
       setSending(false);
       await reviewDiff(true);
-      setError(
+      setReviewNotice(
         result.status === "updated" || result.status === "merge-ready"
           ? "The draft is synchronized. Review the updated changes before finalizing."
           : "The draft is up to date with its target branch.",
@@ -937,7 +960,6 @@ export function AgentWidget({
 
   const finalize = async () => {
     if (!reviewDigest || !commitMessage.trim() || sending) return;
-    if (!window.confirm("Finalize these reviewed changes and create a pull request?")) return;
     setSending(true);
     setError("");
     try {
@@ -1083,6 +1105,9 @@ export function AgentWidget({
   const canShowReview = Boolean(
     session?.branch && !connectionError && !session.busy && !draftRunStarting && !draftRun && !reviewing,
   );
+  const reviewBlocked = Boolean(
+    (scenarioReview?.hasChanges && !scenarioReview.approved) || session?.syncConflicts?.length,
+  );
   const statusLabel =
     selectedDraft?.status === "archived" && mood !== "offline"
       ? "Draft archived"
@@ -1167,35 +1192,33 @@ export function AgentWidget({
             ) : (
               <AgentModelButton onClick={() => setView("settings")}>Configure AI provider</AgentModelButton>
             )}
-            {(!selectedDraft || selectedDraft.status === "archived") && (
-              <div className="agent-draft-toolbar">
-                {!selectedDraft && (
-                  <button
-                    type="button"
-                    disabled={
-                      sending ||
-                      reviewing ||
-                      session?.busy ||
-                      draftsLoading ||
-                      draftRunStarting ||
-                      Boolean(draftRun) ||
-                      draftTargets.length === 0
-                    }
-                    onClick={() => setShowDraftForm(!showDraftForm)}
-                  >
-                    New draft
-                  </button>
-                )}
-                {selectedDraft?.status === "archived" && (
-                  <button type="button" disabled={sending} onClick={() => void restoreDraft()}>
-                    Restore draft
-                  </button>
-                )}
-                <small className="agent-sr-only">
-                  Stored in this local preview. The browser identity is not sign-in.
-                </small>
-              </div>
-            )}
+            <div className="agent-draft-toolbar">
+              {!selectedDraft && (
+                <button
+                  type="button"
+                  disabled={
+                    sending ||
+                    reviewing ||
+                    session?.busy ||
+                    draftsLoading ||
+                    draftRunStarting ||
+                    Boolean(draftRun) ||
+                    draftTargets.length === 0
+                  }
+                  onClick={() => setShowDraftForm(!showDraftForm)}
+                >
+                  New draft
+                </button>
+              )}
+              {selectedDraft?.status === "archived" && (
+                <button type="button" disabled={sending} onClick={() => void restoreDraft()}>
+                  Restore draft
+                </button>
+              )}
+              <small className="agent-sr-only">
+                Stored in this local preview. The browser identity is not sign-in.
+              </small>
+            </div>
             <div className="agent-header-actions">
               {!home && (
                 <button
@@ -1305,7 +1328,15 @@ export function AgentWidget({
               onSelect={() => {
                 setView("changes");
                 setError("");
-                if (session?.branch && !session.busy && !sending && !reviewing && !draftRunStarting && !draftRun)
+                if (
+                  session &&
+                  !connectionError &&
+                  !session.busy &&
+                  !sending &&
+                  !reviewing &&
+                  !draftRunStarting &&
+                  !draftRun
+                )
                   void reviewDiff();
               }}
             >
@@ -1345,14 +1376,8 @@ export function AgentWidget({
             <section className="agent-pr-history" aria-label="Pull request history" aria-busy={historyLoading}>
               <AgentReviewHeading
                 title="Pull request history"
-                description="Pull requests created from your drafts, in one place."
-                actionLabel={historyLoading ? "Refreshing…" : "Refresh status"}
-                disabled={historyLoading}
-                onAction={() => void loadPullRequests(true)}
+                description="Pull requests created from your drafts, in one place. History loads when you open this tab."
               />
-              <AgentReviewNote title="Local preview status">
-                Status updates on refresh using the GitHub CLI account on this computer.
-              </AgentReviewNote>
               {historyLoading ? (
                 <AgentReviewStatus>Loading pull requests…</AgentReviewStatus>
               ) : historyError ? (
@@ -1504,31 +1529,37 @@ export function AgentWidget({
           {view === "changes" && (
             <section className="agent-diff" aria-label="Workspace changes" aria-busy={reviewing}>
               <AgentReviewHeading
-                title="Workspace changes"
-                description="Review the diff, sync with the target branch, then create a pull request."
-                actionLabel={reviewing ? "Refreshing…" : "Refresh"}
-                disabled={
-                  !session?.branch ||
-                  connectionError ||
-                  reviewing ||
-                  sending ||
-                  session.busy ||
-                  draftRunStarting ||
-                  Boolean(draftRun)
-                }
-                onAction={() => void reviewDiff()}
+                title="Review changes"
+                description="Review this draft and prepare it for a pull request. Changes load when you open this tab."
               />
               {session?.branch && (
                 <div className="agent-branch">
-                  <span>Local branch</span>
-                  <code>{session.branch}</code>
-                  {session.baseBranch && (
-                    <small>
-                      Target: <code>{session.baseBranch}</code>
-                    </small>
+                  <div className="agent-branch-heading">
+                    <span className="agent-branch-label">Local branch</span>
+                    <code className="agent-branch-name">{session.branch}</code>
+                  </div>
+                  {(session.baseBranch || session.baseCommit) && (
+                    <div className="agent-branch-meta">
+                      {session.baseBranch && (
+                        <span className="agent-branch-detail">
+                          <span>Target</span>
+                          <code>{session.baseBranch}</code>
+                        </span>
+                      )}
+                      {session.baseCommit && (
+                        <span className="agent-branch-detail">
+                          <span>Based on</span>
+                          <code>{session.baseCommit.slice(0, 7)}</code>
+                        </span>
+                      )}
+                    </div>
                   )}
-                  {session.baseCommit && <small>Based on {session.baseCommit.slice(0, 7)}</small>}
                 </div>
+              )}
+              {reviewNotice && canShowReview && (
+                <p className="agent-changes-notice" role="status">
+                  {reviewNotice}
+                </p>
               )}
               {reviewing ? (
                 <AgentReviewStatus>Loading workspace changes...</AgentReviewStatus>
@@ -1538,42 +1569,19 @@ export function AgentWidget({
                 <AgentReviewStatus>Connect to the local agent to load workspace changes.</AgentReviewStatus>
               ) : !session.branch ? (
                 <AgentReviewStatus>
-                  The workspace is created when the agent starts working on this draft.
+                  No draft changes yet. Ask Q-Rex to make changes, then return here to review them.
                 </AgentReviewStatus>
               ) : session.busy || draftRunStarting || draftRun ? (
-                <AgentReviewStatus>Wait for the current work to finish, then refresh the changes.</AgentReviewStatus>
+                <AgentReviewStatus>
+                  Wait for the current work to finish, then reopen Changes to review the latest diff.
+                </AgentReviewStatus>
               ) : error && !patch ? (
-                <AgentReviewStatus>Changes could not be loaded. Use Refresh to try again.</AgentReviewStatus>
-              ) : reviewDigest ? (
-                <details className="agent-review-section">
-                  <summary>View technical file changes</summary>
-                  <pre className="agent-patch">
-                    {patch?.split("\n").map((line, index) => (
-                      <span
-                        className={
-                          line.startsWith("+")
-                            ? "addition"
-                            : line.startsWith("-")
-                              ? "deletion"
-                              : line.startsWith("@@")
-                                ? "hunk"
-                                : undefined
-                        }
-                        key={String(index)}
-                      >
-                        {`${line}\n`}
-                      </span>
-                    ))}
-                  </pre>
-                </details>
-              ) : (
-                <AgentReviewStatus>{patch || "No changes in this workspace."}</AgentReviewStatus>
-              )}
-              {reviewDigest && canShowReview && (
-                <AgentReviewNote as="div" title="Verification not recorded">
-                  Check the conversation for test results. Submitting changes does not mean tests passed.
-                </AgentReviewNote>
-              )}
+                <AgentReviewStatus>Changes could not be loaded. Reopen Changes to try again.</AgentReviewStatus>
+              ) : !reviewDigest ? (
+                <AgentReviewStatus>
+                  No changes yet. Ask Q-Rex to work on this draft, then return here to review them.
+                </AgentReviewStatus>
+              ) : null}
               {session?.syncConflicts && session.syncConflicts.length > 0 && (
                 <div className="agent-review-section agent-sync-conflicts" role="alert">
                   <h3>Resolve target-branch conflicts</h3>
@@ -1615,11 +1623,37 @@ export function AgentWidget({
                   ))}
                 </details>
               )}
+              {canShowReview && reviewDigest && (
+                <details className="agent-review-section">
+                  <summary>Review file changes (diff)</summary>
+                  <p className="agent-diff-help">
+                    Lines starting with + were added; lines starting with − were removed.
+                  </p>
+                  <pre className="agent-patch">
+                    {patch?.split("\n").map((line, index) => (
+                      <span
+                        className={
+                          line.startsWith("+")
+                            ? "addition"
+                            : line.startsWith("-")
+                              ? "deletion"
+                              : line.startsWith("@@")
+                                ? "hunk"
+                                : undefined
+                        }
+                        key={String(index)}
+                      >
+                        {`${line}\n`}
+                      </span>
+                    ))}
+                  </pre>
+                </details>
+              )}
               {canShowReview && scenarioReview?.hasChanges && (
                 <div className="agent-review-section agent-scenario-review">
-                  <h3>Scenario review</h3>
+                  <h3>Scenario approval</h3>
                   {scenarioReview.approved ? (
-                    <p>Approved for this version.</p>
+                    <p>Approved for the current scenario version. Changes to it will require another review.</p>
                   ) : scenarioReview.hasImplementation ? (
                     <p>
                       Approval is blocked by E2E implementation changes in this draft. Preserve them separately and
@@ -1627,7 +1661,10 @@ export function AgentWidget({
                     </p>
                   ) : (
                     <>
-                      <p>Review the scenario changes above before approving this version.</p>
+                      <p>
+                        Review the scenario preview and file changes above, then approve this version before
+                        implementation or submission.
+                      </p>
                       <AgentWorkspaceButton type="button" disabled={sending} onClick={() => void approveScenarios()}>
                         Approve scenario changes
                       </AgentWorkspaceButton>
@@ -1640,26 +1677,31 @@ export function AgentWidget({
                   className="agent-commit"
                   onSubmit={(event) => {
                     event.preventDefault();
-                    void finalize();
+                    setReviewConfirmation("finalize");
                   }}
                 >
                   <div className="agent-section-heading">
-                    <h3>Finalize changes</h3>
+                    <h3>Create a pull request</h3>
                     <span>
-                      Sync with the target first. Pull requests use the GitHub CLI account configured on this computer.
+                      The draft is synchronized with the target when you create the PR. If synchronization changes the
+                      draft, review it again before retrying.
                     </span>
                   </div>
-                  <label htmlFor="agent-commit-message">Change title</label>
+                  <label htmlFor="agent-commit-message">Pull request title</label>
                   <TextInput
                     id="agent-commit-message"
                     value={commitMessage}
                     onValueChange={setCommitMessage}
                     maxLength={200}
-                    placeholder="Describe these changes"
+                    placeholder="e.g. Add checkout validation scenarios"
                   />
                   {scenarioReview?.hasChanges && !scenarioReview.approved && (
-                    <p>Approve scenario changes before finalizing.</p>
+                    <p>Approve scenario changes above to continue.</p>
                   )}
+                  <p>
+                    Check the conversation for test results. Creating a PR does not mean tests passed. The PR uses the
+                    GitHub CLI account on this computer and appears in PR history.
+                  </p>
                   <AgentWorkspaceButton
                     type="button"
                     disabled={
@@ -1667,29 +1709,33 @@ export function AgentWidget({
                     }
                     onClick={() => void syncDraft()}
                   >
-                    {sending ? "Syncing…" : "Sync with target branch"}
+                    {sending ? "Working…" : "Sync now (optional)"}
                   </AgentWorkspaceButton>
                   <AgentWorkspaceButton
                     type="submit"
                     disabled={
-                      sending || draftRunStarting || Boolean(draftRun) || !reviewDigest || !commitMessage.trim()
+                      sending ||
+                      draftRunStarting ||
+                      Boolean(draftRun) ||
+                      !reviewDigest ||
+                      !commitMessage.trim() ||
+                      reviewBlocked
                     }
                   >
-                    Finalize and create pull request
+                    Create pull request
                   </AgentWorkspaceButton>
                 </form>
               )}
-              {Boolean(session?.history?.length) && (
-                <section className="agent-review-section">
-                  <h3>Your change history</h3>
-                  {session?.history?.map((item) => (
-                    <p key={item.url}>
-                      <PullRequestLink url={item.url}>
-                        {item.title} ? PR #{item.number}
-                      </PullRequestLink>{" "}
-                      <span>Submitted for review</span>
-                    </p>
-                  ))}
+              {canShowReview && reviewDigest && (
+                <section className="agent-review-section agent-delete-draft-section">
+                  <h3>Delete draft</h3>
+                  <p>
+                    Remove the reviewed changes and local branch. Your chat stays available, and a new branch will be
+                    created when the draft has changes again.
+                  </p>
+                  <button type="button" disabled={sending} onClick={() => setReviewConfirmation("reset")}>
+                    Delete draft
+                  </button>
                 </section>
               )}
             </section>
@@ -2338,6 +2384,45 @@ export function AgentWidget({
             </form>
           ) : null}
         </section>
+      )}
+      {reviewConfirmation && (
+        <Modal
+          className="prd-confirm-dialog agent-confirm-dialog"
+          labelledBy="agent-confirm-title"
+          onClose={() => setReviewConfirmation(undefined)}
+        >
+          <h2 id="agent-confirm-title">
+            {reviewConfirmation === "reset" ? "Delete draft changes?" : "Create pull request?"}
+          </h2>
+          <p>
+            {reviewConfirmation === "reset"
+              ? "This removes all reviewed changes and the local branch. Your chat stays available. You can create a new branch when the draft has changes again. This cannot be undone."
+              : "The reviewed changes will be finalized and submitted as a pull request using the GitHub CLI account on this computer."}
+          </p>
+          <div className="prd-confirm-actions">
+            <button
+              type="button"
+              className="prd-action-button"
+              disabled={sending}
+              onClick={() => setReviewConfirmation(undefined)}
+            >
+              {reviewConfirmation === "reset" ? "Keep draft" : "Cancel"}
+            </button>
+            <button
+              type="button"
+              className="prd-delete-button"
+              disabled={sending}
+              onClick={() => {
+                const action = reviewConfirmation;
+                setReviewConfirmation(undefined);
+                if (action === "reset") void resetChanges();
+                else void finalize();
+              }}
+            >
+              {reviewConfirmation === "reset" ? "Delete draft" : "Create pull request"}
+            </button>
+          </div>
+        </Modal>
       )}
       {!home && (
         <button

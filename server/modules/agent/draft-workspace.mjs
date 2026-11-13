@@ -117,31 +117,47 @@ export async function createDraftWorkspace({ userId, draftId, branch, targetBran
   mkdirSync(dirname(workspace), { recursive: true });
 
   if (existsSync(workspace)) {
-    const [topLevel, currentBranch] = await Promise.all([
-      git(["rev-parse", "--show-toplevel"], workspace),
-      git(["branch", "--show-current"], workspace),
-    ]);
-    if (resolve(topLevel.stdout.trim()) !== workspace || currentBranch.stdout.trim() !== branch)
+    const topLevel = await git(["rev-parse", "--show-toplevel"], workspace);
+    if (resolve(topLevel.stdout.trim()) !== workspace)
       throw new Error("A different worktree already exists at this draft path. It has been preserved.");
-    const mergeBase = await git(["merge-base", target.ref, branch], workspace).catch(() => undefined);
+    const checkedOutBranch = await git(["branch", "--show-current"], workspace);
+    let currentBranch = checkedOutBranch.stdout.trim();
+    if (!currentBranch && (await localBranchExists(branch))) {
+      const branchHead = (await git(["rev-parse", branch])).stdout.trim();
+      if (branchHead === target.commit) await git(["branch", "-D", branch]);
+      else {
+        await git(["switch", branch], workspace);
+        currentBranch = branch;
+      }
+    }
+    if (currentBranch && currentBranch !== branch)
+      throw new Error("A different worktree already exists at this draft path. It has been preserved.");
+    const mergeBase = currentBranch
+      ? await git(["merge-base", target.ref, branch], workspace).catch(() => undefined)
+      : undefined;
     const head = await git(["rev-parse", "HEAD"], workspace);
     return {
       workspace,
-      branch,
+      branch: currentBranch || undefined,
+      branchCandidate: branch,
       baseCommit: mergeBase?.stdout.trim() || target.commit,
       expectedHead: head.stdout.trim(),
       baseBranch: target.branch,
     };
   }
 
-  if (await localBranchExists(branch)) await git(["worktree", "add", workspace, branch]);
-  else await git(["worktree", "add", "-b", branch, workspace, target.ref]);
+  if (await localBranchExists(branch)) {
+    const branchHead = (await git(["rev-parse", branch])).stdout.trim();
+    if (branchHead === target.commit) await git(["branch", "-D", branch]);
+    else await git(["worktree", "add", workspace, branch]);
+  }
+  if (!existsSync(workspace)) await git(["worktree", "add", "--detach", workspace, target.ref]);
   const head = await git(["rev-parse", "HEAD"], workspace);
-  const mergeBase = await git(["merge-base", target.ref, "HEAD"], workspace).catch(() => undefined);
   return {
     workspace,
-    branch,
-    baseCommit: mergeBase?.stdout.trim() || target.commit,
+    branch: (await git(["branch", "--show-current"], workspace)).stdout.trim() || undefined,
+    branchCandidate: branch,
+    baseCommit: target.commit,
     expectedHead: head.stdout.trim(),
     baseBranch: target.branch,
   };

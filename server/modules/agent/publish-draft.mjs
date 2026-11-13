@@ -119,7 +119,7 @@ export async function refreshPullRequests(pullRequests, run = execute) {
       );
     }
     const current = JSON.parse(result.stdout);
-    if (!current || current.url !== item.url || !["OPEN", "CLOSED"].includes(current.state))
+    if (!current || current.url !== item.url || !["OPEN", "CLOSED", "MERGED"].includes(current.state))
       throw new Error("GitHub returned an invalid pull-request status.");
     refreshed.push({
       ...item,
