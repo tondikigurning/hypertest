@@ -1,6 +1,4 @@
 import { type FormEvent, type ReactNode, type RefObject, useState } from "react";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
 import {
   CloseButton,
   FormField,
@@ -13,6 +11,7 @@ import {
 } from "../../components";
 import { label } from "../scenarios/scenario";
 import { PrdDocumentIcon } from "./components/prd-document-icon";
+import { PrdMarkdown } from "./components/prd-markdown";
 import { usePrdVersions } from "./use-prd-versions";
 import type { Prd } from "./use-prds";
 import "./prd.css";
@@ -120,6 +119,7 @@ export function PrdCatalog({
   const [selectedId, setSelectedId] = useState("");
   const [editingName, setEditingName] = useState(false);
   const [editingContent, setEditingContent] = useState(false);
+  const [showEditorPreview, setShowEditorPreview] = useState(false);
   const [name, setName] = useState("");
   const [contentDraft, setContentDraft] = useState("");
   const [actionError, setActionError] = useState("");
@@ -233,6 +233,7 @@ export function PrdCatalog({
     if (!selectedVersion) return;
     setContentDraft(selectedVersion.content);
     setEditingContent(true);
+    setShowEditorPreview(false);
     setEditingName(false);
     setActionError("");
   }
@@ -421,16 +422,31 @@ export function PrdCatalog({
                     Saving reviewed content or adding validated requirements pauses for explicit PRD review in the Agent
                     panel.
                   </p>
-                  <FormField label="PRD Markdown" htmlFor="prd-version-content">
-                    <TextAreaInput
-                      id="prd-version-content"
-                      value={contentDraft}
-                      onValueChange={setContentDraft}
-                      rows={18}
-                      spellCheck={false}
-                      autoFocus
-                    />
-                  </FormField>
+                  <fieldset className="prd-editor-tabs">
+                    <legend>Document view</legend>
+                    <button type="button" aria-pressed={!showEditorPreview} onClick={() => setShowEditorPreview(false)}>
+                      Markdown
+                    </button>
+                    <button type="button" aria-pressed={showEditorPreview} onClick={() => setShowEditorPreview(true)}>
+                      Preview
+                    </button>
+                  </fieldset>
+                  {showEditorPreview ? (
+                    <div className="prd-editor-preview">
+                      <PrdMarkdown content={contentDraft.replace(/^---\s*\r?\n[\s\S]*?\r?\n---(?:\r?\n|$)/, "")} />
+                    </div>
+                  ) : (
+                    <FormField label="PRD Markdown" htmlFor="prd-version-content">
+                      <TextAreaInput
+                        id="prd-version-content"
+                        value={contentDraft}
+                        onValueChange={setContentDraft}
+                        rows={18}
+                        spellCheck={false}
+                        autoFocus
+                      />
+                    </FormField>
+                  )}
                   <EditorActions
                     busy={busy}
                     label="Save changes"
@@ -467,21 +483,12 @@ export function PrdCatalog({
                 </p>
               )}
               {frontMatter && !editingContent && (
-                <div className="prd-frontmatter">
-                  <strong>Document details</strong>
+                <details className="prd-frontmatter">
+                  <summary>Document details</summary>
                   <pre>{frontMatter[1]}</pre>
-                </div>
+                </details>
               )}
-              {!editingContent && (
-                <article className="prd-document">
-                  <ReactMarkdown
-                    remarkPlugins={[remarkGfm]}
-                    components={{ img: ({ alt }) => <span>{alt || "Image"}</span> }}
-                  >
-                    {markdown || ""}
-                  </ReactMarkdown>
-                </article>
-              )}
+              {!editingContent && <PrdMarkdown content={markdown || ""} />}
             </div>
           )}
         </div>

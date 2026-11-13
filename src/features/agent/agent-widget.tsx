@@ -9,6 +9,7 @@ import { useRunEnvironment } from "../runs/use-run-environment";
 import { label as displayLabel } from "../scenarios/scenario";
 import { agentFetch, getActiveDraftId, setActiveDraftId } from "./agent-api";
 import { AgentSettings } from "./agent-settings";
+import { AgentChatMessage } from "./components/agent-chat-message";
 import {
   AgentContextAction,
   AgentContextError,
@@ -120,6 +121,27 @@ interface DraftFeature {
 }
 const endpoint = "/api/agent";
 
+function formatHistoryDate(value: string | undefined) {
+  if (!value) return undefined;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return undefined;
+  return new Intl.DateTimeFormat(undefined, { dateStyle: "medium" }).format(date);
+}
+
+function summarizePatch(patch: string | undefined) {
+  const files: Array<string> = [];
+  let additions = 0;
+  let deletions = 0;
+  for (const line of patch?.split("\n") ?? []) {
+    if (line.startsWith("diff --git ")) {
+      const match = line.match(/^diff --git a\/(.+) b\/(.+)$/);
+      files.push(match?.[2] ?? line.slice("diff --git ".length));
+    } else if (line.startsWith("+") && !line.startsWith("+++")) additions++;
+    else if (line.startsWith("-") && !line.startsWith("---")) deletions++;
+  }
+  return { files: [...new Set(files)], additions, deletions };
+}
+
 const contextStorageKey = "automation-agent-contexts";
 const commands = [
   { name: "ask-qa", description: "Ask about testing or investigate a scenario." },
@@ -221,6 +243,7 @@ export function AgentWidget({
   const widgetDrag = useWidgetDrag(!home);
   const [view, setView] = useState<"chat" | "changes" | "history" | "settings">("chat");
   const [message, setMessage] = useState("");
+  const [showScrollToLatest, setShowScrollToLatest] = useState(false);
   const [waves, setWaves] = useState(0);
   const [selectedSkill, setSelectedSkill] = useState<string>();
   const [contexts, setContexts] = useState<Array<ContextAttachment>>(() => initialContexts(scenario, feature));
@@ -268,6 +291,11 @@ export function AgentWidget({
       setMessage(value.slice(match[0].length));
     } else setMessage(value);
     setSkillsOpen(false);
+    composerRef.current?.focus();
+  };
+  const prepareFeedback = (prompt: string) => {
+    setMessage(prompt);
+    setView("chat");
     composerRef.current?.focus();
   };
   useEffect(() => {
@@ -340,6 +368,7 @@ export function AgentWidget({
   const [pullRequests, setPullRequests] = useState<Array<PullRequestRecord>>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyError, setHistoryError] = useState("");
+  const [historyStatus, setHistoryStatus] = useState("all");
   useEffect(() => {
     const update = () => setDraftIdState(getActiveDraftId());
     window.addEventListener("automation-agent-draft-change", update);
@@ -380,6 +409,22 @@ export function AgentWidget({
   }>();
   const [preview, setPreview] = useState<Array<DraftFeature>>([]);
   const [commitMessage, setCommitMessage] = useState("");
+  const patchSummary = useMemo(() => summarizePatch(patch), [patch]);
+  const historyCounts = useMemo(() => {
+    const counts = { open: 0, merged: 0, closed: 0 };
+    for (const pullRequest of pullRequests) {
+      const status = pullRequest.status.toLowerCase();
+      if (status === "open" || status === "merged" || status === "closed") counts[status]++;
+    }
+    return counts;
+  }, [pullRequests]);
+  const visiblePullRequests = useMemo(
+    () =>
+      historyStatus === "all"
+        ? pullRequests
+        : pullRequests.filter((pullRequest) => pullRequest.status.toLowerCase() === historyStatus),
+    [historyStatus, pullRequests],
+  );
   const requestNumber = useRef(0);
   const latestResponse = useRef(0);
   const messagesRef = useRef<HTMLDivElement>(null);
@@ -506,6 +551,8 @@ export function AgentWidget({
       setScenarioReview(undefined);
       setPreview([]);
       setView("chat");
+      setShowScrollToLatest(false);
+      followMessages.current = true;
     },
     [draftRun, draftRunStarting, reviewing, sending, session?.busy],
   );
@@ -1107,6 +1154,8 @@ export function AgentWidget({
       setConfirmReset(false);
       setView("chat");
       setMessage("");
+      setShowScrollToLatest(false);
+      followMessages.current = true;
       setSelectedSkill(undefined);
       {
         const selected = selectionAttachment(scenario, feature);
@@ -1434,15 +1483,40 @@ export function AgentWidget({
             <section className="agent-pr-history" aria-label="Pull request history" aria-busy={historyLoading}>
               <AgentReviewHeading
                 title="Pull request history"
-                description="Pull requests created from your drafts, in one place. History loads when you open this tab."
+                description="Pull requests created from drafts in this browser's local preview."
+                actionLabel={historyLoading ? "Refreshing…" : "Refresh"}
+                disabled={historyLoading}
+                onAction={() => void loadPullRequests()}
               />
+              {!historyLoading && !historyError && pullRequests.length > 0 && (
+                <fieldset className="agent-history-filters">
+                  <legend className="agent-sr-only">Filter pull requests by status</legend>
+                  {(
+                    [
+                      ["all", "All", pullRequests.length],
+                      ["open", "Open", historyCounts.open],
+                      ["merged", "Merged", historyCounts.merged],
+                      ["closed", "Closed", historyCounts.closed],
+                    ] as const
+                  ).map(([status, label, count]) => (
+                    <button
+                      type="button"
+                      key={status}
+                      aria-pressed={historyStatus === status}
+                      onClick={() => setHistoryStatus(status)}
+                    >
+                      {label} <span>{count}</span>
+                    </button>
+                  ))}
+                </fieldset>
+              )}
               {historyLoading ? (
                 <AgentReviewStatus>Loading pull requests…</AgentReviewStatus>
               ) : historyError ? (
-                <AgentAlert>{historyError} Try refreshing the history again.</AgentAlert>
-              ) : pullRequests.length ? (
+                <AgentAlert>{historyError}</AgentAlert>
+              ) : visiblePullRequests.length ? (
                 <ul className="agent-pr-list">
-                  {pullRequests.map((pullRequest) => (
+                  {visiblePullRequests.map((pullRequest) => (
                     <li key={pullRequest.url}>
                       <div className="agent-pr-main">
                         <span className="agent-pr-number">PR #{pullRequest.number}</span>
@@ -1450,6 +1524,21 @@ export function AgentWidget({
                         <small>
                           <code>{pullRequest.branch}</code> → <code>{pullRequest.baseBranch}</code>
                         </small>
+                        {formatHistoryDate(pullRequest.createdAt) && (
+                          <small className="agent-pr-date">
+                            Created{" "}
+                            <time dateTime={pullRequest.createdAt}>{formatHistoryDate(pullRequest.createdAt)}</time>
+                            {formatHistoryDate(pullRequest.mergedAt || pullRequest.closedAt) && (
+                              <>
+                                <span aria-hidden="true"> · </span>
+                                {pullRequest.mergedAt ? "Merged" : "Closed"}{" "}
+                                <time dateTime={pullRequest.mergedAt || pullRequest.closedAt}>
+                                  {formatHistoryDate(pullRequest.mergedAt || pullRequest.closedAt)}
+                                </time>
+                              </>
+                            )}
+                          </small>
+                        )}
                       </div>
                       <span className="agent-pr-status" data-status={pullRequest.status.toLowerCase()}>
                         {pullRequest.status.toLowerCase()}
@@ -1457,6 +1546,8 @@ export function AgentWidget({
                     </li>
                   ))}
                 </ul>
+              ) : pullRequests.length ? (
+                <AgentReviewStatus>No {historyStatus} pull requests in this history.</AgentReviewStatus>
               ) : (
                 <AgentReviewStatus>
                   No pull requests yet. Finalize a reviewed draft to see it here. History belongs to this browser's
@@ -1471,7 +1562,9 @@ export function AgentWidget({
               ref={messagesRef}
               onScroll={(event) => {
                 const el = event.currentTarget;
-                followMessages.current = el.scrollHeight - el.scrollTop - el.clientHeight < 48;
+                const atLatest = el.scrollHeight - el.scrollTop - el.clientHeight < 48;
+                followMessages.current = atLatest;
+                setShowScrollToLatest(!atLatest);
               }}
               aria-live="polite"
               aria-relevant="additions text"
@@ -1492,9 +1585,20 @@ export function AgentWidget({
                 </div>
               )}
               {!selectedDraft && !draftsLoading && !draftError && (
-                <p className="agent-review-empty" role="status">
-                  Create a local draft to start chatting.
-                </p>
+                <div className="agent-chat-empty" role="status">
+                  <QRex mood="idle" large />
+                  <span className="agent-eyebrow">GET STARTED</span>
+                  <h2>Give Q-Rex a workspace</h2>
+                  <p>Create a local draft to explore coverage, design scenarios, and review changes together.</p>
+                  {showDraftForm ? (
+                    <span className="agent-chat-empty-progress">Complete the draft details above to continue.</span>
+                  ) : (
+                    <button type="button" onClick={() => setShowDraftForm(true)}>
+                      Create a draft
+                    </button>
+                  )}
+                  <small>Draft changes stay in a separate local worktree until you submit them for review.</small>
+                </div>
               )}
               {draftsLoading && !selectedDraft && (
                 <p className="agent-review-empty" role="status">
@@ -1555,20 +1659,7 @@ export function AgentWidget({
                 )}
 
               {session?.messages.map((item) => (
-                <div className={`agent-message ${item.role}`} key={item.id}>
-                  <strong>{item.role === "user" ? "You" : item.role === "tool" ? "HyperTest runner" : "Q-Rex"}</strong>
-                  {(item.skill || item.contexts?.length) && (
-                    <div className="agent-message-contexts">
-                      {item.skill && <span className="agent-message-skill">/{item.skill}</span>}
-                      {item.contexts?.map((context) => (
-                        <span key={context.id} title={context.source}>
-                          {context.label}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                  <p>{item.text}</p>
-                </div>
+                <AgentChatMessage key={item.id} item={item} onFeedback={prepareFeedback} />
               ))}
               {session?.busy && !session.userRequest && !session.approvalRequest && (
                 <div className="agent-working" role="status">
@@ -1580,16 +1671,34 @@ export function AgentWidget({
                         ...
                       </span>
                     </strong>
+                    <span>Reading the draft and preparing a response. You can stop this turn at any time.</span>
                   </div>
                 </div>
               )}
+              {showScrollToLatest && session?.messages.length ? (
+                <button
+                  className="agent-scroll-latest"
+                  type="button"
+                  onClick={() => {
+                    const container = messagesRef.current;
+                    if (container) container.scrollTo({ top: container.scrollHeight, behavior: "smooth" });
+                    followMessages.current = true;
+                    setShowScrollToLatest(false);
+                  }}
+                >
+                  Latest messages ↓
+                </button>
+              ) : null}
             </div>
           )}
           {view === "changes" && (
             <section className="agent-diff" aria-label="Workspace changes" aria-busy={reviewing}>
               <AgentReviewHeading
                 title="Review changes"
-                description="Review this draft and prepare it for a pull request. Changes load when you open this tab."
+                description="Inspect the current draft before approving scenarios or creating a pull request."
+                actionLabel={reviewing ? "Refreshing…" : "Refresh"}
+                disabled={reviewing || sending || Boolean(session?.busy || draftRunStarting || draftRun) || !session}
+                onAction={() => void reviewDiff()}
               />
               {session?.branch && (
                 <div className="agent-branch">
@@ -1619,6 +1728,29 @@ export function AgentWidget({
                 <p className="agent-changes-notice" role="status">
                   {reviewNotice}
                 </p>
+              )}
+              {canShowReview && reviewDigest && (
+                <section className="agent-change-summary" aria-label="Change summary">
+                  <div className="agent-change-metrics">
+                    <span>
+                      <strong>{patchSummary.files.length}</strong> {patchSummary.files.length === 1 ? "file" : "files"}
+                    </span>
+                    <span className="agent-change-added">+{patchSummary.additions} added</span>
+                    <span className="agent-change-removed">−{patchSummary.deletions} removed</span>
+                  </div>
+                  {patchSummary.files.length > 0 && (
+                    <details>
+                      <summary>Files changed</summary>
+                      <ul>
+                        {patchSummary.files.map((file) => (
+                          <li key={file}>
+                            <code>{file}</code>
+                          </li>
+                        ))}
+                      </ul>
+                    </details>
+                  )}
+                </section>
               )}
               {reviewing ? (
                 <AgentReviewStatus>Loading workspace changes...</AgentReviewStatus>
@@ -1692,9 +1824,9 @@ export function AgentWidget({
                     {patch?.split("\n").map((line, index) => (
                       <span
                         className={
-                          line.startsWith("+")
+                          line.startsWith("+") && !line.startsWith("+++")
                             ? "addition"
-                            : line.startsWith("-")
+                            : line.startsWith("-") && !line.startsWith("---")
                               ? "deletion"
                               : line.startsWith("@@")
                                 ? "hunk"
