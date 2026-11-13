@@ -112,7 +112,8 @@ export async function createDraftWorkspace({ userId, draftId, branch, targetBran
   if (!idPattern.test(userId) || !idPattern.test(draftId)) throw new Error("The local draft identity is invalid.");
   if (typeof branch !== "string" || !/^draft\/local\/[a-z0-9-]+-[a-f0-9]{8}$/.test(branch))
     throw new Error("The local draft branch name is invalid.");
-  const target = await resolveTarget(targetBranch);
+  // Starting a conversation uses the last locally known target; synchronization refreshes it explicitly.
+  const target = await resolveTarget(targetBranch, { refresh: false });
   const workspace = validateWorktreePath(join(workspacesRoot, userId, draftId, "workspace"));
   mkdirSync(dirname(workspace), { recursive: true });
 

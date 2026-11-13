@@ -104,3 +104,15 @@ export const agentUsage = pgTable(
     check("automation_agent_usage_output_tokens_check", sql`${table.outputTokens} >= 0`),
   ],
 );
+
+export const agentPrds = pgTable(
+  "automation_agent_prds",
+  {
+    userId: text("user_id").notNull(),
+    module: text("module").notNull(),
+    submodule: text("submodule").notNull(),
+    state: jsonb("state").notNull(),
+    revision: integer("revision").notNull().default(1),
+  },
+  (table) => [primaryKey({ columns: [table.userId, table.module, table.submodule] })],
+);

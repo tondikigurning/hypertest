@@ -37,6 +37,7 @@ import {
 } from "./draft-store.mjs";
 import { createDraftWorkspace, listDraftTargets } from "./draft-workspace.mjs";
 import { listPrds } from "./prd-catalog.mjs";
+import { createPrdDatabase } from "./prd-database.mjs";
 import { refreshPullRequests } from "./publish-draft.mjs";
 
 const sessions = new Map();
@@ -77,6 +78,7 @@ function sessionFor(id, draftId, draft) {
       key,
       createSession({
         userId: id,
+        prdStore: createPrdDatabase(id),
         stateFile,
         preferencesFile: join(sessionsRoot, id, "model-preferences.json"),
         ...(draftId !== "default" && draft

@@ -26,7 +26,7 @@ async function waitFor(session, predicate) {
   assert.fail(`Agent did not reach the expected state: ${JSON.stringify(session.snapshot())}`);
 }
 
-async function workflow(t, responses, runtime = {}, files = {}) {
+async function workflow(t, responses, runtime = {}, files = {}, prdStore) {
   const root = await mkdtemp(join(tmpdir(), "automation-agent-workflow-"));
   const workspace = join(root, "workspace");
   for (const name of ["ask-qa", "write-prd", "write-e2e-scenarios", "write-e2e-code"]) {
@@ -99,6 +99,7 @@ async function workflow(t, responses, runtime = {}, files = {}) {
   await once(server, "listening");
   const session = createSession({
     stateFile: join(root, "session.json"),
+    prdStore,
     prepareWorkspace: async () => ({ workspace, branch, baseBranch: branch, baseCommit: head, expectedHead: head }),
     runtime: {
       getProviderCredential: async () => ({
@@ -119,6 +120,36 @@ async function workflow(t, responses, runtime = {}, files = {}) {
   await session.setModel("9router", "test/model");
   return { session, workspace, requests };
 }
+
+test("PRD workflow writes through the database adapter and requests review", async (t) => {
+  let content;
+  const prdStore = {
+    list: async () => [],
+    read: async () => content,
+    write: async (_path, next, { requestApproval, signal }) => {
+      const approved = await requestApproval({ kind: "prd-review", reason: "Review PRD", command: next, signal });
+      if (!approved) throw new Error("Declined");
+      content = next;
+      return true;
+    },
+  };
+  const prd = "---\nstatus: reviewed\n---\n[validated] Read orders\n";
+  const { session, workspace } = await workflow(
+    t,
+    [{ tool: "write_file", input: { path: prdPath, content: prd } }, { text: "PRD saved." }],
+    {},
+    {},
+    prdStore,
+  );
+  await session.send("Create the PRD", undefined, undefined, [], "write-prd");
+  const pending = await waitFor(session, (state) => state.approvalRequest || !state.busy);
+  assert.equal(pending.approvalRequest?.kind, "prd-review");
+  session.decideApproval(pending.approvalRequest.id, "accept");
+  await waitFor(session, (state) => !state.busy);
+  assert.equal(content, prd);
+  await assert.rejects(readFile(join(workspace, prdPath)), { code: "ENOENT" });
+  assert.equal((await git("git", ["status", "--porcelain"], { cwd: workspace })).stdout, "");
+});
 
 test("chat hands off skills and reviews artifacts without running workspace scenarios", async (t) => {
   const prd = "---\nstatus: reviewed\n---\n# Orders\n- [validated] Users can list orders.\n";

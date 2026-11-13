@@ -114,6 +114,7 @@ export function createAgentTools({
   onFileWritten,
   confirmFlows,
   useSkill,
+  prdStore,
 }) {
   const pathSchema = z.object({ path: z.string().describe("Relative path inside this draft workspace.") });
   const agentTools = {
@@ -130,7 +131,24 @@ export function createAgentTools({
     list_files: tool({
       description: "List source files available in this draft workspace. Secret files and dependencies are omitted.",
       inputSchema: z.object({ directory: z.string().optional().describe("Optional relative directory to list.") }),
-      execute: async ({ directory }) => (await listWorkspaceFiles(workspace, directory || "")).slice(0, 400),
+      execute: async ({ directory }) => {
+        const files = await listWorkspaceFiles(workspace, directory || "").catch((error) => {
+          if (prdStore && error.code === "ENOENT" && /^docs\/prd(?:\/|$)/.test(directory || "")) return [];
+          throw error;
+        });
+        if (prdStore && (!directory || directory === "docs/prd" || directory.startsWith("docs/prd/"))) {
+          const prds = await prdStore.list();
+          return [
+            ...new Set([
+              ...files.filter((path) => !/^docs\/prd\/[^/]+\/[^/]+\.md$/i.test(path)),
+              ...prds
+                .map(({ module, submodule }) => `docs/prd/${module}/${submodule}.md`)
+                .filter((path) => !directory || path.startsWith(`${directory}/`)),
+            ]),
+          ].slice(0, 400);
+        }
+        return files.slice(0, 400);
+      },
     }),
     read_file: tool({
       description:
@@ -146,6 +164,20 @@ export function createAgentTools({
           .describe("Number of lines, up to 500. Defaults to 200 when paging."),
       }),
       execute: async ({ path, startLine, lineCount }) => {
+        if (prdStore?.isPrd(path)) {
+          const content = await prdStore.read(path);
+          if (content === undefined) throw new Error("The PRD does not exist in the database.");
+          if (startLine === undefined && lineCount === undefined && Buffer.byteLength(content) <= 64000)
+            return redact(content, variables);
+          const lines = content.split(/\r?\n/);
+          const first = startLine ?? 1;
+          const page = lines.slice(first - 1, first - 1 + (lineCount ?? 200)).join("\n");
+          if (Buffer.byteLength(page) > 64000) throw new Error("This page exceeds 64 KB. Request fewer lines.");
+          return redact(
+            `Lines ${first}-${first + Math.min(lineCount ?? 200, lines.length - first + 1) - 1} of ${lines.length}\n${page}`,
+            variables,
+          );
+        }
         const absolute = await safeWorkspacePath(workspace, path);
         const info = await lstat(absolute);
         if (!info.isFile() || info.nlink > 1 || info.size > 2 * 1024 * 1024)
@@ -168,6 +200,12 @@ export function createAgentTools({
         content: z.string().max(262144).describe("Complete UTF-8 file contents, up to 256 KB."),
       }),
       execute: async ({ path, content }) => {
+        if (prdStore?.isPrd(path)) {
+          await prdStore.write(path, content);
+          return { path, bytesWritten: Buffer.byteLength(content), storage: "database" };
+        }
+        if (prdStore && /^docs\/prd\//i.test(path.replaceAll("\\", "/")))
+          throw new Error("Use a valid module and submodule PRD identifier.");
         const absolute = await safeWorkspacePath(workspace, path);
         const before = await readExistingForWrite(absolute);
         await authorizeFileWrite?.(path, content);
@@ -189,6 +227,21 @@ export function createAgentTools({
         newText: z.string().max(32000),
       }),
       execute: async ({ path, oldText, newText }) => {
+        if (prdStore?.isPrd(path)) {
+          const content = await prdStore.read(path);
+          if (content === undefined) throw new Error("The PRD does not exist in the database.");
+          const first = content.indexOf(oldText);
+          if (first < 0 || content.indexOf(oldText, first + oldText.length) >= 0)
+            throw new Error("The exact old text must occur once.");
+          await prdStore.write(
+            path,
+            content.slice(0, first) + newText + content.slice(first + oldText.length),
+            content,
+          );
+          return { path, updated: true, storage: "database" };
+        }
+        if (prdStore && /^docs\/prd\//i.test(path.replaceAll("\\", "/")))
+          throw new Error("Use a valid module and submodule PRD identifier.");
         const absolute = await safeWorkspacePath(workspace, path);
         const info = await lstat(absolute);
         if (!info.isFile() || info.nlink > 1 || info.size > 262144)

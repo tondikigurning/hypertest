@@ -77,6 +77,7 @@ export async function confirmFlowReview({
   redact,
   requestApproval,
   signal,
+  readPrd = (path) => readOptionalFile(workspace, path),
 }) {
   const feature = featureReviewPath(featurePath);
   const prd = prdPath.replaceAll("\\", "/");
@@ -93,7 +94,7 @@ export async function confirmFlowReview({
   )
     throw new Error("Provide distinct flow IDs and descriptions.");
   const featureContent = await readOptionalFile(workspace, feature);
-  const prdContent = await readOptionalFile(workspace, prd);
+  const prdContent = (await readPrd(prd)) || "";
   if (!isReviewedPrd(prdContent)) throw new Error("A matching reviewed PRD is required before confirming flows.");
   const list = flows.map((flow) => `${flow.id.trim()}: ${flow.description.trim()}`).join("\n");
   if (redact(list) !== list)
@@ -107,10 +108,7 @@ export async function confirmFlowReview({
   if (!accepted || signal?.aborted) return undefined;
   await safePath(workspace, feature);
   await safePath(workspace, prd);
-  if (
-    (await readOptionalFile(workspace, feature)) !== featureContent ||
-    (await readOptionalFile(workspace, prd)) !== prdContent
-  )
+  if ((await readOptionalFile(workspace, feature)) !== featureContent || ((await readPrd(prd)) || "") !== prdContent)
     throw new Error("The feature or PRD changed while awaiting confirmation. Review the flow list again.");
   return {
     feature,
@@ -122,7 +120,14 @@ export async function confirmFlowReview({
   };
 }
 
-export async function authorizeFlowWrite({ workspace, path, content, confirmations, safePath }) {
+export async function authorizeFlowWrite({
+  workspace,
+  path,
+  content,
+  confirmations,
+  safePath,
+  readPrd = (value) => readOptionalFile(workspace, value),
+}) {
   const feature = featureReviewPath(path);
   if (!feature) return;
   const before = await readOptionalFile(workspace, feature);
@@ -139,7 +144,7 @@ export async function authorizeFlowWrite({ workspace, path, content, confirmatio
     changedFlows.some((id) => !approval.ids.includes(id)) ||
     typeof approval.prd !== "string" ||
     !/^docs\/prd\/.+\.md$/i.test(approval.prd) ||
-    approval.prdDigest !== contentDigest(await readOptionalFile(workspace, approval.prd))
+    approval.prdDigest !== contentDigest((await readPrd(approval.prd)) || "")
   )
     throw new Error("Confirm the affected flow list with the matching reviewed PRD before changing scenario intent.");
 }

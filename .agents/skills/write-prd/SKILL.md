@@ -7,6 +7,8 @@ description: Create, import, refresh or review a sub-module PRD or product requi
 
 Produces one reviewed Markdown PRD for one sub-module at `docs/prd/<module>/<submodule>.md`. It runs **before** `write-e2e-scenarios`: the scenario skill reads this PRD for product context instead of tracing frontend source, which this project cannot see.
 
+In Q-Rex, that path is a virtual PRD identifier backed by the database. Use the agent's file tools with this identifier; the content and versions are not repository changes. Review the proposed PRD in the PRD interface and approval request. Outside Q-Rex, use the repository documentation workflow as usual.
+
 This skill writes documentation only. It does not write `.feature` files, flow registries, scenario or flow IDs, steps, POMs or mocks. Those belong to `write-e2e-scenarios` and `write-e2e-code`.
 
 References (read only when the step says so):
@@ -130,7 +132,7 @@ Check the PRD against this list and fix what fails:
 
 ## Step 6 — Review gate and stop
 
-Present a short summary table (area, number of items by provenance, discrepancies, candidate defects, open questions) and link the PRD file or its diff for review.
+Present a short summary table (area, number of items by provenance, discrepancies, candidate defects, open questions) and link the PRD for review. In Q-Rex, direct the user to its PRD view; the PRD is not in the Git diff.
 
 Ask: "Is this PRD accurate enough to use as product context for scenarios?" Offer these choices and explain any recommendation:
 

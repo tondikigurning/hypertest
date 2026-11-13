@@ -76,6 +76,8 @@ For review or extension of existing scenarios, compare their observed outcomes w
 
 ## Step 0b — Context interview (required)
 
+In Q-Rex, PRD paths identify database documents. Use the agent file tools to read them; PRD content is not part of the Git diff.
+
 Scope tells the agent _where_ to look. Product context tells it _what matters_. Use the topics below as a checklist for discovery. Consult the PRD, existing scenarios and user context first; ask only consequential unresolved questions. Record unknowns and assumptions without presenting them as confirmed requirements. Explicit review and data-safety gates still apply.
 
 Before scenario discovery in any mode, find and read the matching `docs/prd/<module>/<submodule>.md`. A matching `status: reviewed` PRD covering the requested scope is mandatory. If it is absent, draft, or does not cover the scope, apply [write-prd](../write-prd/SKILL.md) to create, review or refresh it; stop at its review gate and resume this workflow only after the applicable PRD review is explicitly approved. If multiple PRDs match or scope is ambiguous, resolve that ambiguity. Reuse answered context. Treat validated items as confirmed product context and unvalidated `spec` items as stated requirements; keep unvalidated observations and assumptions visibly unconfirmed. Do not use unresolved conflicts or assumptions as intended behavior. Record the PRD path, status, relevant item IDs and gaps in the flow-list review. PRD approval does not approve the flow list or scenarios.

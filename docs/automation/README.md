@@ -11,6 +11,8 @@ Follow the root [README](../../README.md) for dependencies, PostgreSQL, migratio
 The agent automatically prepares one workspace using the default target branch (development when available). Configure a provider and choose a model that has passed the tool-calling check. Drafts use committed source in a separate worktree; uncommitted changes in
 the explorer checkout do not appear there. The API runtime uses the running checkout's implementation.
 Skill files and product/test sources are read from the selected draft's committed base and draft edits.
+Preparing a workspace uses the locally cached target branch without contacting GitHub. Synchronizing a
+draft fetches the target branch from origin and may require Git authentication.
 
 For tenant exploration, select the environment and enter `E2E_USERNAME` and `E2E_PASSWORD` in browser
 Variables. Chat sends these variables separately to the local API, including when starting from
@@ -31,7 +33,9 @@ The default workflow uses the review gates below. When an approval is pending, *
    resolving their current draft source. Missing or ambiguous identities are rejected.
 2. `write-prd` imports or explores one sub-module and records requirement provenance. Writing
    `status: reviewed` or new validated content presents the complete proposed document for explicit
-   PRD approval. After approval Q-Rex reports and stops; scenario discovery resumes on another turn.
+   PRD approval. PRDs and their versions are stored in PostgreSQL; their `docs/prd/...` paths are
+   virtual identifiers for the agent tools, not Git changes. Existing checkout PRDs remain separate
+   baseline files. After approval Q-Rex reports and stops; scenario discovery resumes on another turn.
 3. `write-e2e-scenarios` reads the matching reviewed PRD and explores the tenant. `confirm_flows`
    presents the described flow list for confirmation before scenario-intent changes. Confirmation
    is tied to the current PRD and feature contents and does not approve the scenarios.
