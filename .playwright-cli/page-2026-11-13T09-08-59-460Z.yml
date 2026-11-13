@@ -1,0 +1,156 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e112]:
+    - button "Toggle Sidebar" [ref=e113]
+    - main [ref=e115]:
+      - generic [ref=e116]:
+        - generic [ref=e117]:
+          - generic [ref=e118]:
+            - button "Toggle Sidebar" [ref=e360] [cursor=pointer]
+            - button "Module Selector" [ref=e119] [cursor=pointer]
+            - link [ref=e121] [cursor=pointer]:
+              - /url: /
+              - img "Hyperscal Logo" [ref=e122]
+              - text: HYPERSCAL
+          - generic [ref=e123]:
+            - generic [ref=e125] [cursor=pointer]:
+              - paragraph [ref=e127]: Offline
+              - generic "Unavailable" [ref=e129]
+            - generic "Notifications" [ref=e131] [cursor=pointer]: 99+
+            - button [ref=e136]:
+              - generic [ref=e137] [cursor=pointer]:
+                - paragraph [ref=e141]: TG
+                - paragraph [ref=e142]: Hi, Tondiki Gurning
+        - status [ref=e347]:
+          - generic [ref=e352]:
+            - generic [ref=e353]:
+              - heading "Live updates are paused" [level=3] [ref=e354]
+              - button "Close alert" [ref=e355] [cursor=pointer]
+            - paragraph [ref=e357]: The rest of the page works normally, but it won't refresh on its own right now.
+            - button "Retry" [ref=e359] [cursor=pointer]
+        - generic [ref=e163]:
+          - complementary [ref=e363]:
+            - generic "System Settings Sidebar" [ref=e364]:
+              - list [ref=e367]:
+                - generic [ref=e368]:
+                  - paragraph [ref=e370]: System Settings
+                  - list [ref=e372]:
+                    - listitem [ref=e373]:
+                      - menuitem "Profanity Settings" [ref=e374] [cursor=pointer]
+                    - listitem [ref=e377]:
+                      - menuitem "Connected Services" [ref=e378] [cursor=pointer]
+                    - listitem [ref=e381]:
+                      - menuitem "Policies" [ref=e382] [cursor=pointer]
+                    - listitem [ref=e385]:
+                      - menuitem "Message Templates" [ref=e386] [cursor=pointer]
+                    - listitem [ref=e389]:
+                      - menuitem "Concurrency Settings" [ref=e390] [cursor=pointer]
+          - main [ref=e393]:
+            - generic [ref=e394]:
+              - navigation "breadcrumb" [ref=e395]:
+                - generic [ref=e396]:
+                  - list [ref=e397]:
+                    - listitem [ref=e398]:
+                      - link [ref=e399] [cursor=pointer]:
+                        - /url: /
+                        - paragraph [ref=e400]
+                      - generic [aria-hidden] [ref=e402]: /
+                    - listitem [ref=e403]:
+                      - link [ref=e404] [cursor=pointer]:
+                        - /url: /system-settings
+                        - paragraph [ref=e405]: SYSTEM SETTINGS
+                      - generic [aria-hidden] [ref=e406]: /
+                  - list [ref=e407]:
+                    - listitem [ref=e408]:
+                      - paragraph [ref=e409] [cursor=pointer]: POLICIES
+              - button "Create New Policy" [ref=e411] [cursor=pointer]
+            - generic [ref=e418]:
+              - paragraph [ref=e421]: 0 rows selected
+              - generic [ref=e422]:
+                - button "Refresh" [ref=e425] [cursor=pointer]
+                - generic [ref=e427]:
+                  - generic [ref=e428]:
+                    - button "Previous Page" [disabled] [ref=e430]
+                    - button "Next Page" [disabled] [ref=e432]
+                  - generic [ref=e434]:
+                    - button "Table settings" [disabled]
+              - table [ref=e438]:
+                - rowgroup [ref=e439]:
+                  - row [ref=e440]:
+                    - columnheader [ref=e441]
+                    - columnheader [ref=e443]
+                    - columnheader [ref=e445]
+                    - columnheader [ref=e447]
+                    - columnheader [ref=e449]
+                    - columnheader [ref=e451]
+                - rowgroup [ref=e453]:
+                  - row [ref=e454]:
+                    - cell [ref=e455]
+                    - cell [ref=e457]
+                    - cell [ref=e459]
+                    - cell [ref=e461]
+                    - cell [ref=e463]
+                    - cell [ref=e465]
+                  - row [ref=e467]:
+                    - cell [ref=e468]
+                    - cell [ref=e470]
+                    - cell [ref=e472]
+                    - cell [ref=e474]
+                    - cell [ref=e476]
+                    - cell [ref=e478]
+                  - row [ref=e480]:
+                    - cell [ref=e481]
+                    - cell [ref=e483]
+                    - cell [ref=e485]
+                    - cell [ref=e487]
+                    - cell [ref=e489]
+                    - cell [ref=e491]
+                  - row [ref=e493]:
+                    - cell [ref=e494]
+                    - cell [ref=e496]
+                    - cell [ref=e498]
+                    - cell [ref=e500]
+                    - cell [ref=e502]
+                    - cell [ref=e504]
+                  - row [ref=e506]:
+                    - cell [ref=e507]
+                    - cell [ref=e509]
+                    - cell [ref=e511]
+                    - cell [ref=e513]
+                    - cell [ref=e515]
+                    - cell [ref=e517]
+                  - row [ref=e519]:
+                    - cell [ref=e520]
+                    - cell [ref=e522]
+                    - cell [ref=e524]
+                    - cell [ref=e526]
+                    - cell [ref=e528]
+                    - cell [ref=e530]
+                  - row [ref=e532]:
+                    - cell [ref=e533]
+                    - cell [ref=e535]
+                    - cell [ref=e537]
+                    - cell [ref=e539]
+                    - cell [ref=e541]
+                    - cell [ref=e543]
+                  - row [ref=e545]:
+                    - cell [ref=e546]
+                    - cell [ref=e548]
+                    - cell [ref=e550]
+                    - cell [ref=e552]
+                    - cell [ref=e554]
+                    - cell [ref=e556]
+                  - row [ref=e558]:
+                    - cell [ref=e559]
+                    - cell [ref=e561]
+                    - cell [ref=e563]
+                    - cell [ref=e565]
+                    - cell [ref=e567]
+                    - cell [ref=e569]
+                  - row [ref=e571]:
+                    - cell [ref=e572]
+                    - cell [ref=e574]
+                    - cell [ref=e576]
+                    - cell [ref=e578]
+                    - cell [ref=e580]
+                    - cell [ref=e582]
+  - region "Notifications alt+T"

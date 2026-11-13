@@ -1,0 +1,67 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - button "Toggle Sidebar" [ref=e3]
+    - main [ref=e5]:
+      - generic [ref=e6]:
+        - generic [ref=e7]:
+          - generic [ref=e8]:
+            - button "Toggle Sidebar" [ref=e9] [cursor=pointer]
+            - button "Module Selector" [ref=e12] [cursor=pointer]
+            - link [ref=e14] [cursor=pointer]:
+              - /url: /
+              - img "Hyperscal Logo" [ref=e15]
+              - text: HYPERSCAL
+          - generic [ref=e16]:
+            - generic "Notifications" [ref=e20] [cursor=pointer]
+            - button [ref=e23]:
+              - generic [ref=e24] [cursor=pointer]
+        - generic [ref=e29]:
+          - generic [ref=e31]:
+            - paragraph [ref=e32]: Friday, November 13
+            - generic [ref=e33]: Hello, User
+          - generic [ref=e34]:
+            - generic [ref=e35]:
+              - paragraph [ref=e36]: Your Apps
+              - button "Show All" [ref=e37] [cursor=pointer]
+            - generic:
+              - link [ref=e39] [cursor=pointer]:
+                - /url: /case-management
+                - paragraph [ref=e44]: Case Management
+              - link [ref=e45] [cursor=pointer]:
+                - /url: /workforce-management
+                - paragraph [ref=e50]: Workforce Management
+              - link [ref=e51] [cursor=pointer]:
+                - /url: /organization-management
+                - paragraph [ref=e56]: Organization Management
+              - link [ref=e57] [cursor=pointer]:
+                - /url: /knowledge-management
+                - paragraph [ref=e62]: Knowledge Management
+              - link [aria-hidden] [ref=e63] [cursor=pointer]:
+                - /url: /iam
+                - paragraph [ref=e68]: Identity Access Management
+              - link [aria-hidden] [ref=e69] [cursor=pointer]:
+                - /url: /user-management
+                - paragraph [ref=e74]: User Management
+              - link [aria-hidden] [ref=e75] [cursor=pointer]:
+                - /url: /system-settings
+                - paragraph [ref=e80]: System Settings
+              - link [aria-hidden] [ref=e81] [cursor=pointer]:
+                - /url: /reports
+                - paragraph [ref=e86]: Reports
+              - link [aria-hidden] [ref=e87] [cursor=pointer]:
+                - /url: /bssweb/dashboard
+                - paragraph [ref=e92]: BSS Web
+              - link [aria-hidden] [ref=e93] [cursor=pointer]:
+                - /url: /audit-center
+                - paragraph [ref=e98]: Audit Center
+          - generic [ref=e99]:
+            - tablist [ref=e100]:
+              - tab [selected] [ref=e101] [cursor=pointer]:
+                - text: Recently Viewed
+                - paragraph [ref=e102]: ...
+              - tab [ref=e103] [cursor=pointer]:
+                - text: Upcoming SLA Deadlines
+                - paragraph [ref=e104]: "0"
+            - tabpanel "Recently Viewed ..." [ref=e105]:
+              - region "Loading..." [ref=e108]
+  - region "Notifications alt+T"

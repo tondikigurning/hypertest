@@ -1,0 +1,103 @@
+- generic:
+  - generic:
+    - button [aria-hidden]
+    - main:
+      - generic:
+        - generic [aria-hidden]:
+          - generic:
+            - button:
+              - generic: Toggle Sidebar
+            - button
+            - link:
+              - /url: /
+              - text: HYPERSCAL
+          - generic:
+            - generic:
+              - generic:
+                - paragraph: Offline
+            - generic: 99+
+            - button:
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - paragraph: TG
+                - paragraph: Hi, Tondiki Gurning
+        - status:
+          - generic:
+            - generic:
+              - generic:
+                - generic:
+                  - heading "Live updates are paused" [level=3]
+                  - button "Close alert"
+                - paragraph: The rest of the page works normally, but it won't refresh on its own right now.
+                - generic:
+                  - button "Retry"
+        - generic [aria-hidden]:
+          - complementary:
+            - generic:
+              - generic:
+                - generic:
+                  - list:
+                    - generic:
+                      - generic:
+                        - paragraph: System Settings
+                      - generic:
+                        - list:
+                          - listitem:
+                            - menuitem:
+                              - generic: Profanity Settings
+                          - listitem:
+                            - menuitem:
+                              - generic: Connected Services
+                          - listitem:
+                            - menuitem:
+                              - generic: Policies
+                          - listitem:
+                            - menuitem:
+                              - generic: Message Templates
+                          - listitem:
+                            - menuitem:
+                              - generic: Concurrency Settings
+          - main:
+            - generic:
+              - navigation:
+                - generic:
+                  - list:
+                    - listitem:
+                      - link:
+                        - /url: /
+                        - paragraph
+                      - generic [aria-hidden]: /
+                    - listitem:
+                      - link:
+                        - /url: /system-settings
+                        - paragraph: SYSTEM SETTINGS
+                      - generic [aria-hidden]: /
+                  - list:
+                    - listitem:
+                      - paragraph: PROFANITY SETTINGS
+            - generic:
+              - generic:
+                - generic:
+                  - generic:
+                    - heading [level=2]: Profanity Filter
+                    - paragraph: Globally Enable or Disable profanity filtering for all content.
+                    - generic:
+                      - generic:
+                        - paragraph: Filter is Active
+                        - switch [checked]
+                - generic:
+                  - generic:
+                    - generic:
+                      - heading [level=2]: Manage Word/Phrase
+                      - generic:
+                        - button: Manage
+                    - paragraph: Control how user-generated content is moderated across your organization.
+  - region "Notifications alt+T"
+  - dialog [ref=e1732]:
+    - heading "Disable Profanity Filter?" [level=2] [ref=e1733]
+    - paragraph [ref=e1740]: Are you sure you want to Disable the Profanity Filter?
+    - generic [ref=e1741]:
+      - button "Confirm" [active] [ref=e1743] [cursor=pointer]
+      - button "Cancel" [ref=e1745] [cursor=pointer]

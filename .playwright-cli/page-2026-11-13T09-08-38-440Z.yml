@@ -1,0 +1,146 @@
+- generic [ref=e1]:
+  - generic [ref=e112]:
+    - button "Toggle Sidebar" [ref=e113]
+    - main [ref=e115]:
+      - generic [ref=e116]:
+        - generic [ref=e117]:
+          - generic [ref=e118]:
+            - button "Module Selector" [ref=e119] [cursor=pointer]
+            - link [ref=e121] [cursor=pointer]:
+              - /url: /
+              - img "Hyperscal Logo" [ref=e122]
+              - text: HYPERSCAL
+          - generic [ref=e123]:
+            - generic [ref=e125] [cursor=pointer]:
+              - paragraph [ref=e127]: Offline
+              - generic "Unavailable" [ref=e129]
+            - generic "Notifications" [ref=e131] [cursor=pointer]: 99+
+            - button [ref=e136]:
+              - generic [ref=e137] [cursor=pointer]:
+                - paragraph [ref=e141]: TG
+                - paragraph [ref=e142]: Hi, Tondiki Gurning
+        - generic [ref=e146]:
+          - generic [ref=e147]:
+            - generic [ref=e148]: Major Event
+            - paragraph [ref=e152]: (1/10)
+            - paragraph [ref=e154]: Mass Outage in Area QUEZON CITY
+          - generic [ref=e155]:
+            - generic [ref=e156]:
+              - button "Previous event" [ref=e157] [cursor=pointer]
+              - button "Next event" [ref=e159] [cursor=pointer]
+            - button "View All" [ref=e161] [cursor=pointer]
+        - generic [ref=e166]:
+          - generic [ref=e168]:
+            - paragraph [ref=e169]: Friday, November 13
+            - generic [ref=e170]: Hello, Tondiki Gurning
+          - generic [ref=e171]:
+            - generic [ref=e172]:
+              - paragraph [ref=e173]: Your Apps
+              - button "Show Less" [expanded] [active] [ref=e340] [cursor=pointer]
+            - generic [ref=e176]:
+              - link [ref=e177] [cursor=pointer]:
+                - /url: /case-management
+                - paragraph [ref=e182]: Case Management
+              - link [ref=e183] [cursor=pointer]:
+                - /url: /workforce-management
+                - paragraph [ref=e188]: Workforce Management
+              - link [ref=e189] [cursor=pointer]:
+                - /url: /organization-management
+                - paragraph [ref=e194]: Organization Management
+              - link [ref=e195] [cursor=pointer]:
+                - /url: /knowledge-management
+                - paragraph [ref=e200]: Knowledge Management
+              - link [ref=e341] [cursor=pointer]:
+                - /url: /iam
+                - paragraph [ref=e206]: Identity Access Management
+              - link [ref=e342] [cursor=pointer]:
+                - /url: /user-management
+                - paragraph [ref=e212]: User Management
+              - link [ref=e343] [cursor=pointer]:
+                - /url: /system-settings
+                - paragraph [ref=e218]: System Settings
+              - link [ref=e344] [cursor=pointer]:
+                - /url: /reports
+                - paragraph [ref=e224]: Reports
+              - link [ref=e345] [cursor=pointer]:
+                - /url: /bssweb/dashboard
+                - paragraph [ref=e230]: BSS Web
+              - link [ref=e346] [cursor=pointer]:
+                - /url: /audit-center
+                - paragraph [ref=e236]: Audit Center
+          - generic [ref=e237]:
+            - tablist [ref=e238]:
+              - tab [selected] [ref=e239] [cursor=pointer]:
+                - text: Recently Viewed
+                - paragraph [ref=e240]: "5"
+              - tab [ref=e241] [cursor=pointer]:
+                - text: Upcoming SLA Deadlines
+                - paragraph [ref=e242]: "32"
+            - tabpanel "Recently Viewed 5" [ref=e243]:
+              - generic [ref=e244]:
+                - 'link "Case #VR-031126-338440 Case Management • Request IVR to Case Customer Care 10 days ago" [ref=e245] [cursor=pointer]':
+                  - /url: /case-management/cases?case-number=VR-031126-338440
+                  - generic [ref=e247]:
+                    - generic [ref=e250]:
+                      - paragraph [ref=e251]: "Case #VR-031126-338440"
+                      - generic [ref=e252]:
+                        - paragraph [ref=e253]: Case Management
+                        - generic [ref=e254]: •
+                        - generic [ref=e255]:
+                          - paragraph [ref=e256]: Request
+                          - paragraph [ref=e259]: IVR to Case
+                          - paragraph [ref=e262]: Customer Care
+                    - paragraph [ref=e263]: 10 days ago
+                - 'link "Case #VR-201026-280377 Case Management • Request IVR to Case Customer Care 14 days ago" [ref=e264] [cursor=pointer]':
+                  - /url: /case-management/cases?case-number=VR-201026-280377
+                  - generic [ref=e266]:
+                    - generic [ref=e269]:
+                      - paragraph [ref=e270]: "Case #VR-201026-280377"
+                      - generic [ref=e271]:
+                        - paragraph [ref=e272]: Case Management
+                        - generic [ref=e273]: •
+                        - generic [ref=e274]:
+                          - paragraph [ref=e275]: Request
+                          - paragraph [ref=e278]: IVR to Case
+                          - paragraph [ref=e281]: Customer Care
+                    - paragraph [ref=e282]: 14 days ago
+                - 'link "Case #VR-201026-280378 Case Management • Request IVR to Case Customer Care 15 days ago" [ref=e283] [cursor=pointer]':
+                  - /url: /case-management/cases?case-number=VR-201026-280378
+                  - generic [ref=e285]:
+                    - generic [ref=e288]:
+                      - paragraph [ref=e289]: "Case #VR-201026-280378"
+                      - generic [ref=e290]:
+                        - paragraph [ref=e291]: Case Management
+                        - generic [ref=e292]: •
+                        - generic [ref=e293]:
+                          - paragraph [ref=e294]: Request
+                          - paragraph [ref=e297]: IVR to Case
+                          - paragraph [ref=e300]: Customer Care
+                    - paragraph [ref=e301]: 15 days ago
+                - 'link "Case #HS-261026-280561 Case Management • Complaint Service No Connection 18 days ago" [ref=e302] [cursor=pointer]':
+                  - /url: /case-management/cases?case-number=HS-261026-280561
+                  - generic [ref=e304]:
+                    - generic [ref=e307]:
+                      - paragraph [ref=e308]: "Case #HS-261026-280561"
+                      - generic [ref=e309]:
+                        - paragraph [ref=e310]: Case Management
+                        - generic [ref=e311]: •
+                        - generic [ref=e312]:
+                          - paragraph [ref=e313]: Complaint
+                          - paragraph [ref=e316]: Service
+                          - paragraph [ref=e319]: No Connection
+                    - paragraph [ref=e320]: 18 days ago
+                - 'link "Case #HS-261026-280537 Case Management • Complaint Email to Case Servicedesk 18 days ago" [ref=e321] [cursor=pointer]':
+                  - /url: /case-management/cases?case-number=HS-261026-280537
+                  - generic [ref=e323]:
+                    - generic [ref=e326]:
+                      - paragraph [ref=e327]: "Case #HS-261026-280537"
+                      - generic [ref=e328]:
+                        - paragraph [ref=e329]: Case Management
+                        - generic [ref=e330]: •
+                        - generic [ref=e331]:
+                          - paragraph [ref=e332]: Complaint
+                          - paragraph [ref=e335]: Email to Case
+                          - paragraph [ref=e338]: Servicedesk
+                    - paragraph [ref=e339]: 18 days ago
+  - region "Notifications alt+T"

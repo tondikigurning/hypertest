@@ -1,0 +1,21 @@
+[    2657ms] [ERROR] Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED @ https://mfe.stt.hyperscal.com/catalog/order-management.json:0
+[    2657ms] [ERROR] Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED @ https://mfe.stt.hyperscal.com/catalog/customer-management.json:0
+[    2657ms] [ERROR] Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED @ https://mfe.stt.hyperscal.com/catalog/product-catalog.json:0
+[    2657ms] [ERROR] Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED @ https://mfe.stt.hyperscal.com/catalog/revenue-management.json:0
+[    2657ms] [ERROR] Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED @ https://mfe.stt.hyperscal.com/catalog/serviceability.json:0
+[    2658ms] [ERROR] Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED @ https://mfe.stt.hyperscal.com/catalog/voucher-management.json:0
+[    3206ms] [ERROR] WebSocket connection to 'wss://ws.stt1.hyperscal.com/v1.0/ws/tenant/browser/register?challenge_code=d299039c-dc77-44c4-8881-1eb9ad9d0c77' failed: Establishing a tunnel via proxy server failed. @ https://converge.stt1.hyperscal.com/assets/with-challenge-code-Bv9OKD4K.js:0
+[    4886ms] [ERROR] WebSocket connection to 'wss://ws.stt1.hyperscal.com/v1.0/ws/tenant/browser/register?challenge_code=4cb59515-66f6-4078-88b3-de8c5d0e99f2' failed: Establishing a tunnel via proxy server failed. @ https://converge.stt1.hyperscal.com/assets/with-challenge-code-Bv9OKD4K.js:0
+[   10041ms] [ERROR] WebSocket connection to 'wss://ws.stt1.hyperscal.com/v1.0/ws/tenant/browser/register?challenge_code=ba1bfdca-e78c-4435-95e6-b929f5083736' failed: Establishing a tunnel via proxy server failed. @ https://converge.stt1.hyperscal.com/assets/with-challenge-code-Bv9OKD4K.js:0
+[   20274ms] [ERROR] WebSocket connection to 'wss://ws.stt1.hyperscal.com/v1.0/ws/tenant/browser/register?challenge_code=d18d0aac-ad2d-4266-9420-2e0e20d37398' failed: Establishing a tunnel via proxy server failed. @ https://converge.stt1.hyperscal.com/assets/with-challenge-code-Bv9OKD4K.js:0
+[   38813ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://converge.stt1.hyperscal.com/api/v1.0/layout/tenant/pages/aa355bad-b254-4ead-9a92-4679a676b166/preferences:0
+[  163680ms] [WARNING] Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}. @ https://converge.stt1.hyperscal.com/assets/src-v-RvW5ec.js:170
+[  177000ms] TypeError: l is not a function
+    at onClick (https://converge.stt1.hyperscal.com/assets/src-v-RvW5ec.js:13:151933)
+    at a (https://converge.stt1.hyperscal.com/assets/src-v-RvW5ec.js:13:70070)
+    at od (https://converge.stt1.hyperscal.com/assets/src-v-RvW5ec.js:191:126537)
+    at https://converge.stt1.hyperscal.com/assets/src-v-RvW5ec.js:191:131535
+    at nn (https://converge.stt1.hyperscal.com/assets/src-v-RvW5ec.js:191:15077)
+    at fd (https://converge.stt1.hyperscal.com/assets/src-v-RvW5ec.js:191:127765)
+    at Gf (https://converge.stt1.hyperscal.com/assets/src-v-RvW5ec.js:192:28502)
+    at Uf (https://converge.stt1.hyperscal.com/assets/src-v-RvW5ec.js:192:28324)
