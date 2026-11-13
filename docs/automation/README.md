@@ -24,6 +24,8 @@ with the target-origin restriction. Separate SSO, asset or API origins are block
 
 ## Workflow and review boundaries
 
+The default workflow uses the review gates below. When an approval is pending, **Allow all agent approvals** can be enabled for the current draft session. It automatically allows PRD and flow requests and live browser and agent draft-run approvals, and bypasses scenario approval gates. These are automatic decisions, not human reviews. The mode resets on chat reset or API restart. Scenario approval and automatically confirmed flows do not carry over as manual decisions. Questions and explicit PR submission still need user action. Workspace and origin restrictions, scenario identity validation, and the E2E-owned-data requirement for draft runs still apply.
+
 1. Start with a plain-language request or `/ask-qa`. Q-Rex resolves the scope using the repository,
    attachments and conversation. Its `use_skill` tool loads the appropriate specialist and updates
    the active instructions for following model steps and turns. The user can also select a skill
