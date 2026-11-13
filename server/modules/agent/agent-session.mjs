@@ -392,6 +392,7 @@ export function createSession({
   userId = "local-preview-user",
   prepareWorkspace,
   stateFile = sessionFile,
+  preferencesFile,
   publish = publishDraft,
   runtime = {},
 } = {}) {
@@ -401,6 +402,8 @@ export function createSession({
   const closeModel = runtime.closeAgentLanguageModel || closeAgentLanguageModel;
   const recordUsage = runtime.recordAgentUsage || recordAgentUsage;
   const startIsolatedDraftRun = runtime.startIsolatedDraftRun || createDraftRun;
+  const startBrowser = runtime.startExplorationBrowser || startExplorationBrowser;
+  const runBrowserCommand = runtime.runExplorationBrowserCommand || runExplorationBrowserCommand;
   let busy = false,
     generation = 0,
     resetVersion = 0;
@@ -429,7 +432,10 @@ export function createSession({
   let userRequest;
   let turnSecrets = [];
   let answerResolver;
+  let updateTurnBrowserConfig;
   let approvalResolver;
+  let allowAll = false;
+  const automaticallyConfirmedFlows = new Set();
   const snapshot = () => ({
     messages,
     history,
@@ -439,6 +445,7 @@ export function createSession({
     mode: "workspace-write",
     userRequest,
     approvalRequest,
+    allowAll,
     baseCommit,
     branch,
     baseBranch,
@@ -499,6 +506,34 @@ export function createSession({
     // No usable previous session.
   }
 
+  if (!provider && !model && preferencesFile && !existsSync(stateFile)) {
+    try {
+      const preferences = JSON.parse(readFileSync(preferencesFile, "utf8"));
+      if (typeof preferences.provider === "string" && typeof preferences.model === "string") {
+        provider = preferences.provider;
+        model = preferences.model;
+      }
+    } catch {
+      // A new identity may not have selected a model yet.
+    }
+  }
+
+  function savePreferences(value) {
+    if (!preferencesFile) return;
+    mkdirSync(dirname(preferencesFile), { recursive: true });
+    const temporary = `${preferencesFile}.tmp`;
+    writeFileSync(temporary, JSON.stringify(value), { mode: 0o600 });
+    renameSync(temporary, preferencesFile);
+  }
+
+  if (provider && model && preferencesFile && !existsSync(preferencesFile)) {
+    try {
+      savePreferences({ provider, model });
+    } catch {
+      // The existing session remains usable if preferences cannot be migrated.
+    }
+  }
+
   function save() {
     clearTimeout(saveTimer);
     saveTimer = undefined;
@@ -524,7 +559,9 @@ export function createSession({
           pendingRequest: userRequest ? "question" : approvalRequest ? "permission" : undefined,
           approvedScenarioDigest,
           publicationAttempted,
-          confirmedFlows,
+          confirmedFlows: Object.fromEntries(
+            Object.entries(confirmedFlows).filter(([key]) => !automaticallyConfirmedFlows.has(key)),
+          ),
           requestedSkill,
           runtime: "ai-sdk",
           provider,
@@ -573,6 +610,7 @@ export function createSession({
     if (!(await getCredential(userId, providerValue))) throw new Error("Save an API key for this provider first.");
     if (!(await modelVerified(userId, providerValue, modelValue)))
       throw new Error("Test this model's tool-calling support before selecting it.");
+    savePreferences({ provider: providerValue, model: modelValue });
     const previousProvider = provider;
     const previousModel = model;
     provider = providerValue;
@@ -623,6 +661,15 @@ export function createSession({
   }
 
   function requestApproval({ kind = "command", reason = "", command = "", signal }) {
+    if (allowAll && !signal?.aborted) {
+      messages.push({
+        id: randomUUID(),
+        role: "assistant",
+        text: `Automatically allowed ${kind}: ${redactAgentText(kind === "prd-review" ? reason : command || reason, turnSecrets)}`,
+      });
+      save();
+      return Promise.resolve(true);
+    }
     if (approvalRequest || approvalResolver)
       throw new Error("The agent already has an approval waiting for a decision.");
     const id = randomUUID();
@@ -732,6 +779,33 @@ export function createSession({
     }
     save();
     resolveApproval(decision === "accept");
+  }
+
+  function setAllowAll(enabled) {
+    if (typeof enabled !== "boolean") throw new Error("Invalid approval mode.");
+    if (!enabled) {
+      for (const key of automaticallyConfirmedFlows) delete confirmedFlows[key];
+      automaticallyConfirmedFlows.clear();
+    }
+    allowAll = enabled;
+    messages.push({
+      id: randomUUID(),
+      role: "user",
+      text: enabled ? "Enabled Allow all for this draft session." : "Disabled Allow all for this draft session.",
+    });
+    if (enabled && approvalRequest && approvalResolver) {
+      const request = approvalRequest;
+      messages.push({
+        id: randomUUID(),
+        role: "assistant",
+        text: `Automatically allowed ${request.kind}: ${request.kind === "prd-review" ? request.reason : request.command || request.reason}`,
+      });
+      const resolveApproval = approvalResolver;
+      approvalResolver = undefined;
+      approvalRequest = undefined;
+      resolveApproval(true);
+    }
+    save();
   }
 
   async function draft() {
@@ -877,7 +951,7 @@ export function createSession({
       if (!before || createHash("sha256").update(before).digest("hex") !== digest)
         throw new Error("Changes have changed since review. Review them again.");
       const changes = await scenarioChanges(workspace, baseCommit);
-      if (changes.scenarioDigest && changes.scenarioDigest !== approvedScenarioDigest)
+      if (!allowAll && changes.scenarioDigest && changes.scenarioDigest !== approvedScenarioDigest)
         throw new Error("Review and approve the scenario changes before committing.");
       const options = { cwd: workspace, maxBuffer: 2 * 1024 * 1024, timeout: 60000 };
       if (!branch) {
@@ -966,7 +1040,7 @@ export function createSession({
       const digest = createHash("sha256").update(patch).digest("hex");
       if (!patch || digest !== input.digest) throw new Error("Changes have changed since review. Review them again.");
       const changes = await scenarioChanges(workspace, baseCommit);
-      if (changes.scenarioDigest && changes.scenarioDigest !== approvedScenarioDigest)
+      if (!allowAll && changes.scenarioDigest && changes.scenarioDigest !== approvedScenarioDigest)
         throw new Error("Review and approve the scenario changes before running the draft.");
       const run = await startIsolatedDraftRun({
         workspace,
@@ -1007,7 +1081,7 @@ export function createSession({
     const patch = await workspaceDiff(workspace, baseCommit);
     const digest = createHash("sha256").update(patch).digest("hex");
     const changes = await scenarioChanges(workspace, baseCommit);
-    if (changes.scenarioDigest && changes.scenarioDigest !== approvedScenarioDigest)
+    if (!allowAll && changes.scenarioDigest && changes.scenarioDigest !== approvedScenarioDigest)
       throw new Error("Review and approve the scenario changes before running the draft.");
     const approved = await requestApproval({
       kind: "data-safety",
@@ -1168,7 +1242,7 @@ export function createSession({
     const review = await diff();
     if (!review.patch || review.digest !== digest)
       throw new Error("Changes have changed since review. Review them again.");
-    if (review.scenarioDigest && !review.scenarioApproved)
+    if (!allowAll && review.scenarioDigest && !review.scenarioApproved)
       throw new Error("Review and approve the scenario changes before finalizing.");
 
     const synchronization = await syncWithTarget(message, digest);
@@ -1187,7 +1261,7 @@ export function createSession({
 
     const currentReview = await diff();
     if (currentReview.digest !== digest) throw new Error("Changes have changed since review. Review them again.");
-    if (currentReview.scenarioDigest && !currentReview.scenarioApproved)
+    if (!allowAll && currentReview.scenarioDigest && !currentReview.scenarioApproved)
       throw new Error("Review and approve the scenario changes before finalizing.");
     if (!branch || expectedHead === baseCommit) throw new Error("There are no committed changes to finalize.");
     committing = true;
@@ -1231,10 +1305,11 @@ export function createSession({
     return { pullRequest: result, session: snapshot() };
   }
 
-  function answer(requestId, answers) {
+  function answer(requestId, answers, environment, variables) {
     if (!userRequest || !answerResolver || String(userRequest.id) !== String(requestId))
       throw new Error("This question is no longer pending.");
     const validatedAnswers = validateAnswers(userRequest.questions, answers);
+    if (variables !== undefined) updateTurnBrowserConfig?.(environment, variables);
     const answerTexts = [];
     for (const question of userRequest.questions) {
       const answerText = question.isSecret
@@ -1251,7 +1326,13 @@ export function createSession({
     answerResolver = undefined;
     userRequest = undefined;
     save();
-    resolveAnswer(answerTexts.join("\n"));
+    const configNotice =
+      variables === undefined
+        ? ""
+        : environment
+          ? `\nThe current browser environment is ${environment.label}. Browser Variables were refreshed from the user's tab.`
+          : "\nNo browser environment is currently selected. Browser Variables were refreshed from the user's tab.";
+    resolveAnswer(`${answerTexts.join("\n")}${configNotice}`);
   }
 
   async function send(input, scenario, feature, contextItems = [], selectedSkill, environment, variables) {
@@ -1270,6 +1351,15 @@ export function createSession({
       throw new Error("Test this model's tool-calling support again before continuing.");
     const secrets = [variables?.E2E_USERNAME, variables?.E2E_PASSWORD, credential.apiKey];
     turnSecrets = secrets;
+    const toolSecrets = { ...variables, providerApiKey: credential.apiKey };
+    updateTurnBrowserConfig = (nextEnvironment, nextVariables) => {
+      environment = nextEnvironment;
+      variables = nextVariables;
+      for (const value of [nextVariables?.E2E_USERNAME, nextVariables?.E2E_PASSWORD]) {
+        if (value) secrets.push(value);
+      }
+      Object.assign(toolSecrets, Object.fromEntries(secrets.map((value, index) => [`secret${index}`, value])));
+    };
     busy = true;
     const version = resetVersion;
     error = "";
@@ -1348,7 +1438,7 @@ export function createSession({
       const currentScenarios = await scenarioChanges(workspace, baseCommit);
       const hasApprovedScenarios =
         currentScenarios.scenarioDigest && currentScenarios.scenarioDigest === approvedScenarioDigest;
-      if (skill === "write-e2e-code" && currentScenarios.scenarioDigest && !hasApprovedScenarios)
+      if (!allowAll && skill === "write-e2e-code" && currentScenarios.scenarioDigest && !hasApprovedScenarios)
         throw new Error("Review and approve the scenario changes before implementing them.");
       const controller = new AbortController();
       turnController = controller;
@@ -1362,7 +1452,7 @@ export function createSession({
           .digest("hex");
         if (identity === explorationIdentity && explorationBrowser) return;
         if (explorationBrowser) await closeActiveExplorationBrowser();
-        const browserName = await startExplorationBrowser({ workspace, target: environment.target, variables });
+        const browserName = await startBrowser({ workspace, target: environment.target, variables });
         if (version !== resetVersion || controller.signal.aborted) {
           await closeExplorationBrowser(workspace, browserName);
           throw new Error("Session stopped.");
@@ -1374,23 +1464,23 @@ export function createSession({
         workspace,
         requestUserInput,
         requestApproval,
-        runBrowserCommand: (args) => runExplorationBrowserCommand(workspace, explorationBrowser, args),
+        runBrowserCommand: (args) => runBrowserCommand(workspace, explorationBrowser, args),
         getDiff: async () => ({ patch: await workspaceDiff(workspace, baseCommit) }),
         browserName: explorationBrowser,
         ensureBrowser,
         closeBrowser: closeActiveExplorationBrowser,
-        target: environment?.target,
+        target: () => environment?.target,
         scenarioId: selectedScenario?.id,
-        variables: { ...variables, providerApiKey: credential.apiKey },
+        variables: toolSecrets,
         useSkill: async (name) => {
           if (controller.signal.aborted || version !== resetVersion) throw new Error("Session stopped.");
-          if (prdReviewedThisTurn && name !== activeSkill)
+          if (!allowAll && prdReviewedThisTurn && name !== activeSkill)
             throw new Error(
               "The PRD review is complete. Report the result and stop; resume the next workflow on a subsequent turn.",
             );
           if (name === "write-e2e-code") {
             const changes = await scenarioChanges(workspace, baseCommit);
-            if (changes.scenarioDigest && changes.scenarioDigest !== approvedScenarioDigest)
+            if (!allowAll && changes.scenarioDigest && changes.scenarioDigest !== approvedScenarioDigest)
               throw new Error(
                 "Review and approve the scenario changes in Changes before implementing them. Stop and resume after approval.",
               );
@@ -1416,6 +1506,7 @@ export function createSession({
           });
           if (!approval) return { approved: false };
           confirmedFlows[flowReviewKey(approval.feature)] = approval;
+          if (allowAll) automaticallyConfirmedFlows.add(flowReviewKey(approval.feature));
           save();
           return { approved: true, feature: approval.feature, flows: approval.ids };
         },
@@ -1441,14 +1532,16 @@ export function createSession({
                 "The code workflow must preserve scenario intent and IDs. Activate write-e2e-scenarios and repeat the affected review before changing them.",
               );
           }
-          await authorizeScenarioImplementationWrite(workspace, baseCommit, path, approvedScenarioDigest);
-          await authorizeFlowWrite({
-            workspace,
-            path,
-            content,
-            confirmations: confirmedFlows,
-            safePath: safeWorkspacePath,
-          });
+          if (!allowAll)
+            await authorizeScenarioImplementationWrite(workspace, baseCommit, path, approvedScenarioDigest);
+          if (!allowAll)
+            await authorizeFlowWrite({
+              workspace,
+              path,
+              content,
+              confirmations: confirmedFlows,
+              safePath: safeWorkspacePath,
+            });
           const prdReviewed = await authorizePrdWrite({
             workspace,
             path,
@@ -1511,6 +1604,9 @@ export function createSession({
           environment
             ? `Selected browser environment: ${JSON.stringify(environment)}.`
             : "No browser environment is selected.",
+          allowAll
+            ? "Allow all is enabled by the user for this draft session. Do not stop for PRD, flow, scenario, or live-data approval; these are automatically allowed. Do not describe automatically accepted material as human reviewed. Continue the workflow while preserving all other tool and data restrictions."
+            : "",
         ]
           .filter(Boolean)
           .join("\n\n");
@@ -1604,6 +1700,7 @@ export function createSession({
             userRequest = undefined;
             approvalRequest = undefined;
             turnSecrets = [];
+            updateTurnBrowserConfig = undefined;
             save();
           }
         }
@@ -1614,6 +1711,7 @@ export function createSession({
       busy = false;
       turnController = undefined;
       turnSecrets = [];
+      updateTurnBrowserConfig = undefined;
       await closeActiveExplorationBrowser();
       error =
         cause.message?.startsWith("The destination repository needs a committed HEAD") ||
@@ -1792,9 +1890,9 @@ export function createSession({
     turnSecrets = [];
     turnController = undefined;
     await closeActiveExplorationBrowser();
-    model = undefined;
-    provider = undefined;
     approvedScenarioDigest = undefined;
+    allowAll = false;
+    automaticallyConfirmedFlows.clear();
     confirmedFlows = {};
     requestedSkill = undefined;
     busy = false;
@@ -1849,6 +1947,7 @@ export function createSession({
     reset,
     answer,
     decideApproval,
+    setAllowAll,
     diff,
     draft,
     approveScenarios,
@@ -1885,6 +1984,15 @@ export function createSession({
         deletePrdVersion({ workspace: currentWorkspace, safePath, ...input }),
       ),
     async clearProvider(providerValue) {
+      if (preferencesFile) {
+        let savedProvider;
+        try {
+          savedProvider = JSON.parse(readFileSync(preferencesFile, "utf8")).provider;
+        } catch {
+          // No saved preference to clear.
+        }
+        if (savedProvider === providerValue) savePreferences({});
+      }
       if (provider === providerValue) {
         turnController?.abort();
         provider = undefined;

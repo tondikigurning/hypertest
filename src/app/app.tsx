@@ -474,6 +474,12 @@ export function App() {
                 setSearchParams(next, { replace: true });
               }}
               onCreate={() => {
+                if (feature) {
+                  sessionStorage.setItem(
+                    "automation-prd-context",
+                    JSON.stringify({ module: feature.module, file: feature.file, title: featureTitle(feature) }),
+                  );
+                } else sessionStorage.removeItem("automation-prd-context");
                 sessionStorage.setItem(
                   "automation-prd-start",
                   `Help me create or import a PRD for ${routeModule} / ${routeSubmodule}`,
@@ -481,6 +487,12 @@ export function App() {
                 goHome();
               }}
               onEdit={() => {
+                if (feature) {
+                  sessionStorage.setItem(
+                    "automation-prd-context",
+                    JSON.stringify({ module: feature.module, file: feature.file, title: featureTitle(feature) }),
+                  );
+                } else sessionStorage.removeItem("automation-prd-context");
                 sessionStorage.setItem(
                   "automation-prd-start",
                   `Help me edit or refresh the active PRD for ${routeModule} / ${routeSubmodule}`,

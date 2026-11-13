@@ -78,6 +78,7 @@ interface Session {
   syncConflicts?: Array<string>;
   requestedSkill?: string;
   canCancel?: boolean;
+  allowAll?: boolean;
   userRequest?: { id: string | number; questions: Array<AgentQuestion> };
   approvalRequest?: {
     id: string | number;
@@ -273,6 +274,42 @@ export function AgentWidget({
     if (home && sessionStorage.getItem("automation-prd-start")) {
       const prompt = sessionStorage.getItem("automation-prd-start") || "Help me create or import a PRD for ";
       sessionStorage.removeItem("automation-prd-start");
+      const storedContext = sessionStorage.getItem("automation-prd-context");
+      sessionStorage.removeItem("automation-prd-context");
+      if (storedContext) {
+        try {
+          const menu: unknown = JSON.parse(storedContext);
+          if (
+            menu &&
+            typeof menu === "object" &&
+            "module" in menu &&
+            "file" in menu &&
+            "title" in menu &&
+            typeof menu.module === "string" &&
+            typeof menu.file === "string" &&
+            typeof menu.title === "string"
+          ) {
+            const selected = {
+              id: contextId(),
+              kind: "feature" as const,
+              ref: menu.file,
+              label: menu.title,
+              value: { module: menu.module, file: menu.file, title: menu.title },
+            };
+            setContexts((current) => {
+              const retained = current.filter((item) => !item.auto);
+              if (retained.some((item) => item.kind === "feature" && item.ref === selected.ref)) return retained;
+              if (retained.length >= 8) {
+                setContextError("Remove a context item to attach the selected menu.");
+                return retained;
+              }
+              return [...retained, selected];
+            });
+          }
+        } catch {
+          setContextError("Could not attach the selected menu. Add it using the context picker.");
+        }
+      }
       setSelectedSkill("write-prd");
       setMessage(prompt);
       composerRef.current?.focus();
@@ -824,6 +861,27 @@ export function AgentWidget({
     }
   };
 
+  const setAllowAll = async (allowAll: boolean) => {
+    if (!session || sending) return;
+    setSending(true);
+    setError("");
+    const sequence = ++requestNumber.current;
+    try {
+      const response = await agentFetch(`${endpoint}/approval-mode`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ allowAll }),
+      });
+      const result = (await response.json()) as Session & { error: string };
+      if (!response.ok) throw new Error(result.error);
+      applySnapshot(result, sequence);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Could not change approval mode.");
+    } finally {
+      setSending(false);
+    }
+  };
+
   const reviewDiff = async (force = false) => {
     if (reviewing || (sending && !force)) return;
     setView("changes");
@@ -1020,7 +1078,7 @@ export function AgentWidget({
       const response = await agentFetch(`${endpoint}/answers`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ requestId: session.userRequest.id, answers }),
+        body: JSON.stringify({ requestId: session.userRequest.id, answers, environment, variables: readVariables() }),
       });
       const result = (await response.json()) as Session & { error: string };
       if (!response.ok) throw new Error(result.error);
@@ -1106,7 +1164,7 @@ export function AgentWidget({
     session?.branch && !connectionError && !session.busy && !draftRunStarting && !draftRun && !reviewing,
   );
   const reviewBlocked = Boolean(
-    (scenarioReview?.hasChanges && !scenarioReview.approved) || session?.syncConflicts?.length,
+    (scenarioReview?.hasChanges && !scenarioReview.approved && !session?.allowAll) || session?.syncConflicts?.length,
   );
   const statusLabel =
     selectedDraft?.status === "archived" && mood !== "offline"
@@ -1514,14 +1572,15 @@ export function AgentWidget({
               ))}
               {session?.busy && !session.userRequest && !session.approvalRequest && (
                 <div className="agent-working" role="status">
-                  <QRex mood={mood} />
-                  <span>
-                    Working through your request
-                    <span className="agent-working-dots" aria-hidden="true">
-                      {" "}
-                      ...
-                    </span>
-                  </span>
+                  <QRex mood="working" />
+                  <div className="agent-working-copy">
+                    <strong>
+                      Q-Rex is working
+                      <span className="agent-working-dots" aria-hidden="true">
+                        ...
+                      </span>
+                    </strong>
+                  </div>
                 </div>
               )}
             </div>
@@ -1652,7 +1711,9 @@ export function AgentWidget({
               {canShowReview && scenarioReview?.hasChanges && (
                 <div className="agent-review-section agent-scenario-review">
                   <h3>Scenario approval</h3>
-                  {scenarioReview.approved ? (
+                  {session?.allowAll ? (
+                    <p>Allow all is enabled. Scenario changes can proceed without manual approval.</p>
+                  ) : scenarioReview.approved ? (
                     <p>Approved for the current scenario version. Changes to it will require another review.</p>
                   ) : scenarioReview.hasImplementation ? (
                     <p>
@@ -1695,7 +1756,7 @@ export function AgentWidget({
                     maxLength={200}
                     placeholder="e.g. Add checkout validation scenarios"
                   />
-                  {scenarioReview?.hasChanges && !scenarioReview.approved && (
+                  {scenarioReview?.hasChanges && !scenarioReview.approved && !session?.allowAll && (
                     <p>Approve scenario changes above to continue.</p>
                   )}
                   <p>
@@ -1741,10 +1802,25 @@ export function AgentWidget({
             </section>
           )}
           {session?.canCancel && (
-            <div className="agent-stop-bar">
-              <span>Agent is working in its local workspace</span>
+            <div
+              className="agent-stop-bar"
+              data-state={
+                cancelling ? "stopping" : session.userRequest || session.approvalRequest ? "waiting" : "working"
+              }
+            >
+              <div className="agent-stop-status" role="status">
+                <span className="agent-stop-indicator" aria-hidden="true" />
+                <span>
+                  {cancelling
+                    ? "Stopping Q-Rex…"
+                    : session.userRequest || session.approvalRequest
+                      ? "Needs your response"
+                      : "Working on your request"}
+                </span>
+              </div>
               <button type="button" onClick={() => void cancel()} disabled={cancelling}>
-                {cancelling ? "Stopping..." : "Stop agent"}
+                <span className="agent-stop-icon" aria-hidden="true" />
+                {cancelling ? "Stopping…" : "Stop agent"}
               </button>
             </div>
           )}
@@ -1768,6 +1844,19 @@ export function AgentWidget({
               </legend>
               {session.approvalRequest.reason && <p>{session.approvalRequest.reason}</p>}
               {session.approvalRequest.command && <pre>{session.approvalRequest.command}</pre>}
+              <label>
+                <input
+                  type="checkbox"
+                  checked={Boolean(session.allowAll)}
+                  disabled={sending}
+                  onChange={(event) => void setAllowAll(event.target.checked)}
+                />{" "}
+                Allow all agent approvals for this draft session
+              </label>
+              <p>
+                Automatically allows PRD, flow, scenario and live-data actions, including changes to the selected
+                environment. Turns off when the API restarts or the chat resets.
+              </p>
               <div>
                 <button type="button" disabled={sending} onClick={() => void decideApproval("decline")}>
                   Decline

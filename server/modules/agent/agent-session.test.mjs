@@ -74,6 +74,26 @@ test("selected provider and model survive session reload before a workspace exis
   assert.equal(restored.model, "example-model");
 });
 
+test("new chats and draft sessions retain the selected provider and model", async (t) => {
+  const root = await mkdtemp(join(tmpdir(), "automation-agent-preferences-"));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const options = {
+    stateFile: join(root, "first.json"),
+    preferencesFile: join(root, "preferences.json"),
+    runtime: { getProviderCredential: async () => ({ apiKey: secret }), isModelVerified: async () => true },
+  };
+  const session = createSession(options);
+  await session.setModel("openai", "example-model");
+  await session.reset();
+  assert.equal(session.snapshot().provider, "openai");
+  assert.equal(createSession(options).snapshot().model, "example-model");
+  const next = createSession({ ...options, stateFile: join(root, "next.json") });
+  assert.equal(next.snapshot().provider, "openai");
+  assert.equal(next.snapshot().model, "example-model");
+  await next.clearProvider("openai");
+  assert.equal(createSession({ ...options, stateFile: join(root, "third.json") }).snapshot().provider, undefined);
+});
+
 async function waitUntil(predicate) {
   const deadline = Date.now() + 10000;
   while (Date.now() < deadline) {

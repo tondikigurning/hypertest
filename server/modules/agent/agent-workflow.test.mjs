@@ -235,6 +235,55 @@ test("chat hands off skills, reviews artifacts, and runs a newly authored draft 
   await session.discardDraftRun();
 });
 
+test("allow all resolves pending review and permits subsequent flow and implementation without manual approval", async (t) => {
+  const prd = "---\nstatus: reviewed\n---\n# Orders\n- [validated] Users can list orders.\n";
+  const feature = `Feature: Orders\n  @${scenarioId} @flow:LIST\n  Scenario: List orders\n    Given the orders page is open\n`;
+  const implementation = "e2e/tests/bdd/steps/example/orders.steps.ts";
+  const responses = [
+    { tool: "use_skill", input: { skill: "write-prd" } },
+    { tool: "write_file", input: { path: prdPath, content: prd } },
+    { tool: "use_skill", input: { skill: "write-e2e-scenarios" } },
+    { tool: "confirm_flows", input: { featurePath, prdPath, flows: [{ id: "LIST", description: "List orders" }] } },
+    { tool: "write_file", input: { path: featurePath, content: feature } },
+    { tool: "use_skill", input: { skill: "write-e2e-code" } },
+    { tool: "write_file", input: { path: implementation, content: "// implementation\n" } },
+    { tool: "run_draft_scenario", input: { scenarioId, file: "example/orders.feature", dataOwner: "e2e-owned" } },
+    { text: "Finished." },
+  ];
+  let runs = 0;
+  const { session, workspace } = await workflow(t, responses, {
+    startIsolatedDraftRun: async () => {
+      runs++;
+      return {
+        active: () => false,
+        publicRun: () => ({ id: "fixture", scenarioId, status: "passed", done: true, tests: [], isolated: true }),
+        dispose: async () => {},
+      };
+    },
+  });
+  await session.send(
+    "Prepare coverage.",
+    undefined,
+    undefined,
+    [],
+    undefined,
+    { label: "Test", target: "https://example.invalid" },
+    { E2E_USERNAME: "test-user", E2E_PASSWORD: "test-password" },
+  );
+  const pending = await waitFor(session, (state) => state.approvalRequest || !state.busy);
+  assert.equal(pending.approvalRequest?.kind, "prd-review");
+  session.setAllowAll(true);
+  await waitFor(session, (state) => !state.busy);
+  assert.equal(session.snapshot().allowAll, true);
+  assert.equal(await readFile(join(workspace, implementation), "utf8"), "// implementation\n");
+  assert.equal(runs, 1);
+  assert.equal((await session.diff()).scenarioApproved, false);
+  await session.discardDraftRun();
+  session.setAllowAll(false);
+  assert.equal(session.snapshot().allowAll, false);
+  assert.equal((await session.diff()).scenarioApproved, false);
+});
+
 test("draft selection rejects missing, duplicate and moved scenario identities", () => {
   const row = { id: scenarioId, file: "example/orders.feature", key: "orders:1" };
   assert.equal(selectDraftScenario([row], { scenarioId, file: row.file }), row);
@@ -361,6 +410,39 @@ test("browser locator inspection stays read-only and CLI option overrides are re
     /selected target origin/,
   );
   assert.equal(calls.length, 1);
+});
+
+test("answers use browser configuration saved while an agent question is pending", async (t) => {
+  const responses = [
+    { tool: "ask_user", input: { question: "Configure Variables?", options: [], isSecret: false } },
+    { tool: "playwright_cli", input: { action: "snapshot" } },
+    { text: "Explored." },
+  ];
+  const starts = [];
+  const { session, requests } = await workflow(t, responses, {
+    startExplorationBrowser: async (input) => {
+      starts.push(input);
+      return "fixture-browser";
+    },
+    runExplorationBrowserCommand: async () => ({ stdout: "fixture snapshot fixture-user fixture-password" }),
+    closeExplorationBrowser: async () => {},
+  });
+  await session.send("Create a PRD.");
+  const pending = await waitFor(session, (state) => state.userRequest || !state.busy);
+  assert.ok(pending.userRequest);
+  const environment = { label: "Fixture", target: "https://example.invalid" };
+  const variables = { E2E_USERNAME: "fixture-user", E2E_PASSWORD: "fixture-password" };
+  session.answer(
+    pending.userRequest.id,
+    { [pending.userRequest.questions[0].id]: "Configured" },
+    environment,
+    variables,
+  );
+  await waitFor(session, (state) => !state.busy);
+  assert.equal(starts.length, 1);
+  assert.equal(starts[0].target, environment.target);
+  assert.equal(starts[0].variables.E2E_USERNAME, variables.E2E_USERNAME);
+  assert.doesNotMatch(JSON.stringify(requests), /fixture-password|fixture-user/);
 });
 
 test("follow-up chat resolves an unchanged explorer attachment to its current draft source", async (t) => {

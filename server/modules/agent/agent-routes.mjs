@@ -78,6 +78,7 @@ function sessionFor(id, draftId, draft) {
       createSession({
         userId: id,
         stateFile,
+        preferencesFile: join(sessionsRoot, id, "model-preferences.json"),
         ...(draftId !== "default" && draft
           ? {
               prepareWorkspace: () =>
@@ -524,7 +525,12 @@ export function createAgentRouter({ resolveSession = sessionFor, resolveIdentity
   });
   router.post("/answers", (req, res) => {
     try {
-      req.agentSession.answer(req.body?.requestId, req.body?.answers);
+      req.agentSession.answer(
+        req.body?.requestId,
+        req.body?.answers,
+        req.body?.environment ? resolveAgentEnvironment(req.body.environment) : undefined,
+        resolveAgentVariables(req.body?.variables),
+      );
       touchLocalDraft(req.agentIdentity.userId, req.agentDraftId);
       res.json({ ...req.agentSession.snapshot(), draft: req.agentDraft });
     } catch (error) {
@@ -534,6 +540,15 @@ export function createAgentRouter({ resolveSession = sessionFor, resolveIdentity
   router.post("/approval", (req, res) => {
     try {
       req.agentSession.decideApproval(req.body?.requestId, req.body?.decision);
+      touchLocalDraft(req.agentIdentity.userId, req.agentDraftId);
+      res.json({ ...req.agentSession.snapshot(), draft: req.agentDraft });
+    } catch (error) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+  router.post("/approval-mode", (req, res) => {
+    try {
+      req.agentSession.setAllowAll(req.body?.allowAll);
       touchLocalDraft(req.agentIdentity.userId, req.agentDraftId);
       res.json({ ...req.agentSession.snapshot(), draft: req.agentDraft });
     } catch (error) {

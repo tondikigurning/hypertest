@@ -58,7 +58,7 @@ export async function safeWorkspacePath(workspace, input) {
 
 function redact(value, variables = {}) {
   let text = String(value);
-  for (const secret of [variables.E2E_USERNAME, variables.E2E_PASSWORD, variables.providerApiKey]) {
+  for (const secret of Object.values(variables)) {
     if (typeof secret === "string" && secret) text = text.replaceAll(secret, "[redacted]");
   }
   return text
@@ -297,7 +297,8 @@ export function createAgentTools({
           .describe("Data ownership for a mutating browser action."),
       }),
       execute: async ({ action, target: locator, value, dataOwner }) => {
-        if ((!browserName && !ensureBrowser) || !target)
+        const currentTarget = typeof target === "function" ? target() : target;
+        if ((!browserName && !ensureBrowser) || !currentTarget)
           throw new Error("Select an environment and configure E2E Variables before browser exploration.");
         if (action === "close" && closeBrowser) {
           await closeBrowser();
@@ -308,12 +309,12 @@ export function createAgentTools({
         let destination;
         if (action === "goto") {
           try {
-            destination = new URL(value || "", target);
+            destination = new URL(value || "", currentTarget);
           } catch {
             throw new Error("Enter a valid URL within the selected target environment.");
           }
           if (
-            destination.origin !== new URL(target).origin ||
+            destination.origin !== new URL(currentTarget).origin ||
             destination.username ||
             destination.password ||
             /(?:password|passwd|secret|token|api[_-]?key)/i.test(destination.search)
@@ -327,7 +328,7 @@ export function createAgentTools({
             throw new Error(
               "State whether this action uses E2E-owned data or shared/unknown data before requesting approval.",
             );
-          const details = [target, scenarioId || "scenario not selected", action];
+          const details = [currentTarget, scenarioId || "scenario not selected", action];
           if (locator) details.push(`target: ${redact(locator, variables)}`);
           if (value && ["fill", "select", "press"].includes(action)) details.push(`value: ${redact(value, variables)}`);
           const allowed = await requestApproval({

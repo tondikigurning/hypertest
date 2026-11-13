@@ -808,20 +808,77 @@
 .agent-stop-bar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 9px 20px;
-  background: #f7f8fc;
-  border-top: 1px solid var(--agent-border);
-  color: var(--agent-muted);
-  font-size: 10px;
+  align-self: flex-end;
+  flex-shrink: 0;
+  gap: 10px;
+  max-width: calc(100% - 40px);
+  margin: 4px 20px 10px;
+  padding: 4px 4px 4px 12px;
+  background: #fff;
+  border: 1px solid #e0e4ee;
+  border-radius: 12px;
+  box-shadow: 0 3px 12px #25334a0d;
+  color: #4d5870;
+  font-size: 12px;
+}
+.agent-home .agent-stop-bar {
+  margin-right: max(20px, calc((100% - 720px) / 2));
+}
+.agent-stop-status {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  line-height: 1.4;
+  font-weight: 500;
+}
+.agent-stop-indicator {
+  width: 6px;
+  height: 6px;
+  flex: 0 0 6px;
+  border-radius: 50%;
+  background: var(--agent-accent);
+}
+.agent-stop-bar[data-state="working"] .agent-stop-indicator {
+  box-shadow: 0 0 0 3px #7054bf1a;
+  animation: agent-pulse 1.5s ease-in-out infinite;
+}
+.agent-stop-bar[data-state="waiting"] .agent-stop-indicator {
+  background: #b7791f;
+  box-shadow: 0 0 0 3px #b7791f1a;
 }
 .agent-stop-bar button {
-  border: 1px solid #dce2ee;
-  border-radius: 6px;
-  background: white;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 30px;
+  flex-shrink: 0;
+  border: 1px solid #e0e4ee;
+  border-radius: 8px;
+  background: #f8f9fc;
+  color: var(--agent-ink);
   padding: 5px 9px;
-  font-size: 10px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.agent-stop-bar button:hover:not(:disabled) {
+  background: #edf1f9;
+  border-color: #aab8d1;
+}
+.agent-stop-bar button:focus-visible {
+  outline: 2px solid var(--agent-accent);
+  outline-offset: 2px;
+}
+.agent-stop-bar button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+.agent-stop-icon {
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  background: currentColor;
 }
 .agent-reset {
   flex-shrink: 0;
@@ -1464,6 +1521,19 @@ body:has(dialog[open]) .agent-widget:not(:has(.agent-confirm-dialog[open])) {
 .agent-working .q-rex {
   width: 42px;
   height: 42px;
+  flex: 0 0 42px;
+}
+.agent-working-copy {
+  display: grid;
+  gap: 3px;
+  font-size: 12px;
+  line-height: 1.4;
+}
+.agent-working-copy strong {
+  color: var(--agent-ink);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.3;
 }
 .agent-toggle {
   gap: 12px;
@@ -2079,6 +2149,18 @@ body:has(dialog[open]) .agent-widget:not(:has(.agent-confirm-dialog[open])) {
 .agent-home .agent-working {
   max-width: 720px;
   margin-inline: auto;
+}
+.agent-home .agent-working {
+  width: fit-content;
+  max-width: min(100%, 720px);
+  margin-inline: auto;
+  padding: 6px 10px;
+  gap: 7px;
+}
+.agent-home .agent-working .q-rex {
+  width: 28px;
+  height: 28px;
+  flex-basis: 28px;
 }
 .agent-home .agent-message.user {
   margin-left: max(24px, calc((100% - 720px) / 2 + 24px));
