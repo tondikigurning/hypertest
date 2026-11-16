@@ -121,6 +121,12 @@ Only check validation that can be triggered without submitting data you must not
 - [ ] Language or locale variations, only if the user raised them.
 - [ ] Responsive behavior, only if in scope.
 
+### 10. Cross-menu and platform journeys
+
+- [ ] Identify journeys owned by this submodule that hand off to or receive results from another menu, module or platform, using the PRD sources, existing scenarios and reachable UI.
+- [ ] Record the participating areas, entry point, prerequisites, observable outcome, dependencies and relevant supporting PRDs in the owning submodule's PRD. Follow accessible read-only steps within the established scope and data-safety rules.
+- [ ] Mark any inaccessible or unverified handoff, upstream behavior or external outcome with its reason and what is needed to verify it. A mocked response does not verify the real integration.
+
 ## How to record an observation
 
 For each thing you saw, capture what you will need to write one requirement line:
@@ -168,7 +174,7 @@ Pause the affected interaction and ask the user when:
 - The UI shows real customer data and you are unsure how to handle it.
 - Live behavior contradicts the spec in a way that may be a real defect and you need a ticket ID. Never invent one.
 - You hit a login wall, MFA or a protected environment you were not cleared to use.
-- Exploration reveals a sub-module boundary different from the one agreed (for example, the page contains another sub-module's functions).
+- The product submodule that owns the requested journey remains ambiguous after checking the request, navigation, PRDs and feature sources. A journey crossing another submodule or platform is not by itself a change of ownership or a reason to stop documenting it in the owner's PRD.
 
 ## Coverage statement
 

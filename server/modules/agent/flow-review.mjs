@@ -2,8 +2,20 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { parseFeature } from "../catalog/scenario-catalog.mjs";
+import { prdIdentity } from "./prd-identity.mjs";
 
 const featurePrefix = "e2e/tests/bdd/features/";
+
+/** Shared component contracts have no owning product menu in their source path. */
+function matchesSubmodulePrd(feature, prd) {
+  const identity = prdIdentity(prd);
+  if (!identity) return false;
+  const parts = feature.slice(featurePrefix.length).split("/");
+  if (parts.length < 2) return false;
+  if (parts[0] === "_components") return true;
+  const submodule = parts[1].replace(/\.feature$/i, "");
+  return parts[0] === identity.module && submodule === identity.submodule;
+}
 
 export function featureReviewPath(path) {
   const normalized = path.replaceAll("\\", "/");
@@ -83,6 +95,8 @@ export async function confirmFlowReview({
   const prd = prdPath.replaceAll("\\", "/");
   if (!feature || !/^docs\/prd\/.+\.md$/i.test(prd))
     throw new Error("Choose a feature file and its matching PRD in docs/prd.");
+  if (!matchesSubmodulePrd(feature, prd))
+    throw new Error("Choose the owning submodule PRD at docs/prd/<module>/<submodule>.md for this feature.");
   await safePath(workspace, feature);
   await safePath(workspace, prd);
   const ids = flows.map((flow) => flow.id.trim());
@@ -143,7 +157,7 @@ export async function authorizeFlowWrite({
     !Array.isArray(approval.ids) ||
     changedFlows.some((id) => !approval.ids.includes(id)) ||
     typeof approval.prd !== "string" ||
-    !/^docs\/prd\/.+\.md$/i.test(approval.prd) ||
+    !matchesSubmodulePrd(feature, approval.prd) ||
     approval.prdDigest !== contentDigest((await readPrd(approval.prd)) || "")
   )
     throw new Error("Confirm the affected flow list with the matching reviewed PRD before changing scenario intent.");

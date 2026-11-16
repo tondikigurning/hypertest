@@ -7,6 +7,12 @@ description: Create, import, refresh or review a sub-module PRD or product requi
 
 Produces one reviewed Markdown PRD for one sub-module at `docs/prd/<module>/<submodule>.md`. It runs **before** `write-e2e-scenarios`: the scenario skill reads this PRD for product context instead of tracing frontend source, which this project cannot see.
 
+The PRD belongs to the real product submodule and covers its child test groups and files, including cross-menu or
+cross-platform journeys. When the request names a child, resolve its owning submodule and create or update that same
+submodule PRD. Record child requirements, dependencies and gaps within its sections, preserving stable requirement IDs
+and existing validated content. Record areas outside the explored or reviewed scope as unverified; do not imply the
+whole submodule was explored or validated. Never create a separate PRD for a child group or feature file.
+
 In Q-Rex, that path is a virtual PRD identifier backed by the database. Use the agent's file tools with this identifier; the content and versions are not repository changes. Review the proposed PRD in the PRD interface and approval request. Outside Q-Rex, use the repository documentation workflow as usual.
 
 This skill writes documentation only. It does not write `.feature` files, flow registries, scenario or flow IDs, steps, POMs or mocks. Those belong to `write-e2e-scenarios` and `write-e2e-code`.
@@ -64,7 +70,7 @@ Record every answer with its provenance (`spec` for what the user stated, `assum
 
 ## Step 1 — Check existing artifacts
 
-1. Look for `docs/prd/<module>/<submodule>.md`, the submodule's flat `.feature` and all files beneath its feature folder, and for sibling PRDs whose conventions you should match. Follow [test organization](../../../docs/automation/test-organization.md): functional, integration and other child groups share one parent submodule PRD. Record cross-menu/platform dependencies and outcomes there, referencing other PRDs when useful; a test group does not create a new product submodule or PRD.
+1. Resolve the owning product submodule, then inspect its existing `docs/prd/<module>/<submodule>.md`, flat `.feature` and all files beneath its feature folder. Follow [test organization](../../../docs/automation/test-organization.md). Inventory known child groups and check which areas the existing PRD covers. Record requirements, cross-menu/platform dependencies, outcomes and unverified gaps in that single document; reference other PRDs as supporting context. Reuse the existing document and its IDs for child-scoped work.
 2. Choose the mode:
    - **Create**: no PRD exists.
    - **Import**: the user supplied a document. Normalize it (Step 2A), then explore (Step 2B).
@@ -117,6 +123,7 @@ Follow [references/prd-template.md](references/prd-template.md) exactly. Write i
 - Quote UI messages exactly as seen and say where you saw them (screen, environment, date). They feed later scenario assertions, so paraphrasing them is a defect.
 - Describe consumer-visible behavior, not implementation. Do not name internal components, files or libraries you cannot verify.
 - List candidate business flows (name, description, priority, smoke candidate, provenance) as input for the flow-list confirmation in `write-e2e-scenarios`. Do not assign flow or scenario IDs here.
+- Cover the submodule and its known child groups in the same document. Identify which groups or journeys were actually explored and which remain unverified. For a scoped refresh, update the affected requirements in place and retain unrelated requirements and their prior review state.
 - Set `status: draft` in the front matter until the review gate passes.
 
 ## Step 5 — Quality checks before review

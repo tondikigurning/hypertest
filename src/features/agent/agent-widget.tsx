@@ -222,7 +222,7 @@ function selectionAttachment(
       ref: `group:${group.path}`,
       label: group.title,
       title: group.title,
-      text: `Selected test group in the explorer: ${group.path}. Scope includes its submodule feature, if present, and all descendant feature files. Resolve the matching sources and parent submodule PRD in your workspace before editing; the explorer selection may differ from the committed draft base.`,
+      text: `Selected submodule or test group in the explorer: ${group.path}. Scope includes its feature, if present, and all descendant feature files. Resolve the matching sources and single submodule PRD in your workspace before editing; the explorer selection may differ from the committed draft base.`,
       auto: true,
     };
   }
@@ -328,7 +328,21 @@ export function AgentWidget({
       if (storedContext) {
         try {
           const menu: unknown = JSON.parse(storedContext);
+          let selected: ContextAttachment | undefined;
           if (
+            menu &&
+            typeof menu === "object" &&
+            "module" in menu &&
+            "submodule" in menu &&
+            typeof menu.module === "string" &&
+            typeof menu.submodule === "string"
+          ) {
+            const scope = selectionAttachment(undefined, undefined, {
+              path: `${menu.module}/${menu.submodule}`,
+              title: `${displayLabel(menu.module)} / ${displayLabel(menu.submodule)}`,
+            });
+            if (scope) selected = { ...scope, id: contextId(), auto: false };
+          } else if (
             menu &&
             typeof menu === "object" &&
             "module" in menu &&
@@ -338,21 +352,25 @@ export function AgentWidget({
             typeof menu.file === "string" &&
             typeof menu.title === "string"
           ) {
-            const selected = {
+            selected = {
               id: contextId(),
               kind: "feature" as const,
               ref: menu.file,
               label: menu.title,
               value: { module: menu.module, file: menu.file, title: menu.title },
             };
+          }
+          if (selected) {
+            const attachment = selected;
             setContexts((current) => {
               const retained = current.filter((item) => !item.auto);
-              if (retained.some((item) => item.kind === "feature" && item.ref === selected.ref)) return retained;
+              if (retained.some((item) => item.kind === attachment.kind && item.ref === attachment.ref))
+                return retained;
               if (retained.length >= 8) {
                 setContextError("Remove a context item to attach the selected menu.");
                 return retained;
               }
-              return [...retained, selected];
+              return [...retained, attachment];
             });
           }
         } catch {

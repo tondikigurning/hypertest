@@ -1,17 +1,13 @@
 import { and, eq } from "drizzle-orm";
 import { database } from "../../database.mjs";
 import { agentPrds } from "../results/schema.mjs";
+import { prdIdentity } from "./prd-identity.mjs";
 import { requiresPrdReview } from "./prd-review.mjs";
+
+export { prdIdentity } from "./prd-identity.mjs";
 
 const identity = /^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/;
 const empty = () => ({ activeVersionId: undefined, versions: [] });
-
-export function prdIdentity(path) {
-  const match = /^docs\/prd\/([A-Za-z0-9][A-Za-z0-9_-]{0,63})\/([A-Za-z0-9][A-Za-z0-9_-]{0,63})\.md$/i.exec(
-    path.replaceAll("\\", "/"),
-  );
-  return match ? { module: match[1], submodule: match[2] } : undefined;
-}
 
 function validate(module, submodule) {
   if (!identity.test(module || "") || !identity.test(submodule || ""))

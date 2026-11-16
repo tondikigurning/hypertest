@@ -6,7 +6,7 @@ it does not create another product menu.
 
 ## Feature sources
 
-Paths below are relative to `e2e/tests/bdd/features/`:
+This illustrative layout uses paths relative to `e2e/tests/bdd/features/`; inspect the checkout for existing files:
 
 ```text
 workforce-management/
@@ -37,7 +37,6 @@ When splitting, move the original submodule file into its folder and distribute 
 Preserve IDs, flow tags, references, backgrounds, inherited tags, examples, setup, assertions, safety comments and
 scenario order within each flow. Keep shared steps and page objects reusable; a file split does not require copies
 of their implementations. Register the new paths in `e2e/playwright.bdd.config.ts` only for implemented scenarios.
-The existing Cases configuration includes its nested files recursively.
 
 Existing flat paths remain supported. If a flat file temporarily coexists with a same-named folder, the submodule
 appears once and its total includes both. Prefer the folder layout for new multi-file coverage.
@@ -69,13 +68,23 @@ Flow groups retain their source file, so equal flow labels in different files re
 paths and spans all features. Filters narrow the displayed rows; Run uses the full selected group as stated in its
 confirmation dialog.
 
-Routes follow the same hierarchy: `/case-management/cases` selects all Cases scenarios and
+For example, with the illustrative Cases files above, `/case-management/cases` selects all Cases scenarios and
 `/case-management/cases/bulk` selects the Bulk file. Direct links, reload, browser history, scenario references and
 search results retain the selected source. Old submodule links still open the submodule after a split.
 
-Every descendant uses the same parent PRD: `docs/prd/<module>/<submodule>.md`. In Q-Rex this is a database-backed
-virtual identifier. Test groups do not create PRDs named `integration.md` or `bulk.md`; refresh the parent PRD when
-its scope lacks the integration requirements, and reference other reviewed PRDs as supporting context.
+Each real submodule has one PRD covering its own behavior and all child test groups/files:
+`docs/prd/<module>/<submodule>.md`. In Q-Rex this is a database-backed virtual identifier. Select the submodule
+in the sidebar to view or manage its PRD; child views contain no PRD button. Older child URLs with `?view=prd`
+open the parent submodule PRD. Multiple versions remain versions of that same submodule document.
+
+Keep requirements, candidate flows, integration dependencies and unresolved gaps for every known child scope in
+the parent PRD. A scoped exploration or refresh records what remains unverified and preserves unrelated validated
+requirements; it does not imply full coverage. If a child introduces missing requirements, refresh the same PRD
+through its review workflow. Use other submodule PRDs as supporting context, and keep review ownership with the
+submodule whose feature is being authored. The flow-confirmation tool validates that a flat or nested feature uses
+its owning submodule PRD. Shared `_components` master contracts have no product owner in their path, so they use
+the reviewed PRD of the consuming submodule; the workflow must resolve that owner from context.
+The reusable `_components` navigation is not a product submodule and does not expose a PRD button.
 
 Run can select a scenario, file, flow category within a file, or a submodule/folder. The server resolves every group
 from current source and catalog entries, rejects stale or ambiguous selections, then checks Playwright collection.

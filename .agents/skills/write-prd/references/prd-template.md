@@ -55,11 +55,11 @@ Requirement sources: <document path, ticket keys such as ABC-123, or "none state
 
 **In scope**
 
-- <function or area covered>
+- <submodule function or child test group and its covered journeys>
 
 **Out of scope**
 
-- <function, flow or role deliberately excluded, with the reason if the user gave one>
+- <function, child group, flow or role deliberately excluded, with the reason if the user gave one>
 
 ## 3. Roles and access
 
@@ -99,6 +99,10 @@ Input for the flow-list confirmation in `write-e2e-scenarios`. No flow or scenar
 ### 6.6 Empty, loading and error states
 
 ### 6.7 Role-dependent and state-dependent behavior
+
+### 6.8 Cross-menu and platform integrations
+
+- <requirements, participating menus/platforms, prerequisites and observable outcomes owned by this submodule>
 
 ## 7. UI messages
 
@@ -220,7 +224,7 @@ A statement states one behavior. Split compound statements ("shows X and also al
 
 ## Section guidance
 
-**Purpose and scope.** Use the user's words from the context interview. Out-of-scope items come from the "known issues and scope" answer.
+**Purpose and scope.** Use the user's words from the context interview. Identify known child test groups and which journeys are covered, excluded or unverified within this one submodule PRD. Out-of-scope items come from the "known issues and scope" answer. A scoped refresh must not imply every child was explored.
 
 **Roles and access.** One row per role the user named or that you observed. A role you could not test is listed with `Can do` and `Must be denied` marked `unverified`, and also appears in section 10.
 
@@ -228,7 +232,7 @@ A statement states one behavior. Split compound statements ("shows X and also al
 
 **Candidate business flows.** Cover at least each supported create, read, update and delete happy path plus other main business functions. Recommend happy paths as smoke candidates. These are candidates only; `write-e2e-scenarios` confirms and numbers them.
 
-**Behavior.** Group by what the user does, not by DOM structure. Use sub-sections 6.4.x for each action (create, edit, delete, export, status change, and so on). Add or remove sub-sections to fit the sub-module, but keep 6.1 to 6.7 present.
+**Behavior.** Group by what the user does, not by DOM structure. Use sub-sections 6.4.x for each action (create, edit, delete, export, status change, and so on). Record integration requirements in 6.8. Add or remove sub-sections to fit the sub-module, but keep 6.1 to 6.8 present.
 
 **UI messages.** One row per distinct message. If the same message appears in several places, list the trigger and screen for each.
 

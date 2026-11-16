@@ -326,13 +326,13 @@ test("scenario intent changes require scoped flow confirmation against a current
 test("a draft PRD cannot be used to confirm a flow list", async (t) => {
   const workspace = await mkdtemp(join(tmpdir(), "automation-agent-flow-prd-"));
   t.after(() => rm(workspace, { recursive: true, force: true }));
-  await mkdir(join(workspace, "e2e/tests/bdd/features"), { recursive: true });
+  await mkdir(join(workspace, "e2e/tests/bdd/features/module"), { recursive: true });
   await mkdir(join(workspace, "docs/prd/module"), { recursive: true });
   await writeFile(join(workspace, "docs/prd/module/example.md"), "---\nstatus: draft\n---\n");
   await assert.rejects(
     confirmFlowReview({
       workspace,
-      featurePath: "e2e/tests/bdd/features/example.feature",
+      featurePath: "e2e/tests/bdd/features/module/example.feature",
       prdPath: "docs/prd/module/example.md",
       flows: [{ id: "ONE", description: "A flow" }],
       safePath: safeWorkspacePath,
@@ -346,9 +346,9 @@ test("a draft PRD cannot be used to confirm a flow list", async (t) => {
 test("flow confirmation is rejected if the PRD changes while the user reviews it", async (t) => {
   const workspace = await mkdtemp(join(tmpdir(), "automation-agent-flow-race-"));
   t.after(() => rm(workspace, { recursive: true, force: true }));
-  const featurePath = "e2e/tests/bdd/features/example.feature";
+  const featurePath = "e2e/tests/bdd/features/module/example.feature";
   const prdPath = "docs/prd/module/example.md";
-  await mkdir(join(workspace, "e2e/tests/bdd/features"), { recursive: true });
+  await mkdir(join(workspace, "e2e/tests/bdd/features/module"), { recursive: true });
   await mkdir(join(workspace, "docs/prd/module"), { recursive: true });
   await writeFile(join(workspace, prdPath), "---\nstatus: reviewed\n---\n");
   await assert.rejects(
@@ -365,6 +365,63 @@ test("flow confirmation is rejected if the PRD changes while the user reviews it
       },
     }),
     /changed while awaiting confirmation/,
+  );
+});
+
+test("flow confirmation uses the owning submodule PRD for flat and nested features", async (t) => {
+  const workspace = await mkdtemp(join(tmpdir(), "automation-agent-flow-owner-"));
+  t.after(() => rm(workspace, { recursive: true, force: true }));
+  const reviewed = "---\nstatus: reviewed\n---\n";
+  let approvals = 0;
+  const confirm = (featurePath, prdPath) =>
+    confirmFlowReview({
+      workspace,
+      featurePath,
+      prdPath,
+      flows: [{ id: "ONE", description: "A business flow" }],
+      safePath: async () => {},
+      redact: (value) => value,
+      readPrd: async () => reviewed,
+      requestApproval: async () => {
+        approvals++;
+        return true;
+      },
+    });
+  const parentPrd = "docs/prd/case-management/cases.md";
+  for (const feature of [
+    "e2e/tests/bdd/features/case-management/cases.feature",
+    "e2e/tests/bdd/features/case-management/cases/bulk.feature",
+    "e2e/tests/bdd/features/case-management/cases/integration/platform.feature",
+    "e2e/tests/bdd/features/_components/filter.feature",
+  ])
+    assert.equal((await confirm(feature, parentPrd)).prd, parentPrd);
+  const feature = "e2e/tests/bdd/features/case-management/cases/integration/platform.feature";
+  for (const wrongPrd of [
+    "docs/prd/case-management/integration.md",
+    "docs/prd/case-management/cases/integration.md",
+    "docs/prd/workforce-management/cases.md",
+  ])
+    await assert.rejects(confirm(feature, wrongPrd), /owning submodule PRD/);
+  assert.equal(approvals, 4, "mismatches must be rejected before requesting approval");
+
+  const confirmations = {
+    [flowReviewKey(feature)]: {
+      featureDigest: contentDigest(""),
+      prd: "docs/prd/case-management/integration.md",
+      prdDigest: contentDigest(reviewed),
+      ids: ["ONE"],
+    },
+  };
+  await assert.rejects(
+    authorizeFlowWrite({
+      workspace,
+      path: feature,
+      content: "Feature: Example\n  @flow:ONE\n  Scenario: Example\n    Given a step\n",
+      confirmations,
+      safePath: async () => {},
+      readPrd: async () => reviewed,
+    }),
+    /matching reviewed PRD/,
   );
 });
 

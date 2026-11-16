@@ -6,8 +6,9 @@ instructions are the repository skills in `.agents/skills`; the runtime adapter 
 `server/modules/agent/agent-skills.mjs`.
 
 The explorer follows module → submodule → optional test groups/files. Read [test organization](test-organization.md)
-when adding integration journeys or splitting a large submodule. Each child keeps its parent PRD and scenario ID
-namespace; flow confirmation and scenario review identify the exact files and scenario IDs in the batch.
+when adding integration journeys or splitting a large submodule. Each real submodule has one PRD covering its child
+groups/files; manage it from the submodule view. Children share the parent PRD and scenario ID namespace; flow
+confirmation and scenario review identify the exact files and scenario IDs in the batch.
 
 ## Start and prerequisites
 

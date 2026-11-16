@@ -37,6 +37,11 @@ export function scenarioSubmodule(module: string, file: string) {
     .replace(/\.feature$/i, "");
 }
 
+export function isSubmoduleScope(module: string, scope: string) {
+  const submodule = scenarioSubmodule(module, scope);
+  return Boolean(submodule && scope === `${module}/${submodule}`);
+}
+
 export function scenarioFiltersFromSearchParams(params: URLSearchParams): ScenarioFilters {
   return {
     search: params.get(filterQueryKeys.search) ?? defaultFilters.search,

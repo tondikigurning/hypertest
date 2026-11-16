@@ -17,6 +17,7 @@ import { ScenarioMetadata } from "../features/scenarios/components/scenario-meta
 import { ScenarioNavigation } from "../features/scenarios/components/scenario-navigation";
 import {
   clearScenarioFilterParams,
+  isSubmoduleScope,
   type ScenarioFilterKey,
   scenarioFiltersFromSearchParams,
   scenarioPath,
@@ -44,7 +45,13 @@ export function App() {
       : undefined;
   const routeSubmodule = routeModule && routeScope ? scenarioSubmodule(routeModule, routeScope) : undefined;
   const isHome = route?.id === "home";
-  const isSubmodule = route?.id === "scenario";
+  const isSubmodule = Boolean(
+    route?.id === "scenario" &&
+      routeModule &&
+      routeModule !== "_components" &&
+      routeScope &&
+      isSubmoduleScope(routeModule, routeScope),
+  );
   const location = useLocation();
   const navigate = useNavigate();
   const navigationType = useNavigationType();
@@ -52,6 +59,26 @@ export function App() {
   const filters = scenarioFiltersFromSearchParams(searchParams);
   const { search, status, priority, type } = filters;
   const isPrdView = isSubmodule && searchParams.get("view") === "prd";
+  useEffect(() => {
+    if (
+      route?.id !== "scenario" ||
+      isSubmodule ||
+      searchParams.get("view") !== "prd" ||
+      !routeModule ||
+      !routeSubmodule
+    )
+      return;
+    if (routeModule === "_components") {
+      const next = new URLSearchParams(searchParams);
+      next.delete("view");
+      navigate({ pathname: location.pathname, search: next.toString() }, { replace: true });
+      return;
+    }
+    navigate(
+      { pathname: scenarioPath(routeModule, `${routeModule}/${routeSubmodule}`), search: location.search },
+      { replace: true },
+    );
+  }, [isSubmodule, location.pathname, location.search, navigate, route?.id, routeModule, routeSubmodule, searchParams]);
   const prds = usePrds();
   const prdButton = useRef<HTMLButtonElement>(null);
   const activeRun = useActiveRun(true);
@@ -488,28 +515,24 @@ export function App() {
                 setSearchParams(next, { replace: true });
               }}
               onCreate={() => {
-                if (feature) {
-                  sessionStorage.setItem(
-                    "automation-prd-context",
-                    JSON.stringify({ module: feature.module, file: feature.file, title: featureTitle(feature) }),
-                  );
-                } else sessionStorage.removeItem("automation-prd-context");
+                sessionStorage.setItem(
+                  "automation-prd-context",
+                  JSON.stringify({ module: routeModule, submodule: routeSubmodule }),
+                );
                 sessionStorage.setItem(
                   "automation-prd-start",
-                  `Help me create or import a PRD for ${routeModule} / ${routeSubmodule}`,
+                  `Help me create or import the submodule PRD for ${routeModule} / ${routeSubmodule}, covering its child test groups and files.`,
                 );
                 goHome();
               }}
               onEdit={() => {
-                if (feature) {
-                  sessionStorage.setItem(
-                    "automation-prd-context",
-                    JSON.stringify({ module: feature.module, file: feature.file, title: featureTitle(feature) }),
-                  );
-                } else sessionStorage.removeItem("automation-prd-context");
+                sessionStorage.setItem(
+                  "automation-prd-context",
+                  JSON.stringify({ module: routeModule, submodule: routeSubmodule }),
+                );
                 sessionStorage.setItem(
                   "automation-prd-start",
-                  `Help me edit or refresh the active PRD for ${routeModule} / ${routeSubmodule}`,
+                  `Help me edit or refresh the submodule PRD for ${routeModule} / ${routeSubmodule}, covering its child test groups and files.`,
                 );
                 goHome();
               }}

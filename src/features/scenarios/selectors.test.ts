@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { enrichScenario, parseFeature } from "../../../server/modules/catalog/scenario-catalog.mjs";
-import { scenarioPath, scenarioSubmodule } from "./navigation";
+import { isSubmoduleScope, scenarioPath, scenarioSubmodule } from "./navigation";
 import { filterScenarios, findScenarioGroup, groupFlows, groupModules } from "./selectors";
 
 function scenario(file: string, id: string) {
@@ -69,5 +69,9 @@ test("nested routes and PRDs retain their parent submodule identity", () => {
   assert.equal(scenarioSubmodule("case-management", "case-management/cases/integration/work-orders.feature"), "cases");
   assert.equal(scenarioSubmodule("case-management", "case-management/cases.feature"), "cases");
   assert.equal(scenarioSubmodule("knowledge-management", "case-management/cases.feature"), undefined);
+  assert.equal(isSubmoduleScope("case-management", "case-management/cases"), true);
+  assert.equal(isSubmoduleScope("case-management", "case-management/cases/integration"), false);
+  assert.equal(isSubmoduleScope("case-management", "case-management/cases/integration/work-orders"), false);
+  assert.equal(isSubmoduleScope("knowledge-management", "case-management/cases"), false);
   assert.equal(scenarioPath("a module", "a module/a menu/child group.feature"), "/a%20module/a%20menu/child%20group");
 });
