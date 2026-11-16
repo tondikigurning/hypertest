@@ -10,8 +10,6 @@ import type { PageContext } from "../fixtures/page-context";
 import {
     ACCESS_ROLES_FILTER_API,
     ACCESS_ROLES_LIST_PATH,
-    CASES_FILTER_API,
-    CASES_LIST_PATH,
     ENTITIES_UNITS_FILTER_API,
     ENTITIES_UNITS_FILTER_URL,
     PERMISSION_SETS_FILTER_API,
@@ -69,12 +67,6 @@ const LIST_CONFIG: Record<
         filterApi: WORK_ORDERS_FILTER_API,
         filterUrl: /\/workforcemgmt\/tenant\/work-orders\/filter/,
         detailUrl: /\/workforcemgmt\/tenant\/work-orders\/(?!filter(?:\?|$))[^/?#]+(?:\?.*)?$/,
-    },
-    "cases": {
-        listPath: CASES_LIST_PATH,
-        filterApi: CASES_FILTER_API,
-        filterUrl: /\/casemgmt\/tenant\/cases\/regular\/filter/,
-        detailUrl: /\/casemgmt\/tenant\/cases\/(?!regular\/filter(?:\?|$)|filter(?:\?|$))[^/?#]+(?:\?.*)?$/,
     },
     "survey-template-manager": {
         listPath: SURVEY_TEMPLATE_MANAGER_LIST_PATH,

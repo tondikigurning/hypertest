@@ -66,7 +66,6 @@ function resolvePipelinePage(fixtures: {
     pageContext: PageContext;
     usersPage: PipelinePage;
     userGroupsPage: unknown;
-    casesPage?: PipelinePage;
     workOrdersPage?: unknown;
     currentUrl?: string;
 }): PipelinePage {
@@ -82,14 +81,13 @@ function resolvePipelinePage(fixtures: {
         pageContext: fixtures.pageContext,
         usersPage: fixtures.usersPage,
         userGroupsPage: userGroupsPipelinePage,
-        casesPage: fixtures.casesPage,
         workOrdersPage: workOrdersPipelinePage,
         currentUrl: fixtures.currentUrl,
     });
 }
 
-When("the user selects the {string} pipeline tab", async ({ page, pageContext, usersPage, userGroupsPage, casesPage, workOrdersPage, $testInfo }, tab: string) => {
-    const listPage = resolvePipelinePage({ pageContext, usersPage, userGroupsPage, casesPage, workOrdersPage, currentUrl: page.url() });
+When("the user selects the {string} pipeline tab", async ({ page, pageContext, usersPage, userGroupsPage, workOrdersPage, $testInfo }, tab: string) => {
+    const listPage = resolvePipelinePage({ pageContext, usersPage, userGroupsPage, workOrdersPage, currentUrl: page.url() });
     const targetTab = listPage.pipeline.tab(tab);
     const tabVisible = await targetTab.isVisible().catch(() => false);
     const isMockScenario = $testInfo.tags.includes("@mock");
@@ -125,7 +123,7 @@ When("the user selects the {string} pipeline tab", async ({ page, pageContext, u
     await selectTab(tab);
 });
 
-Then("the {string} pipeline tab is active", async ({ page, pageContext, usersPage, userGroupsPage, casesPage, workOrdersPage }, tab: string) => {
-    const listPage = resolvePipelinePage({ pageContext, usersPage, userGroupsPage, casesPage, workOrdersPage, currentUrl: page.url() });
+Then("the {string} pipeline tab is active", async ({ page, pageContext, usersPage, userGroupsPage, workOrdersPage }, tab: string) => {
+    const listPage = resolvePipelinePage({ pageContext, usersPage, userGroupsPage, workOrdersPage, currentUrl: page.url() });
     await listPage.pipeline.expectTabActive(tab);
 });

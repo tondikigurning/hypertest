@@ -10,7 +10,6 @@ import {
 } from "../../fixtures/page-context";
 import type { AccessRolesPage } from "../../pages/iam/AccessRolesPage";
 import type { PermissionSetsPage } from "../../pages/iam/PermissionSetsPage";
-import type { CasesPage } from "../../pages/case-management/CasesPage";
 import type { UserGroupsPage } from "../../pages/user-management/UserGroupsPage";
 import type { UsersPage } from "../../pages/user-management/UsersPage";
 import type { WorkOrdersPage } from "../../pages/workforce-management/WorkOrdersPage";
@@ -34,7 +33,7 @@ type DetailPanelPage =
     | AccessRolesPage
     | PermissionSetsPage
     | WorkOrdersPage
-    | CasesPage | SurveyTemplateManagerPage | OrganizationsPage | EntitiesPage;
+    | SurveyTemplateManagerPage | OrganizationsPage | EntitiesPage;
 
 function resolveDetailPanelPage(fixtures: {
     pageContext: PageContext;
@@ -43,7 +42,6 @@ function resolveDetailPanelPage(fixtures: {
     accessRolesPage: AccessRolesPage;
     permissionSetsPage: PermissionSetsPage;
     workOrdersPage?: WorkOrdersPage;
-    casesPage?: CasesPage;
     surveyTemplateManagerPage?: SurveyTemplateManagerPage;
     organizationsPage?: OrganizationsPage;
     entitiesPage?: EntitiesPage;
@@ -71,16 +69,16 @@ Given("the detail panel API response is delayed by 3 seconds", async ({ network,
     });
 });
 
-Given("the detail panel is open", async ({ page, pageContext, usersPage, userGroupsPage, accessRolesPage, permissionSetsPage, workOrdersPage, casesPage, surveyTemplateManagerPage, organizationsPage, entitiesPage }) => {
+Given("the detail panel is open", async ({ page, pageContext, usersPage, userGroupsPage, accessRolesPage, permissionSetsPage, workOrdersPage, surveyTemplateManagerPage, organizationsPage, entitiesPage }) => {
     const detailPage = resolveDetailPanelPage({
         pageContext, usersPage, userGroupsPage, accessRolesPage, permissionSetsPage, workOrdersPage,
-        casesPage, surveyTemplateManagerPage, organizationsPage, entitiesPage, currentUrl: page.url()
+        surveyTemplateManagerPage, organizationsPage, entitiesPage, currentUrl: page.url()
     });
     await detailPage.openDetailPanel();
 });
 
 When("the user clicks the first list row", async ({ page, pageContext, usersPage, userGroupsPage, accessRolesPage, permissionSetsPage, workOrdersPage,
-    casesPage, surveyTemplateManagerPage, organizationsPage, entitiesPage, $testInfo }) => {
+    surveyTemplateManagerPage, organizationsPage, entitiesPage, $testInfo }) => {
     if (pageContext.currentPage === "survey-template-manager") {
         if (!(await surveyTemplateManagerPage.hasTemplateCards())) {
             $testInfo.skip(true, "No survey template card is available to preview. This scenario depends on environment seed data.");
@@ -106,55 +104,55 @@ When("the user clicks the first list row", async ({ page, pageContext, usersPage
 
     const detailPage = resolveDetailPanelPage({
         pageContext, usersPage, userGroupsPage, accessRolesPage, permissionSetsPage, workOrdersPage,
-        casesPage, surveyTemplateManagerPage, organizationsPage, entitiesPage, currentUrl: page.url()
+        surveyTemplateManagerPage, organizationsPage, entitiesPage, currentUrl: page.url()
     });
     await detailPage.table.openRowDetail(0);
 });
 
-When("the user clicks the {string} detail panel tab", async ({ page, pageContext, usersPage, userGroupsPage, accessRolesPage, permissionSetsPage, workOrdersPage, casesPage, surveyTemplateManagerPage, organizationsPage, entitiesPage }, tabName: string) => {
+When("the user clicks the {string} detail panel tab", async ({ page, pageContext, usersPage, userGroupsPage, accessRolesPage, permissionSetsPage, workOrdersPage, surveyTemplateManagerPage, organizationsPage, entitiesPage }, tabName: string) => {
     const detailPage = resolveDetailPanelPage({
         pageContext, usersPage, userGroupsPage, accessRolesPage, permissionSetsPage, workOrdersPage,
-        casesPage, surveyTemplateManagerPage, organizationsPage, entitiesPage, currentUrl: page.url()
+        surveyTemplateManagerPage, organizationsPage, entitiesPage, currentUrl: page.url()
     });
     await detailPage.clickDetailPanelTab(tabName);
 });
 
-When("the user closes the detail panel", async ({ page, pageContext, usersPage, userGroupsPage, accessRolesPage, permissionSetsPage, workOrdersPage, casesPage, surveyTemplateManagerPage, organizationsPage, entitiesPage }) => {
+When("the user closes the detail panel", async ({ page, pageContext, usersPage, userGroupsPage, accessRolesPage, permissionSetsPage, workOrdersPage, surveyTemplateManagerPage, organizationsPage, entitiesPage }) => {
     const detailPage = resolveDetailPanelPage({
         pageContext, usersPage, userGroupsPage, accessRolesPage, permissionSetsPage, workOrdersPage,
-        casesPage, surveyTemplateManagerPage, organizationsPage, entitiesPage, currentUrl: page.url()
+        surveyTemplateManagerPage, organizationsPage, entitiesPage, currentUrl: page.url()
     });
     await detailPage.closeDetailPanel();
 });
 
-Then("the detail panel is visible", async ({ page, pageContext, usersPage, userGroupsPage, accessRolesPage, permissionSetsPage, workOrdersPage, casesPage, surveyTemplateManagerPage, organizationsPage, entitiesPage }) => {
+Then("the detail panel is visible", async ({ page, pageContext, usersPage, userGroupsPage, accessRolesPage, permissionSetsPage, workOrdersPage, surveyTemplateManagerPage, organizationsPage, entitiesPage }) => {
     const detailPage = resolveDetailPanelPage({
         pageContext, usersPage, userGroupsPage, accessRolesPage, permissionSetsPage, workOrdersPage,
-        casesPage, surveyTemplateManagerPage, organizationsPage, entitiesPage, currentUrl: page.url()
+        surveyTemplateManagerPage, organizationsPage, entitiesPage, currentUrl: page.url()
     });
     await detailPage.expectDetailPanelVisible();
 });
 
-Then("the detail panel is not visible", async ({ page, pageContext, usersPage, userGroupsPage, accessRolesPage, permissionSetsPage, workOrdersPage, casesPage, surveyTemplateManagerPage, organizationsPage, entitiesPage }) => {
+Then("the detail panel is not visible", async ({ page, pageContext, usersPage, userGroupsPage, accessRolesPage, permissionSetsPage, workOrdersPage, surveyTemplateManagerPage, organizationsPage, entitiesPage }) => {
     const detailPage = resolveDetailPanelPage({
         pageContext, usersPage, userGroupsPage, accessRolesPage, permissionSetsPage, workOrdersPage,
-        casesPage, surveyTemplateManagerPage, organizationsPage, entitiesPage, currentUrl: page.url()
+        surveyTemplateManagerPage, organizationsPage, entitiesPage, currentUrl: page.url()
     });
     await detailPage.expectDetailPanelHidden();
 });
 
-Then("the detail panel header shows a title", async ({ page, pageContext, usersPage, userGroupsPage, accessRolesPage, permissionSetsPage, workOrdersPage, casesPage, surveyTemplateManagerPage, organizationsPage, entitiesPage }) => {
+Then("the detail panel header shows a title", async ({ page, pageContext, usersPage, userGroupsPage, accessRolesPage, permissionSetsPage, workOrdersPage, surveyTemplateManagerPage, organizationsPage, entitiesPage }) => {
     const detailPage = resolveDetailPanelPage({
         pageContext, usersPage, userGroupsPage, accessRolesPage, permissionSetsPage, workOrdersPage,
-        casesPage, surveyTemplateManagerPage, organizationsPage, entitiesPage, currentUrl: page.url()
+        surveyTemplateManagerPage, organizationsPage, entitiesPage, currentUrl: page.url()
     });
     await detailPage.expectDetailPanelHasTitle();
 });
 
-Then("the {string} tab content is visible", async ({ page, pageContext, usersPage, userGroupsPage, accessRolesPage, permissionSetsPage, workOrdersPage, casesPage, surveyTemplateManagerPage, organizationsPage, entitiesPage }, tabName: string) => {
+Then("the {string} tab content is visible", async ({ page, pageContext, usersPage, userGroupsPage, accessRolesPage, permissionSetsPage, workOrdersPage, surveyTemplateManagerPage, organizationsPage, entitiesPage }, tabName: string) => {
     const detailPage = resolveDetailPanelPage({
         pageContext, usersPage, userGroupsPage, accessRolesPage, permissionSetsPage, workOrdersPage,
-        casesPage, surveyTemplateManagerPage, organizationsPage, entitiesPage, currentUrl: page.url()
+        surveyTemplateManagerPage, organizationsPage, entitiesPage, currentUrl: page.url()
     });
     await detailPage.expectDetailTabContentVisible(tabName);
 });

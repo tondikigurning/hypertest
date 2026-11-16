@@ -13,11 +13,9 @@ import { expect } from "@playwright/test";
 
 export class WorkOrdersCreatePage {
     constructor(private readonly page: Page) {
-        this.lastCaseReference = null;
         this.lastAccountNumber = null;
     }
 
-    lastCaseReference: string | null;
     lastAccountNumber: string | null;
 
     private get wizardStepContent(): Locator {
@@ -58,14 +56,6 @@ export class WorkOrdersCreatePage {
 
     private get successHeading(): Locator {
         return this.page.getByText("Success").first();
-    }
-
-    private get backToHomepageButton(): Locator {
-        return this.page.getByRole("button", { name: /back to homepage/i });
-    }
-
-    private get createMoreWoButton(): Locator {
-        return this.page.getByRole("button", { name: /create more wo/i });
     }
 
     async navigateTo(): Promise<void> {
@@ -134,37 +124,15 @@ export class WorkOrdersCreatePage {
         await this.page.waitForTimeout(300);
     }
 
-    /**
-     * Search for a case reference number and select the first result.
-     * If `value` is provided, search for that; otherwise use stored lastCaseReference.
-     */
-    async searchCaseReference(value?: string): Promise<void> {
-        const searchVal = value ?? "NONEXISTENT-REF-999999";
+    /** Search for a supplied case reference. */
+    async searchCaseReference(value: string): Promise<void> {
         await this.caseReferenceComboBox.waitFor({ state: "visible", timeout: 20_000 });
         await this.caseReferenceComboBox.click({ force: true });
         const input = this.caseReferenceComboBox.locator("input").or(this.caseReferenceComboBox);
-        await input.fill(searchVal);
+        await input.fill(value);
         await this.page.waitForTimeout(500);
         await input.press("Enter");
         await this.page.waitForTimeout(3000);
-    }
-
-    /** Select the first matching case reference from the dropdown results. */
-    async selectFirstCaseReference(): Promise<void> {
-        const option = this.page.locator('[role="option"]').first();
-        const found = await option.isVisible({ timeout: 20_000 }).catch(() => false);
-        if (!found) {
-            await this.caseReferenceComboBox.click({ force: true });
-            await this.page.waitForTimeout(3000);
-            await option.waitFor({ state: "visible", timeout: 20_000 });
-        }
-        await option.click({ force: true });
-        // Wait for case details to render
-        await this.page.locator("text=Case Details").first().waitFor({ state: "visible", timeout: 20_000 }).catch(() => { });
-        await this.page.waitForTimeout(2000);
-
-        // Check for exclamation icon — incomplete customer data indicator
-        await this.scrollAndCompleteIfExclamation();
     }
 
     /** Scroll wizard up, check for incomplete data (empty Phone field), and complete via kebab. */
@@ -344,97 +312,6 @@ export class WorkOrdersCreatePage {
         }
     }
 
-    /** Navigate to Cases and get a case number from Open pipeline that has customer info. */
-    async getFirstCaseNumber(): Promise<string> {
-        await this.page.goto("/case-management/cases", { waitUntil: "domcontentloaded" });
-        await this.page.waitForTimeout(3000);
-
-        // Dismiss any overlays/major event banners that may block the table
-        await this.page.evaluate(() => {
-            document.querySelectorAll('[class*="fixed"][class*="inset-0"]').forEach(el => el.remove());
-            document.body.style.pointerEvents = "auto";
-        }).catch(() => { });
-        await this.page.waitForTimeout(1000);
-
-        // Step 1: Check and verify current active pipeline tab
-        let isOpenPipelineActive = await this.page.evaluate(() => {
-            const activeTab = document.querySelector('[role="tab"][aria-selected="true"], button[aria-selected="true"]');
-            if (!activeTab) return false;
-            const text = activeTab.textContent || "";
-            return /open/i.test(text);
-        });
-
-        // Step 2: If not Open pipeline, switch to it
-        if (!isOpenPipelineActive) {
-            const tab = this.page.getByRole("tab", { name: /^open/i });
-            const visible = await tab.isVisible({ timeout: 5_000 }).catch(() => false);
-            if (visible) {
-                await tab.click();
-            } else {
-                // Try to access through "Others" dropdown if direct tab not visible
-                await this.page.getByRole("button", { name: /others/i }).click();
-                await this.page.waitForTimeout(500);
-                await this.page.getByRole("menuitem").filter({ hasText: /open/i }).first().click();
-            }
-            // Verify tab switched successfully
-            await this.page.waitForFunction(
-                () => {
-                    const activeTab = document.querySelector('[role="tab"][aria-selected="true"], button[aria-selected="true"]');
-                    return activeTab ? /open/i.test(activeTab.textContent || "") : false;
-                },
-                { timeout: 20_000 }
-            );
-        }
-
-        // Step 3: Wait for table to fully load after pipeline switch
-        await this.page.waitForTimeout(3000);
-        // Re-dismiss any overlays that appeared after tab switch
-        await this.page.evaluate(() => {
-            document.querySelectorAll('[class*="fixed"][class*="inset-0"]').forEach(el => el.remove());
-        }).catch(() => { });
-
-        // Wait for table rows to be visible
-        const tableRows = this.page.locator('tbody tr');
-        await tableRows.first().waitFor({ state: "visible", timeout: 20_000 });
-        await this.page.waitForTimeout(1000);
-
-        // Step 4: Find column indexes: Case Number + Customer Name
-        const headers = this.page.locator('thead tr th, thead tr [role="columnheader"]');
-        const count = await headers.count();
-        let caseCol = -1;
-        const custCols: number[] = [];
-        for (let i = 0; i < count; i++) {
-            const text = await headers.nth(i).textContent();
-            if (text && /case.?number/i.test(text)) caseCol = i;
-            if (text && /customer.?name|customer/i.test(text)) custCols.push(i);
-        }
-        if (caseCol === -1) throw new Error("Case Number column not found in Open pipeline");
-        if (custCols.length === 0) throw new Error("Customer Name column not found in Open pipeline");
-
-        // Step 5: Scan rows for "Complaint > Service" with a real customer
-        const rows = this.page.locator('tbody tr');
-        const rowCount = await rows.count();
-        for (let r = 0; r < rowCount; r++) {
-            const row = rows.nth(r);
-            const allText = await row.locator('td').allTextContents();
-            const hasComplaint = allText.some(t => /complaint\s*>\s*service/i.test(t));
-            if (!hasComplaint) continue;
-            const hasCustomer = custCols.some(ci => {
-                const val = allText[ci]?.trim();
-                return val && val !== "-" && val !== "";
-            });
-            if (!hasCustomer) continue;
-            const caseNum = allText[caseCol]?.trim();
-            if (caseNum) {
-                this.lastCaseReference = caseNum;
-                await this.page.goto("/workforce-management/work-orders", { waitUntil: "domcontentloaded" });
-                await this.page.waitForTimeout(3000);
-                return this.lastCaseReference;
-            }
-        }
-        throw new Error("No matching case found in Open pipeline (no Complaint > Service case with customer data)");
-    }
-
     /** Read first available account number from a Completed work order. */
     async getAccountNumberFromCompletedWO(): Promise<string> {
         // Select "Completed" pipeline tab
@@ -483,14 +360,6 @@ export class WorkOrdersCreatePage {
         await this.wizardNextButton.waitFor({ state: "visible", timeout: 10_000 });
         await this.wizardNextButton.click({ force: true });
         await this.page.waitForTimeout(6000);
-    }
-
-    async clickBackToHomepage(): Promise<void> {
-        await this.page.getByRole("button", { name: /back to (homepage|list)/i }).click();
-    }
-
-    async clickCreateMoreWo(): Promise<void> {
-        await this.page.getByRole("button", { name: /create more wo/i }).click();
     }
 
     // ── Assertions ──────────────────────────────────────────────────────────

@@ -5,8 +5,6 @@ import type { AnyHandler } from "msw";
 import { AccessRolesPage } from "../pages/iam/AccessRolesPage";
 import { PermissionSetsPage } from "../pages/iam/PermissionSetsPage";
 import { CaseDashboardPage } from "../pages/case-management/CaseDashboardPage";
-import { CasesBulkPage } from "../pages/case-management/CasesBulkPage";
-import { CasesPage } from "../pages/case-management/CasesPage";
 import { SurveyTemplateManagerPage } from "../pages/case-management/SurveyTemplateManagerPage";
 import { LoginPage } from "../pages/auth/LoginPage";
 import { UserGroupsPage } from "../pages/user-management/UserGroupsPage";
@@ -29,9 +27,7 @@ type BddFixtures = {
     userGroupsPage: UserGroupsPage;
     accessRolesPage: AccessRolesPage;
     permissionSetsPage: PermissionSetsPage;
-    casesPage: CasesPage;
     surveyTemplateManagerPage: SurveyTemplateManagerPage;
-    casesBulkPage: CasesBulkPage;
     caseDashboardPage: CaseDashboardPage;
     workOrdersPage: WorkOrdersPage;
     workOrdersCreatePage: WorkOrdersCreatePage;
@@ -104,9 +100,6 @@ export const test = base.extend<BddFixtures>({
     userGroupsPage: async ({ page }, use) => {
         await use(new UserGroupsPage(page));
     },
-    casesPage: async ({ page }, use) => {
-        await use(new CasesPage(page));
-    },
     surveyTemplateManagerPage: async ({ page }, use) => {
         const surveyTemplateManagerPage = new SurveyTemplateManagerPage(page);
         try {
@@ -114,9 +107,6 @@ export const test = base.extend<BddFixtures>({
         } finally {
             await surveyTemplateManagerPage.cleanupOwnedTemplates();
         }
-    },
-    casesBulkPage: async ({ page }, use) => {
-        await use(new CasesBulkPage(page));
     },
     caseDashboardPage: async ({ page }, use) => {
         await use(new CaseDashboardPage(page));

@@ -5,10 +5,8 @@ export const USERS_FILTER_API = "/iam/tenant/users/filter";
 export const USER_GROUPS_LIST_PATH = "/user-management/user-groups";
 export const USER_GROUPS_FILTER_API = "/iam/tenant/user-groups/filter";
 
-export const CASES_LIST_PATH = "/case-management/cases";
 // The cases list table + search use the "regular/filter" endpoint (useGetCaseByRegularFilter),
 // NOT the plain "/filter" one — the search assertion waits on this URL, so it must be exact.
-export const CASES_FILTER_API = "/casemgmt/tenant/cases/regular/filter";
 
 export const SURVEY_TEMPLATE_MANAGER_LIST_PATH = "/case-management/survey-template-manager";
 export const SURVEY_TEMPLATE_MANAGER_FILTER_API = "/casemgmt/tenant/survey/list";

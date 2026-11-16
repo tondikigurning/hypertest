@@ -4,7 +4,6 @@ export type ActivePage =
     | "access-roles"
     | "permission-sets"
     | "work-orders"
-    | "cases"
     | "survey-template-manager"
     | "organizations"
     | "entities";
@@ -43,10 +42,6 @@ export function inferActivePageFromPath(pathname: string): ActivePage | null {
 
     if (pathname.startsWith("/workforce-management/work-orders")) {
         return "work-orders";
-    }
-
-    if (pathname.startsWith("/case-management/cases")) {
-        return "cases";
     }
 
     if (pathname.startsWith("/case-management/survey-template-manager")) {
@@ -123,16 +118,6 @@ export function inferActivePageFromTags(tags: readonly string[]): ActivePage | n
         )
     ) {
         return "work-orders";
-    }
-
-    if (
-        normalized.some(
-            (tag) =>
-                tag.startsWith("@TEN_CAS_")
-                || tag.startsWith("@FLOW:TEN_CAS_"),
-        )
-    ) {
-        return "cases";
     }
 
     if (
@@ -215,7 +200,6 @@ export function resolvePage<
     TAccessRolesPage = never,
     TPermissionSetsPage = never,
     TWorkOrdersPage = never,
-    TCasesPage = never,
     TSurveyTemplateManagerPage = never,
     TOrganizationsPage = never,
     TEntitiesPage = never,
@@ -226,12 +210,11 @@ export function resolvePage<
     accessRolesPage?: TAccessRolesPage;
     permissionSetsPage?: TPermissionSetsPage;
     workOrdersPage?: TWorkOrdersPage;
-    casesPage?: TCasesPage;
     surveyTemplateManagerPage?: TSurveyTemplateManagerPage;
     organizationsPage?: TOrganizationsPage;
     entitiesPage?: TEntitiesPage;
     currentUrl?: string;
-}): TUsersPage | TUserGroupsPage | TAccessRolesPage | TPermissionSetsPage | TWorkOrdersPage | TCasesPage | TSurveyTemplateManagerPage | TOrganizationsPage | TEntitiesPage {
+}): TUsersPage | TUserGroupsPage | TAccessRolesPage | TPermissionSetsPage | TWorkOrdersPage | TSurveyTemplateManagerPage | TOrganizationsPage | TEntitiesPage {
     if (fixtures.currentUrl) {
         syncPageContextFromUrl(fixtures.pageContext, fixtures.currentUrl);
     }
@@ -247,9 +230,6 @@ export function resolvePage<
     }
     if (fixtures.pageContext.currentPage === "work-orders") {
         return fixtures.workOrdersPage as TWorkOrdersPage;
-    }
-    if (fixtures.pageContext.currentPage === "cases") {
-        return fixtures.casesPage as TCasesPage;
     }
     if (fixtures.pageContext.currentPage === "survey-template-manager") {
         return fixtures.surveyTemplateManagerPage as TSurveyTemplateManagerPage;
@@ -270,7 +250,6 @@ export function resolveFilterablePage<
     TPermissionSetsPage = never,
     TUsersCreatePage = never,
     TWorkOrdersPage = never,
-    TCasesPage = never,
     TSurveyTemplateManagerPage = never,
 >(fixtures: {
     pageContext: PageContext;
@@ -280,10 +259,9 @@ export function resolveFilterablePage<
     permissionSetsPage?: TPermissionSetsPage;
     workOrdersPage?: TWorkOrdersPage;
     usersCreatePage: TUsersCreatePage;
-    casesPage?: TCasesPage;
     surveyTemplateManagerPage?: TSurveyTemplateManagerPage;
     currentUrl?: string;
-}): TUsersPage | TUserGroupsPage | TAccessRolesPage | TPermissionSetsPage | TUsersCreatePage | TWorkOrdersPage | TCasesPage | TSurveyTemplateManagerPage {
+}): TUsersPage | TUserGroupsPage | TAccessRolesPage | TPermissionSetsPage | TUsersCreatePage | TWorkOrdersPage | TSurveyTemplateManagerPage {
     if (fixtures.pageContext.listSurface === "create-wizard-entity") {
         return fixtures.usersCreatePage;
     }

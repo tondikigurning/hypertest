@@ -90,7 +90,6 @@ When("the user applies each sort option in ascending and descending direction", 
     permissionSetsPage,
     workOrdersPage,
     usersCreatePage,
-    casesPage,
     surveyTemplateManagerPage,
     $testInfo,
 }) => {
@@ -102,7 +101,6 @@ When("the user applies each sort option in ascending and descending direction", 
         permissionSetsPage,
         workOrdersPage,
         usersCreatePage,
-        casesPage,
         surveyTemplateManagerPage,
         currentUrl: page.url(),
     });
@@ -119,7 +117,6 @@ Then("each sort triggers an API call that returns HTTP 200", async ({
     permissionSetsPage,
     workOrdersPage,
     usersCreatePage,
-    casesPage,
     surveyTemplateManagerPage,
 }) => {
     const listPage = resolveFilterablePage({
@@ -130,7 +127,6 @@ Then("each sort triggers an API call that returns HTTP 200", async ({
         permissionSetsPage,
         workOrdersPage,
         usersCreatePage,
-        casesPage,
         surveyTemplateManagerPage,
         currentUrl: page.url(),
     });
@@ -150,7 +146,6 @@ Then("each sort response includes rows in the correct order", async ({
     permissionSetsPage,
     workOrdersPage,
     usersCreatePage,
-    casesPage,
     surveyTemplateManagerPage,
 }) => {
     const listPage = resolveFilterablePage({
@@ -161,7 +156,6 @@ Then("each sort response includes rows in the correct order", async ({
         permissionSetsPage,
         workOrdersPage,
         usersCreatePage,
-        casesPage,
         surveyTemplateManagerPage,
         currentUrl: page.url(),
     });

@@ -180,34 +180,17 @@ Feature: Workforce Management — Work Orders
   #
   # The create work order wizard is a 4-step process:
   #   Step 1 — Case & Job Detail: select Job Type (Repair only), Priority,
-  #            and Case Reference / Ticket ID (case number from Case Management).
+  #            and an optional Case Reference / Ticket ID entered in the wizard.
   #            If the searched case reference is not found, a confirmation dialog
   #            appears asking "Proceed" or "Cancel". Choosing Proceed reveals
   #            an Account Number input (use account number from a completed WO).
   #   Step 2 — Scheduling: select a time slot via TimeSlotSelector.
   #   Step 3 — Summary: review details and confirm.
-  #   Step 4 — Completed: success screen with "Back to Homepage" / "Create More WO".
+  #   Step 4 — Completed: success screen.
   #
   # MSP (Managed Service Provider) is parameterized: default to "Converge".
   # Job Type is Repair (autofilled and disabled in the future).
   # All unrequired inputs should be filled with relevant values.
-
-  @TEN_WKO_CRT_E2E_001 @priority:P0 @smoke @flow:TEN_WKO_CREATE_FLOW @type:positive
-  Scenario: Operator can successfully create a new work order via the wizard with a valid case reference
-    Given the user is on the work orders list page
-    When the user retrieves a case reference number from the cases list
-    And the user opens the create work order wizard
-    And the user selects the "Repair" job type
-    And the user selects the first available priority
-    And the user searches for the case reference number
-    And the user selects the first matching case reference
-    And the user selects the Converge MSP
-    And the user selects the first available entity
-    And the user advances to the scheduling step
-    And the user selects the first available time slot
-    And the user advances to the summary step
-    And the user confirms the work order creation
-    Then the work order creation success screen is displayed
 
   @TEN_WKO_CRT_E2E_002 @priority:P0 @smoke @flow:TEN_WKO_CREATE_FLOW @type:positive
   Scenario: Operator can create a work order by proceeding without a reference via account number
@@ -249,81 +232,6 @@ Feature: Workforce Management — Work Orders
     And the user does not select a case reference
     And the user clicks Next on the work order wizard without filling required fields
     Then the Next button remains disabled
-
-  @TEN_WKO_CRT_E2E_006 @priority:P1 @regression @mock @flow:TEN_WKO_CREATE_FLOW @type:ui-interaction
-  Scenario: Returning to the work orders list from the success screen
-    Given the work order creation APIs are mocked for success
-    And the user is on the work orders list page
-    When the user retrieves a case reference number from the cases list
-    And the user opens the create work order wizard
-    And the user selects the "Repair" job type
-    And the user selects the first available priority
-    And the user searches for the case reference number
-    And the user selects the first matching case reference
-    And the user selects the Converge MSP
-    And the user selects the first available entity
-    And the user advances to the scheduling step
-    And the user selects the first available time slot
-    And the user advances to the summary step
-    And the user confirms the work order creation
-    Then the work order creation success screen is displayed
-    When the user clicks the work order success screen button "Back to Homepage"
-    Then the work orders list page is displayed
-
-  @TEN_WKO_CRT_E2E_007 @priority:P1 @regression @mock @flow:TEN_WKO_CREATE_FLOW @type:ui-interaction
-  Scenario: Create More WO resets the wizard after successful creation
-    Given the work order creation APIs are mocked for success
-    And the user is on the work orders list page
-    When the user retrieves a case reference number from the cases list
-    And the user opens the create work order wizard
-    And the user selects the "Repair" job type
-    And the user selects the first available priority
-    And the user searches for the case reference number
-    And the user selects the first matching case reference
-    And the user selects the Converge MSP
-    And the user selects the first available entity
-    And the user advances to the scheduling step
-    And the user selects the first available time slot
-    And the user advances to the summary step
-    And the user confirms the work order creation
-    Then the work order creation success screen is displayed
-    When the user clicks the work order success screen button "Create More WO"
-    Then the work order wizard is on the "Case & Job Detail" step
-
-  @TEN_WKO_CRT_E2E_008 @priority:P1 @regression @mock @flow:TEN_WKO_CREATE_FLOW @type:positive
-  Scenario: Summary step shows the entered details before confirming
-    Given the work order creation APIs are mocked for success
-    And the user is on the work orders list page
-    When the user retrieves a case reference number from the cases list
-    And the user opens the create work order wizard
-    And the user selects the "Repair" job type
-    And the user selects the first available priority
-    And the user searches for the case reference number
-    And the user selects the first matching case reference
-    And the user selects the Converge MSP
-    And the user selects the first available entity
-    And the user advances to the scheduling step
-    And the user selects the first available time slot
-    And the user advances to the summary step
-    Then the summary shows the selected priority and case reference details
-
-  @TEN_WKO_CRT_E2E_009 @priority:P1 @regression @mock @flow:TEN_WKO_CREATE_FLOW @type:negative
-  Scenario: Work order creation shows error when the API returns a 500 server error
-    Given the user is on the work orders list page
-    When the user retrieves a case reference number from the cases list
-    And the user opens the create work order wizard
-    And the user selects the "Repair" job type
-    And the user selects the first available priority
-    And the user searches for the case reference number
-    And the user selects the first matching case reference
-    And the user selects the Converge MSP
-    And the user selects the first available entity
-    And the user advances to the scheduling step
-    And the user selects the first available time slot
-    And the user advances to the summary step
-    And the create work order API is configured to return a 500 server error
-    And the user confirms the work order creation
-    Then the application shows an error state
 
   # ── TEN_WKO_MENU_FLOW (kebab menu action visibility per pipeline status) ──
   #

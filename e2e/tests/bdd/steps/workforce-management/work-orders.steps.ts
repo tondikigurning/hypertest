@@ -57,22 +57,8 @@ When("the user selects the {string} job type", async ({ workOrdersCreatePage }) 
     await workOrdersCreatePage.selectRepairJobType();
 });
 
-When("the user retrieves a case reference number from the cases list", async ({ workOrdersCreatePage }) => {
-    await workOrdersCreatePage.getFirstCaseNumber();
-});
-
 When("the user selects the first available priority", async ({ workOrdersCreatePage }) => {
     await workOrdersCreatePage.selectFirstPriority();
-});
-
-When("the user searches for the case reference number", async ({ workOrdersCreatePage }) => {
-    const ref = workOrdersCreatePage.lastCaseReference;
-    if (!ref) throw new Error("No case reference stored — did 'retrieves a case reference' run?");
-    await workOrdersCreatePage.searchCaseReference(ref);
-});
-
-When("the user selects the first matching case reference", async ({ workOrdersCreatePage }) => {
-    await workOrdersCreatePage.selectFirstCaseReference();
 });
 
 When("the user advances to the scheduling step", async ({ workOrdersCreatePage }) => {
@@ -142,56 +128,6 @@ When("the user cancels the work order create wizard", async ({ workOrdersCreateP
     await page.waitForURL(/\/workforce-management\/work-orders/, { timeout: 30_000 });
 });
 
-When("the user completes a work order creation wizard", async ({ workOrdersPage, workOrdersCreatePage }) => {
-    await workOrdersPage.clickCreate();
-    await workOrdersCreatePage.selectRepairJobType();
-    await workOrdersCreatePage.selectFirstPriority();
-    await workOrdersCreatePage.searchCaseReference();
-    await workOrdersCreatePage.selectFirstCaseReference();
-    await workOrdersCreatePage.clickNext();
-    await workOrdersCreatePage.selectFirstTimeSlot();
-    await workOrdersCreatePage.clickNext();
-    await workOrdersCreatePage.confirmCreateWorkOrder();
-});
-
-When("the user clicks the work order success screen button {string}", async ({ workOrdersCreatePage }, buttonLabel: string) => {
-    if (/back to homepage/i.test(buttonLabel)) {
-        await workOrdersCreatePage.clickBackToHomepage();
-    } else if (/create more wo/i.test(buttonLabel)) {
-        await workOrdersCreatePage.clickCreateMoreWo();
-    }
-});
-
-When("the user completes the create work order wizard", async ({ workOrdersCreatePage }) => {
-    await workOrdersCreatePage.selectRepairJobType();
-    await workOrdersCreatePage.selectFirstPriority();
-    await workOrdersCreatePage.searchCaseReference();
-    await workOrdersCreatePage.selectFirstCaseReference();
-    await workOrdersCreatePage.clickNext();
-    await workOrdersCreatePage.selectFirstTimeSlot();
-    await workOrdersCreatePage.clickNext();
-    await workOrdersCreatePage.confirmCreateWorkOrder();
-});
-
-When("the user advances the create work order wizard to the summary step", async ({ workOrdersPage, workOrdersCreatePage }) => {
-    await workOrdersPage.clickCreate();
-    await workOrdersCreatePage.selectRepairJobType();
-    await workOrdersCreatePage.selectFirstPriority();
-    await workOrdersCreatePage.searchCaseReference();
-    await workOrdersCreatePage.selectFirstCaseReference();
-    await workOrdersCreatePage.clickNext();
-    await workOrdersCreatePage.selectFirstTimeSlot();
-    await workOrdersCreatePage.clickNext();
-});
-
-Given("the work order creation APIs are mocked for success", async ({ network }) => {
-    network.use(
-        http.post(/\/api\/v1\.0\/workforcemgmt\/tenant\/work-orders(\?.*)?$/, () =>
-            HttpResponse.json({ id: "wo-1", message: "Work order created successfully" }, { status: 200 })
-        )
-    );
-});
-
 // ─── Work Orders list assertions ─────────────────────────────────────────
 
 Then("the work orders data table is visible", async ({ workOrdersPage }) => {
@@ -245,13 +181,6 @@ Then("the not-found confirmation dialog is not visible", async ({ workOrdersCrea
     const dialog = await workOrdersCreatePage.getNotFoundDialog();
     await expect(dialog).not.toBeVisible({ timeout: 10000 });
 });
-
-Then("the summary shows the selected priority and case reference details", async ({ page }) => {
-    await expect(page.getByText(/priority/i).first()).toBeVisible({ timeout: 15000 });
-    await expect(page.getByText(/case reference|ticket id/i).first()).toBeVisible({ timeout: 5000 });
-});
-
-// ─── Row actions (kebab menu) ────────────────────────────────────────────
 
 When("the user opens the first work order row actions menu", async ({ workOrdersPage, $testInfo }) => {
     const rowCount = await workOrdersPage.table.rows.count();
