@@ -1,7 +1,7 @@
 /**
  * BDD step definitions — Case Management / Bulk (tenants).
  *
- * Implements TEN_CAS_BULK_FLOW in cases.feature.
+ * Implements TEN_CAS_BULK_FLOW in case-management/cases/bulk.feature.
  */
 
 import { createBdd } from "playwright-bdd";

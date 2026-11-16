@@ -7,6 +7,7 @@ import { useActiveRun } from "../runs/use-active-run";
 import { useDraftRuns } from "../runs/use-draft-runs";
 import { useRunEnvironment } from "../runs/use-run-environment";
 import { label as displayLabel } from "../scenarios/scenario";
+import { isScenarioInScope } from "../scenarios/selectors";
 import { agentFetch, getActiveDraftId, setActiveDraftId } from "./agent-api";
 import { AgentSettings } from "./agent-settings";
 import {
@@ -189,7 +190,11 @@ function contextDisplayLabel(item: ContextAttachment) {
   return item.label;
 }
 
-function selectionAttachment(scenario?: ContextScenario, feature?: { module: string; file: string; title: string }) {
+function selectionAttachment(
+  scenario?: ContextScenario,
+  feature?: { module: string; file: string; title: string },
+  group?: { path: string; title: string },
+): ContextAttachment | undefined {
   if (scenario) {
     return {
       id: "current-selection",
@@ -210,16 +215,31 @@ function selectionAttachment(scenario?: ContextScenario, feature?: { module: str
       value: feature,
     };
   }
+  if (group) {
+    return {
+      id: "current-selection",
+      kind: "note",
+      ref: `group:${group.path}`,
+      label: group.title,
+      title: group.title,
+      text: `Selected test group in the explorer: ${group.path}. Scope includes its submodule feature, if present, and all descendant feature files. Resolve the matching sources and parent submodule PRD in your workspace before editing; the explorer selection may differ from the committed draft base.`,
+      auto: true,
+    };
+  }
   return undefined;
 }
 
-function initialContexts(scenario?: ContextScenario, feature?: { module: string; file: string; title: string }) {
+function initialContexts(
+  scenario?: ContextScenario,
+  feature?: { module: string; file: string; title: string },
+  group?: { path: string; title: string },
+) {
   const stored = readContexts();
   if (!stored) {
-    const selected = selectionAttachment(scenario, feature);
+    const selected = selectionAttachment(scenario, feature, group);
     return selected ? [selected] : [];
   }
-  const selected = selectionAttachment(scenario, feature);
+  const selected = selectionAttachment(scenario, feature, group);
   const validStored = stored.filter(
     (item) => !item.auto || (selected && item.ref === selected.ref && item.kind === selected.kind),
   );
@@ -229,12 +249,14 @@ function initialContexts(scenario?: ContextScenario, feature?: { module: string;
 export function AgentWidget({
   scenario,
   feature,
+  group,
   contextScenarios,
   home,
 }: {
   home: boolean;
   scenario?: ContextScenario;
   feature?: { module: string; file: string; title: string };
+  group?: { path: string; title: string };
   contextScenarios: Array<ContextScenario>;
 }) {
   const [open, setOpen] = useState(false);
@@ -244,7 +266,7 @@ export function AgentWidget({
   const [message, setMessage] = useState("");
   const [waves, setWaves] = useState(0);
   const [selectedSkill, setSelectedSkill] = useState<string>();
-  const [contexts, setContexts] = useState<Array<ContextAttachment>>(() => initialContexts(scenario, feature));
+  const [contexts, setContexts] = useState<Array<ContextAttachment>>(() => initialContexts(scenario, feature, group));
   const [contextPicker, setContextPicker] = useState<
     "menu" | "scenario" | "feature" | "category" | "flow" | "file" | "run" | "note" | null
   >(null);
@@ -276,7 +298,13 @@ export function AgentWidget({
   const toggleRef = useRef<HTMLButtonElement>(null);
   const latestRun = useActiveRun(true);
   const { run: draftRun, starting: draftRunStarting } = useDraftRuns();
-  const selectionSignature = scenario ? `scenario:${scenario.key}` : feature ? `feature:${feature.file}` : "";
+  const selectionSignature = scenario
+    ? `scenario:${scenario.key}`
+    : feature
+      ? `feature:${feature.file}`
+      : group
+        ? `group:${group.path}`
+        : "";
   const previousSelection = useRef(selectionSignature);
   const close = () => {
     setOpen(false);
@@ -422,14 +450,14 @@ export function AgentWidget({
   useEffect(() => {
     if (selectionSignature === previousSelection.current) return;
     previousSelection.current = selectionSignature;
-    const selected = selectionAttachment(scenario, feature);
+    const selected = selectionAttachment(scenario, feature, group);
     setContexts((current) => {
       const manual = current.filter((item) => !item.auto);
       const alreadyAttached =
         selected && manual.some((item) => item.kind === selected.kind && item.ref === selected.ref);
       return [...manual, ...(selected && !alreadyAttached && manual.length < 8 ? [selected] : [])];
     });
-  }, [selectionSignature, scenario, feature]);
+  }, [selectionSignature, scenario, feature, group]);
 
   useEffect(() => {
     try {
@@ -504,12 +532,13 @@ export function AgentWidget({
     const groups = new Map<string, { file: string; module: string; category: string; feature: string }>();
     for (const item of contextScenarios) {
       if (feature && item.file !== feature.file) continue;
+      if (group && !isScenarioInScope(item.file, group.path)) continue;
       const name = item.category || "Uncategorized";
       const key = JSON.stringify([item.module, item.file, name]);
       groups.set(key, { file: item.file, module: item.module, category: name, feature: item.feature || item.file });
     }
     return [...groups.values()];
-  }, [contextScenarios, feature]);
+  }, [contextScenarios, feature, group]);
 
   const selectedContextRefs = useMemo(() => new Set(contexts.map((item) => `${item.kind}:${item.ref}`)), [contexts]);
 
@@ -1058,7 +1087,7 @@ export function AgentWidget({
       setMessage("");
       setSelectedSkill(undefined);
       {
-        const selected = selectionAttachment(scenario, feature);
+        const selected = selectionAttachment(scenario, feature, group);
         setContexts(selected ? [selected] : []);
       }
       setContextPicker(null);

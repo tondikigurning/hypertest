@@ -23,6 +23,8 @@ describes a draft hosted product; use the README and implementation to understan
 
 ## Data and execution invariants
 
+- When adding, splitting or moving BDD features, follow [test organization](docs/automation/test-organization.md).
+  Keep real submodules at the sidebar's submodule level and put coverage groups and related files beneath their owner.
 - Preserve scenario identity and source information. IDs can be missing or duplicated; do not assume an ID uniquely
   identifies a row, silently choose an ambiguous match, or represent unknown execution availability as runnable.
 - Catalogs are generated data. Change their producers or inputs and regenerate through the documented workflow; do

@@ -1,7 +1,7 @@
 /**
  * BDD step definitions — Case Management / Cases (tenants).
  *
- * Implements case-management/cases.feature. All step text is case-specific and self-contained
+ * Implements the child features under case-management/cases/. All step text is case-specific and self-contained
  * (it deliberately does NOT reuse the users-bound global steps like `the user clicks {string}`
  * or `the {string} dialog is visible`), so there are no cross-module step collisions.
  *

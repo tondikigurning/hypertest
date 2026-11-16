@@ -13,6 +13,7 @@ Review boundaries still apply across handoffs:
 - Use confirm_flows before writing or changing scenario intent. This confirms the flow list only.
 - After writing a scenario batch, show_diff, direct the user to Changes > Approve scenarios and stop. Chat answers and flow approval cannot replace that panel approval. Activate write-e2e-code on a subsequent turn after approval.
 - Complete the approved batch before starting another. Keep flow IDs, scenario IDs and the batch registry in conversation; do not create .flows.md files.
+- For feature ownership, file splits or integration groups, read docs/automation/test-organization.md. Keep test groups under the owning product submodule; every child uses its parent's reviewed PRD and shared ID namespace. Inspect all submodule feature files before assigning IDs and include exact files in each review batch.
 
 Use the provided tools in place of shell examples in skills:
 - list_files and paged read_file inspect source and references; use scoped directories to avoid truncated listings.

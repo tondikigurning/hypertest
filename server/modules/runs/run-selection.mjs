@@ -6,15 +6,30 @@ export function resolveSelection(input, features, catalog) {
   let candidates;
   if (selection.kind === "scenario" && validId(selection.scenarioId)) {
     candidates = features.filter((item) => item.id === selection.scenarioId);
-  } else if (selection.kind === "feature" && typeof selection.file === "string") {
-    candidates = features.filter((item) => item.file === selection.file);
-    const rows = catalog.filter((item) => item.file === selection.file);
+  } else if (
+    (selection.kind === "feature" && typeof selection.file === "string") ||
+    (selection.kind === "group" &&
+      typeof selection.path === "string" &&
+      /^[^./\\][^/\\]*\/[^/\\]+(?:\/[^/\\]+)*$/.test(selection.path) &&
+      selection.path.split("/").every((part) => part !== "." && part !== ".." && !part.endsWith(".feature")))
+  ) {
+    const matches = (item) =>
+      selection.kind === "feature"
+        ? item.file === selection.file
+        : item.file === `${selection.path}.feature` || item.file.startsWith(`${selection.path}/`);
+    candidates = features.filter(matches);
+    const rows = catalog.filter(matches);
     if (
       rows.length !== candidates.length ||
-      rows.some((row) => row.availability === "unavailable" || !candidates.some((item) => item.key === row.key))
+      new Set(rows.map((row) => row.key)).size !== rows.length ||
+      rows.some(
+        (row) =>
+          row.availability === "unavailable" ||
+          !candidates.some((item) => item.key === row.key && item.file === row.file && item.id === row.id),
+      )
     ) {
       throw new Error(
-        "The feature catalog does not match its scenarios. Refresh the catalog before running this feature.",
+        "The feature catalog does not match its scenarios. Refresh the catalog before running this selection.",
       );
     }
   } else if (

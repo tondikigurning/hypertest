@@ -3890,6 +3890,45 @@ body:has(dialog[open]) .floating-run {
   background: transparent;
   color: #7b8798;
 }
+.navigation-group-row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.sidebar .navigation-group-row .feature-nav-item {
+  flex: 1;
+  min-width: 0;
+  width: auto;
+}
+.navigation-group-row.contains-active > .feature-nav-item {
+  color: #5c419f;
+}
+.navigation-group-toggle {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 28px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+}
+.navigation-group-toggle:hover {
+  background: #eeeafa;
+}
+.navigation-group-toggle:focus-visible {
+  outline: 2px solid #8065c5;
+  outline-offset: 1px;
+}
+.navigation-group-toggle[aria-expanded="true"] .module-chevron {
+  transform: rotate(90deg);
+}
+.sidebar .nested-feature-nav {
+  margin: 2px 0 4px 10px;
+  padding-left: 6px;
+}
 @media (max-width: 650px) {
   .app-body > .sidebar.sidebar-collapsed {
     padding-inline: 6px;

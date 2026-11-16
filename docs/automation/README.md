@@ -5,6 +5,10 @@ review, question and browser tools. It does not give the model a shell. The work
 instructions are the repository skills in `.agents/skills`; the runtime adapter is
 `server/modules/agent/agent-skills.mjs`.
 
+The explorer follows module → submodule → optional test groups/files. Read [test organization](test-organization.md)
+when adding integration journeys or splitting a large submodule. Each child keeps its parent PRD and scenario ID
+namespace; flow confirmation and scenario review identify the exact files and scenario IDs in the batch.
+
 ## Start and prerequisites
 
 Follow the root [README](../../README.md) for dependencies, PostgreSQL, migrations and local startup.
@@ -71,6 +75,7 @@ From the repository root (use `pnpm.cmd` if PowerShell blocks the `.ps1` shim):
 
 ```powershell
 node --test server/modules/agent/*.test.mjs
+node --import tsx --test src/features/scenarios/*.test.ts server/modules/runs/*.test.mjs
 node --test server/modules/agent/exploration-browser.smoke.mjs
 pnpm exec biome check src server vite.config.ts drizzle.config.ts
 pnpm typecheck
@@ -80,6 +85,9 @@ pnpm build
 The agent tests drive the real AI SDK streaming/tool loop with a deterministic local provider and
 temporary Git repositories. They cover PRD review, skill handoffs, flow confirmation, scenario
 approval, workspace selection, redaction, and the absence of workspace scenario execution.
+
+The scenario and run-selection tests cover nested menu grouping, parent PRD identity, source-path filtering,
+and server rejection of stale, missing or ambiguous group selections. They use local fixtures and do not run tenant BDD.
 
 The separate browser smoke test uses real Playwright, the installed CLI and the origin-restricted
 proxy against a synthetic loopback login/dashboard. It needs no provider, database or tenant account.

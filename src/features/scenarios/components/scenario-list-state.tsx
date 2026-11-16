@@ -1,6 +1,9 @@
 import type { ReactNode } from "react";
 
-export type ScenarioListStateProps = { kind: "loading" } | { kind: "empty"; onClear: () => void };
+export type ScenarioListStateProps =
+  | { kind: "loading" }
+  | { kind: "unwritten" }
+  | { kind: "empty"; onClear: () => void };
 
 export function ClearFiltersButton({
   children,
@@ -23,6 +26,15 @@ export function ScenarioListState(props: ScenarioListStateProps) {
     return (
       <div className="empty" role="status">
         Loading scenarios&hellip;
+      </div>
+    );
+  }
+
+  if (props.kind === "unwritten") {
+    return (
+      <div className="empty">
+        <strong>No scenarios yet</strong>
+        <span>View this submodule's PRD to review its requirements or start authoring scenarios with Q-Rex.</span>
       </div>
     );
   }

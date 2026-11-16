@@ -1,6 +1,7 @@
 export type RunSelection =
   | { kind: "scenario"; scenarioId: string }
   | { kind: "feature"; file: string }
+  | { kind: "group"; path: string }
   | { kind: "category"; file: string; category: string };
 export interface Run {
   id: string;

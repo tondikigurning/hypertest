@@ -33,7 +33,7 @@ Derive file names from the established project patterns. If target or approval i
 
 ## Step 1 — Read before writing
 
-1. Read the approved `.feature` and the shared context needed by the selected batch. Keep every `@ID`, `@flow:` and `@ref:` tag and scenario intent unchanged.
+1. Read every approved `.feature` in the batch, the owning submodule's other feature files and shared context. Resolve nested files through [test organization](../../../docs/automation/test-organization.md); all children use their parent's PRD and ID namespace. Keep every `@ID`, `@flow:` and `@ref:` tag and scenario intent unchanged. Intent-preserving file splits retain inherited tags, backgrounds, examples, safety notes and flow order, and reuse existing step/POM bindings.
 2. Read the shared fixtures, utilities, `steps/_shared/` and components relevant to the scope. Follow the [test-data convention](../write-e2e-scenarios/references/data-safety.md#test-data-values) when adding or changing values.
 3. Read the existing POM and steps for the same module (for example `pages/user-management/UsersPage.ts`, `steps/user-management/users.steps.ts`) and copy their style.
 4. Read every `@ref:TEN_COM_*` master in `features/_components/` that the scope links to. Its steps are the contract you must implement.
@@ -72,7 +72,7 @@ aligned files and fields in the summary.
 
 ## Step 8 — Verify
 
-Check step bindings, collection and types for the affected scenarios. Before any live execution, inspect their setup, steps, POMs, tags and environment and follow [data-safety.md](../write-e2e-scenarios/references/data-safety.md). Select only the authorized scenarios and verify the selection using the active runner's options. Do not run BDD generation concurrently with the Automation local runner: they share generated files.
+Check step bindings, collection and types for the affected scenarios. When features are split or nested, update the runner's explicit paths/globs for implemented files and check collection for every moved scenario ID. Before any live execution, inspect their setup, steps, POMs, tags and environment and follow [data-safety.md](../write-e2e-scenarios/references/data-safety.md). Select only the authorized scenarios and verify the selection using the active runner's options. Do not run BDD generation concurrently with the Automation local runner: they share generated files.
 
 Inspect `e2e/package.json` and the runner script before choosing a command. `pnpm test:bdd` generates and runs BDD and can sync the catalog, import results and upload evidence when configured; an unfiltered invocation runs the suite. Report those effects and do not use the full suite as a default. If live execution is unavailable or unsafe, perform feasible non-live checks and report the exact blocker and unverified scope.
 

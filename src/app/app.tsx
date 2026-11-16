@@ -24,7 +24,13 @@ import {
   updateScenarioFilterParams,
 } from "../features/scenarios/navigation";
 import { category, featureTitle, label, type Scenario } from "../features/scenarios/scenario";
-import { filterScenarios, groupFlows, groupModules } from "../features/scenarios/selectors";
+import {
+  filterScenarios,
+  findScenarioGroup,
+  groupFlows,
+  groupModules,
+  isScenarioInScope,
+} from "../features/scenarios/selectors";
 import { useDraftScenarios } from "../features/scenarios/use-draft-scenarios";
 import { useScenarioCatalog } from "../features/scenarios/use-scenario-catalog";
 
@@ -32,7 +38,11 @@ export function App() {
   const matches = useMatches();
   const route = matches.at(-1);
   const routeModule = route?.params.module;
-  const routeSubmodule = route?.params.submodule;
+  const routeScope =
+    routeModule && route?.params.submodule
+      ? `${routeModule}/${route.params.submodule}${route.params["*"] ? `/${route.params["*"]}` : ""}`
+      : undefined;
+  const routeSubmodule = routeModule && routeScope ? scenarioSubmodule(routeModule, routeScope) : undefined;
   const isHome = route?.id === "home";
   const isSubmodule = route?.id === "scenario";
   const location = useLocation();
@@ -85,22 +95,16 @@ export function App() {
       setOpenModules((previous) => new Set([...previous, routeModule]));
     }
   }, [location.pathname, navigationType, routeModule]);
-  const modules = useMemo(() => {
-    const groups = groupModules(scenarios);
-    for (const prd of [...prds.checkout.items, ...prds.draftPrds.items]) {
-      let group = groups.find((item) => item.name === prd.module);
-      if (!group) {
-        group = { name: prd.module, features: [] };
-        groups.push(group);
-      }
-      const file = `${prd.module}/${prd.submodule}.feature`;
-      if (!group.features.some((item) => item.file === file))
-        group.features.push({ file, title: label(prd.submodule), count: 0 });
-    }
-    return groups
-      .sort((a, b) => a.name.localeCompare(b.name))
-      .map((group) => ({ ...group, features: group.features.sort((a, b) => a.title.localeCompare(b.title)) }));
-  }, [scenarios, prds.checkout.items, prds.draftPrds.items]);
+  const modules = useMemo(
+    () => groupModules(scenarios, [...prds.checkout.items, ...prds.draftPrds.items]),
+    [scenarios, prds.checkout.items, prds.draftPrds.items],
+  );
+  const selectedGroup = useMemo(() => findScenarioGroup(modules, routeScope), [modules, routeScope]);
+  const scopedScenarios = useMemo(
+    () => (selectedGroup ? scenarios.filter((item) => isScenarioInScope(item.file, selectedGroup.path)) : []),
+    [scenarios, selectedGroup],
+  );
+  const scopeTitle = selectedGroup?.path.split("/").slice(1).map(label).join(" / ");
   const types = useMemo(() => [...new Set(scenarios.map((s) => s.type).filter(Boolean))].sort(), [scenarios]);
   const priorities = useMemo(
     () =>
@@ -113,17 +117,7 @@ export function App() {
     () => [...new Set(scenarios.map((scenario) => activeStatus(scenario)?.trim() || "Not run"))].sort(),
     [scenarios, activeStatus],
   );
-  const feature = useMemo(
-    () =>
-      scenarios.find(
-        (scenario) =>
-          scenario.module === routeModule &&
-          routeSubmodule !== undefined &&
-          scenarioSubmodule(scenario.module, scenario.file) === routeSubmodule,
-      ),
-    [scenarios, routeModule, routeSubmodule],
-  );
-  const featureFile = feature?.file;
+  const feature = selectedGroup?.file && !selectedGroup.children.length ? scopedScenarios[0] : undefined;
   const navigateToScenario = useCallback(
     (module: string, file: string, params = searchParams, replace = false) => {
       const next = new URLSearchParams(params);
@@ -160,8 +154,8 @@ export function App() {
     [scenarios, activeStatus],
   );
   const filtered = useMemo(
-    () => filterScenarios(filterableScenarios, { featureFile, status, priority, type, search }),
-    [filterableScenarios, featureFile, status, priority, type, search],
+    () => filterScenarios(filterableScenarios, { scopePath: selectedGroup?.path, status, priority, type, search }),
+    [filterableScenarios, selectedGroup, status, priority, type, search],
   );
   const chosen = scenarios.find((s) => s.key === selected);
   const references = useMemo(
@@ -186,7 +180,7 @@ export function App() {
   };
   const flows = useMemo(() => groupFlows(filtered), [filtered]);
   const hasFilters = Boolean(search.trim() || status !== "all" || priority !== "all" || type !== "all");
-  const featureCount = feature ? scenarios.filter((item) => item.file === feature.file).length : 0;
+  const featureCount = scopedScenarios.length;
   const clearFilters = () => setSearchParams(clearScenarioFilterParams(searchParams), { replace: true });
   const goHome = () => {
     const params = clearScenarioFilterParams(searchParams);
@@ -253,16 +247,17 @@ export function App() {
         <ScenarioNavigation
           modules={modules}
           openModules={openModules}
-          featureFile={routeModule && routeSubmodule ? `${routeModule}/${routeSubmodule}.feature` : featureFile}
+          scopePath={selectedGroup?.path}
           collapsed={sidebarCollapsed}
           onToggleSidebar={() => setSidebarCollapsed((value) => !value)}
           onToggleModule={toggleModule}
-          onSelectFeature={(module, file) => {
+          prdError={prds.checkout.error || prds.draftPrds.error}
+          onSelectGroup={(module, path) => {
             if (window.matchMedia("(max-width: 650px)").matches) setSidebarCollapsed(true);
             setOpenModules((previous) => new Set([...previous, module]));
             const next = updateScenarioFilterParams(searchParams, "search", "");
             next.delete("view");
-            navigateToScenario(module, file, next);
+            navigateToScenario(module, path, next);
             setSelected(undefined);
           }}
         />
@@ -273,13 +268,13 @@ export function App() {
                 <div className="list-heading">
                   <div>
                     <span className="list-eyebrow">
-                      {search.trim() ? "Scenario explorer" : feature ? label(feature.module) : "Scenario explorer"}
+                      {search.trim() ? "Scenario explorer" : routeModule ? label(routeModule) : "Scenario explorer"}
                     </span>
                     <h2>
                       {search.trim()
                         ? "Search results"
-                        : feature
-                          ? featureTitle(feature)
+                        : selectedGroup
+                          ? scopeTitle
                           : routeSubmodule
                             ? label(routeSubmodule)
                             : "Feature not found"}
@@ -287,11 +282,11 @@ export function App() {
                     <p aria-live="polite">
                       {search.trim()
                         ? `${filtered.length} ${filtered.length === 1 ? "scenario" : "scenarios"} found across all features`
-                        : feature
+                        : selectedGroup
                           ? `${filtered.length} of ${featureCount} ${featureCount === 1 ? "scenario" : "scenarios"} shown`
                           : routeModule && routeSubmodule
-                            ? "No scenarios found for this submodule."
-                            : "Choose a feature from the sidebar to continue."}
+                            ? "This test group is not in the current catalog."
+                            : "Choose a submodule from the sidebar to continue."}
                     </p>
                   </div>
                   <div className="list-heading-actions">
@@ -311,12 +306,16 @@ export function App() {
                         <span>View PRD</span>
                       </button>
                     )}
-                    {feature && !search.trim() && (
+                    {selectedGroup && scopedScenarios.length > 0 && !search.trim() && (
                       <GroupRun
-                        key={feature.file}
-                        selection={{ kind: "feature", file: feature.file }}
-                        name={featureTitle(feature)}
-                        items={scenarios.filter((s) => s.file === feature.file)}
+                        key={selectedGroup.path}
+                        selection={
+                          selectedGroup.file && !selectedGroup.children.length
+                            ? { kind: "feature", file: selectedGroup.file }
+                            : { kind: "group", path: selectedGroup.path }
+                        }
+                        name={scopeTitle || selectedGroup.title}
+                        items={scopedScenarios}
                       />
                     )}
                   </div>
@@ -371,9 +370,15 @@ export function App() {
                 {error && <p role="alert">{error}</p>}
                 {draftError && <p role="alert">Drafts: {draftError}</p>}
                 {loading && <ScenarioListState kind="loading" />}
-                {!loading && !error && feature && filtered.length === 0 && (
-                  <ScenarioListState kind="empty" onClear={clearFilters} />
-                )}
+                {!loading &&
+                  !error &&
+                  selectedGroup &&
+                  filtered.length === 0 &&
+                  (scopedScenarios.length === 0 && !search.trim() ? (
+                    <ScenarioListState kind="unwritten" />
+                  ) : (
+                    <ScenarioListState kind="empty" onClear={clearFilters} />
+                  ))}
                 {flows.map(([flowKey, entries]) => {
                   const categoryName = category(entries[0]);
                   const flowFile = entries[0].file;
@@ -391,7 +396,16 @@ export function App() {
                             <span className="disclosure" aria-hidden="true">
                               &#9656;
                             </span>
-                            {search.trim() && <span className="flow-feature">{featureTitle(entries[0])} / </span>}
+                            {(search.trim() || Boolean(selectedGroup?.children.length)) && (
+                              <span className="flow-feature">
+                                {entries[0].file
+                                  .split("/")
+                                  .slice(1)
+                                  .map((part) => label(part.replace(/\.feature$/, "")))
+                                  .join(" / ")}{" "}
+                                /{" "}
+                              </span>
+                            )}
                             {categoryName}
                             <span className="flow-count">{entries.length}</span>
                           </span>
@@ -530,7 +544,16 @@ export function App() {
           {previewOpen && activeRun && <LiveRun run={activeRun} onClose={() => setPreviewOpen(false)} />}
           <AgentWidget
             home={isHome}
-            feature={feature ? { module: feature.module, file: feature.file, title: featureTitle(feature) } : undefined}
+            feature={
+              feature
+                ? { module: feature.module, file: feature.file, title: scopeTitle || featureTitle(feature) }
+                : undefined
+            }
+            group={
+              selectedGroup && !feature
+                ? { path: selectedGroup.path, title: scopeTitle || selectedGroup.title }
+                : undefined
+            }
             contextScenarios={agentContextScenarios}
             scenario={
               chosen

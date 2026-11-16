@@ -64,7 +64,7 @@ Record every answer with its provenance (`spec` for what the user stated, `assum
 
 ## Step 1 — Check existing artifacts
 
-1. Look for `docs/prd/<module>/<submodule>.md` and `<submodule>.feature`, and for sibling PRDs whose conventions you should match.
+1. Look for `docs/prd/<module>/<submodule>.md`, the submodule's flat `.feature` and all files beneath its feature folder, and for sibling PRDs whose conventions you should match. Follow [test organization](../../../docs/automation/test-organization.md): functional, integration and other child groups share one parent submodule PRD. Record cross-menu/platform dependencies and outcomes there, referencing other PRDs when useful; a test group does not create a new product submodule or PRD.
 2. Choose the mode:
    - **Create**: no PRD exists.
    - **Import**: the user supplied a document. Normalize it (Step 2A), then explore (Step 2B).

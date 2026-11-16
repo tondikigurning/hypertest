@@ -41,6 +41,8 @@ See the [Q-Rex workflow guide](docs/automation/README.md) for skill handoffs, re
 
 BDD feature files under `e2e/tests/bdd/features` are the authored scenario source. The Automation API creates or replaces the PostgreSQL scenario catalog at startup. Run `pnpm db:sync-catalog` to refresh it without restarting the API. BDD reporters write run results only; scenario catalog files are not generated in Markdown.
 
+The sidebar follows module → submodule → optional child test groups/files. Large submodules and integration journeys stay inside their owning submodule; see [test organization](docs/automation/test-organization.md) for paths, PRD ownership, IDs and migration rules. Selecting a parent shows and can run all its descendant scenarios.
+
 Scenario execution can change live data. Before running a feature, review its setup, steps, tags, and the E2E data-safety guidance in `.agents/skills/write-e2e-scenarios/references/data-safety.md`. Repository checks do not run BDD scenarios or upload external evidence.
 
 The runner requires Chromium and the local BDD workspace. Install Chromium with `pnpm --filter e2e exec playwright install chromium`. The runner is available only through the loopback API, validates each selected scenario against Playwright collection, and reports test outcomes separately from evidence uploads. See the [Automation specification](docs/SPEC.md) for the app layout, runner behavior, and local-preview limits.

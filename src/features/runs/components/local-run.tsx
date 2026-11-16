@@ -198,6 +198,7 @@ interface RunItem {
   key: string;
   id: string;
   title: string;
+  file?: string;
   availability: "unknown" | "unavailable";
 }
 
@@ -228,7 +229,9 @@ export function GroupRun({ selection, name, items }: { selection: RunSelection; 
             description={
               selection.kind === "category"
                 ? "Run every scenario in this category"
-                : "Run every scenario in this feature"
+                : selection.kind === "group"
+                  ? "Run every scenario in this group and its child files"
+                  : "Run every scenario in this feature"
             }
             closeLabel="Close run form"
             onClose={close}
@@ -247,7 +250,10 @@ export function GroupRun({ selection, name, items }: { selection: RunSelection; 
                 <li key={item.key}>
                   <span>
                     <strong>{item.title}</strong>
-                    <small>{item.id || "ID unavailable"}</small>
+                    <small>
+                      {item.id || "ID unavailable"}
+                      {selection.kind === "group" && item.file ? ` · ${item.file}` : ""}
+                    </small>
                   </span>
                   {item.availability === "unavailable" && <span className="group-unavailable">Unavailable</span>}
                 </li>

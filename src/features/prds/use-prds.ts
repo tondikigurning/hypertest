@@ -1,4 +1,5 @@
-﻿import { useEffect, useState } from "react";
+﻿import type { Dispatch, SetStateAction } from "react";
+import { useEffect, useState } from "react";
 import { agentFetch, getActiveDraftId } from "../agent/agent-api";
 
 export interface Prd {
@@ -31,8 +32,8 @@ export function usePrds() {
   }, []);
   useEffect(() => {
     const controller = new AbortController();
-    async function load(url: string, update: (result: PrdResult) => void, draftId?: string) {
-      update({ ...empty, loading: true });
+    let timer: number | undefined;
+    async function load(url: string, update: Dispatch<SetStateAction<PrdResult>>, draftId?: string) {
       try {
         const response = await agentFetch(url, {
           signal: controller.signal,
@@ -41,16 +42,35 @@ export function usePrds() {
         });
         const result = await response.json();
         if (!response.ok || !Array.isArray(result)) throw new Error(result.error || "Could not load PRDs.");
-        if (!controller.signal.aborted) update({ items: result, error: "", loading: false });
+        if (!controller.signal.aborted)
+          update((previous) =>
+            !previous.loading && !previous.error && JSON.stringify(previous.items) === JSON.stringify(result)
+              ? previous
+              : { items: result, error: "", loading: false },
+          );
       } catch (error) {
         if (!controller.signal.aborted)
-          update({ items: [], error: error instanceof Error ? error.message : "Could not load PRDs.", loading: false });
+          update((previous) => ({
+            ...previous,
+            error: error instanceof Error ? error.message : "Could not load PRDs.",
+            loading: false,
+          }));
       }
     }
+    setCheckout({ ...empty, loading: true });
     void load("/api/agent/checkout-prds", setCheckout);
-    if (draft) void load("/api/agent/prds", setDraftPrds, draft);
-    else setDraftPrds(empty);
-    return () => controller.abort();
+    setDraftPrds(draft ? { ...empty, loading: true } : empty);
+    if (draft) {
+      const poll = async () => {
+        await load("/api/agent/prds", setDraftPrds, draft);
+        if (!controller.signal.aborted) timer = window.setTimeout(poll, 2000);
+      };
+      void poll();
+    }
+    return () => {
+      controller.abort();
+      window.clearTimeout(timer);
+    };
   }, [draft]);
   return { checkout, draftPrds, draft };
 }

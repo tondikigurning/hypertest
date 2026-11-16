@@ -20,7 +20,7 @@ const router = createBrowserRouter([
     Component: App,
     children: [
       { id: "home", index: true, element: routeMarker },
-      { id: "scenario", path: ":module/:submodule", element: routeMarker },
+      { id: "scenario", path: ":module/:submodule/*", element: routeMarker },
     ],
   },
   { path: "*", loader: () => redirect("/") },

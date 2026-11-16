@@ -97,7 +97,7 @@ Rules:
 
 ## Step 1 — PRD and browser discovery
 
-1. Read the target `.feature` file if it exists. List its scenario IDs and `@flow:` categories; these tags are the source of truth for catalog flow categories.
+1. Resolve the owning submodule and read its flat feature and all descendant `.feature` files that exist, following [test organization](../../../docs/automation/test-organization.md). List existing IDs and `@flow:` categories across those files before choosing the target files for this batch. These tags are the source of truth for catalog flow categories.
 2. Rebuild the scoped flow registry from the confirmed flow list in the current conversation and existing feature scenarios. Track candidate flows that do not yet have scenarios, review scope and unresolved discovery gaps in the conversation; do not create a separate registry file.
 3. Read the reviewed PRD's requirements, candidate flows, discrepancies and unverified areas. Use them to guide browser exploration, following [references/flow-discovery.md](references/flow-discovery.md). Include in-page tabs, menus, dialogs, conditional actions and state-dependent journeys.
 4. Read **every** file in `e2e/tests/bdd/features/_components/`. That folder is an open-ended inventory of reusable contracts (pipeline, filter, filter-search, sort, view-detail, and whatever has been added since). Decide which ones apply to this scope before you browse.
@@ -171,9 +171,13 @@ If the real behavior contradicts the spec, PRD or ticket:
 
 ## Step 5 — Write the `.feature` file
 
-File: `e2e/tests/bdd/features/<module>/<submodule>.feature`. One sub-module, one file. The module folder matches the route segment exactly.
+Use `e2e/tests/bdd/features/<module>/<submodule>.feature` for a small scope, or child files under
+`e2e/tests/bdd/features/<module>/<submodule>/` when the submodule needs several files or test groups.
+Follow [test organization](../../../docs/automation/test-organization.md) for integration ownership and splitting.
+Keep the matching reviewed PRD at `docs/prd/<module>/<submodule>.md` for every child; refresh its reviewed scope
+before authoring an integration it does not cover. Include exact target feature paths in flow confirmation and batch review.
 
-Follow the header and tag order in [references/e2e-conventions.md](references/e2e-conventions.md). Scenario IDs are `TEN_<CODE>_<FLG>_E2E_NNN`, where `NNN` resets for each flow section.
+Follow the header and tag order in [references/e2e-conventions.md](references/e2e-conventions.md). Scenario IDs are `TEN_<CODE>_<FLG>_E2E_NNN`; allocate numbers across the owning submodule, including all child files and known retired IDs. Each distinct flow abbreviation has its own sequence; a file boundary never restarts it.
 
 ## Step 6 — Output and stop
 

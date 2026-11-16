@@ -25,14 +25,16 @@ export function scenarioPath(module: string, file: string) {
   const prefix = `${module}/`;
   const relativeFile = file.startsWith(prefix) ? file.slice(prefix.length) : file;
   const submodule = relativeFile.replace(/\.feature$/i, "");
-  return `/${encodeURIComponent(module)}/${encodeURIComponent(submodule)}`;
+  return `/${[module, ...submodule.split("/")].map(encodeURIComponent).join("/")}`;
 }
 
 export function scenarioSubmodule(module: string, file: string) {
   const prefix = `${module}/`;
   if (!file.startsWith(prefix)) return undefined;
-  const submodule = file.slice(prefix.length).replace(/\.feature$/i, "");
-  return submodule.includes("/") ? undefined : submodule;
+  return file
+    .slice(prefix.length)
+    .split("/")[0]
+    .replace(/\.feature$/i, "");
 }
 
 export function scenarioFiltersFromSearchParams(params: URLSearchParams): ScenarioFilters {

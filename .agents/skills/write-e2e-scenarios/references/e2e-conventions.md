@@ -4,7 +4,8 @@
 
 ```
 e2e/tests/bdd/
-  features/<module>/<feature>.feature   # _components/ holds reusable master contracts
+  features/<module>/<submodule>.feature # small submodules; _components/ holds reusable master contracts
+  features/<module>/<submodule>/**/*.feature # child groups/files for larger or integration scopes
   steps/<module>/<feature>.steps.ts     # _shared/ holds cross-module steps
   pages/<module>/<PageName>.ts          # one POM per page, grouped by module
   components/<ComponentName>.ts         # flat: COMs are UI-component scoped
@@ -13,6 +14,11 @@ e2e/tests/bdd/
 ```
 
 Naming rule: folder names inside `features/`, `steps/` and `pages/` must match the route module segment exactly. Auth lives under `auth/` (maps to `_public+/`). `features/_components/` is reserved for reusable master contracts. Their steps resolve from `steps/_shared/` or module files, not `steps/_components/`, which must stay empty.
+
+For feature ownership, splitting, integration journeys, child groups and PRD mapping, follow
+[test organization](../../../../docs/automation/test-organization.md). Read all files belonging to the target
+submodule, including its flat file and nested folder when both exist, before discovering coverage or assigning IDs.
+Child names describe test scope; only module and submodule names mirror the product menu/route.
 
 ## Scenario IDs
 
@@ -24,7 +30,7 @@ Naming rule: folder names inside `features/`, `steps/` and `pages/` must match t
 
 Examples: `TEN_USR_LST_E2E_003` (flow `TEN_USR_LIST_FLOW`), `TEN_AUT_LOG_E2E_001` (flow `TEN_LOGIN_FLOW`), `TEN_COM_FSR_E2E_001`.
 
-IDs are permanent. Retire, never renumber. To pick the next number, find the highest `NNN` for the same `<CODE>_<FLG>` within that feature file and add 1.
+IDs are permanent. Retire, never renumber. To pick the next number, find the highest `NNN` for the same `<CODE>_<FLG>` across every file in the owning submodule and known retired IDs, and add 1. Moving or splitting files does not reset the sequence.
 
 ## Test data values
 

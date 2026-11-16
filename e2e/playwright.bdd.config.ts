@@ -113,7 +113,7 @@ export default defineConfig({
                     // here only once their steps/POM exist — the Phase 0 features (home, iam,
                     // organization-management, workforce-management, case-management/dashboard)
                     // are intentionally excluded because their undefined steps would break bddgen.
-                    "tests/bdd/features/case-management/cases.feature",
+                    "tests/bdd/features/case-management/cases/**/*.feature",
                     "tests/bdd/features/case-management/survey-template-manager.feature",
                     "tests/bdd/features/case-management/dashboard.feature",
                     "tests/bdd/features/workforce-management/**/*.feature",

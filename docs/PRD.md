@@ -101,7 +101,7 @@ Izin tulis ke repo tetap dibatasi izin GitHub milik pengguna.
 
 ### 8.3 Catalog
 
-- FR-9. The scenario explorer uses module and feature navigation, a scenario list, and a detail panel for the selected scenario. The list groups scenarios by collapsible `@flow:` category. Each row shows the title, ID or an unavailable-ID label, compact metadata (type, priority, and tags), execution availability, and the latest status for the selected environment. The detail panel shows category, type, latest status and run time, duration, expected result when distinct from the steps, Gherkin steps, example outcomes for scenario outlines, available evidence, and run actions. The list does not need to display every detail field as a column.
+- FR-9. The scenario explorer uses module → submodule → optional child test groups/files, a scenario list, and a detail panel for the selected scenario. Integration journeys and split files remain beneath their owning submodule; every child uses its parent's PRD. Selecting a submodule or child group lists its descendant scenarios and can run the full group after server-side selection validation. Follow [test organization](automation/test-organization.md) for paths and ownership. The list groups scenarios by collapsible `@flow:` category and source file. Each row shows the title, ID or an unavailable-ID label, compact metadata (type, priority, and tags), execution availability, and the latest status for the selected environment. The detail panel shows category, type, latest status and run time, duration, expected result when distinct from the steps, Gherkin steps, example outcomes for scenario outlines, available evidence, and run actions. The list does not need to display every detail field as a column.
 - FR-10. The explorer supports cross-feature search by ID, title, feature, module, category, and tag; filtering by tag, flow, priority, type, and status; and sorting by source order, ID, flow, tag, title, type, priority, status, or last-run time. Environment is selected as a global context and determines the displayed status and results; it is not a separate catalog filter.
 - FR-11. Catalog resmi mengikuti branch target dan di-parse ulang saat PR di-merge atau sync manual. Scenario definition baru atau berubah dikenali dari source feature dan identitas scenario yang stabil; jangan menganggap ID saja unik. Statusnya menjadi `not run` pada setiap env dan referensi evidence terbarunya dihapus. Jika pencocokan identitas ambigu, jangan gunakan hasil lama. Scenario yang tidak berubah mempertahankan hasil hosted terakhirnya.
 - FR-12. Catalog draft di-parse dari workspace draft dan hanya terlihat pemilik draft.
@@ -110,7 +110,7 @@ Izin tulis ke repo tetap dibatasi izin GitHub milik pengguna.
 
 ### 8.4 Run dan evidence (perilaku preview lokal saat ini)
 
-- FR-15. Preview lokal menerima pilihan satu scenario, satu feature, atau satu kategori `@flow:` di dalam feature, pada satu env per run. Filter tag hanya menyaring katalog dan bukan target run.
+- FR-15. Preview lokal menerima pilihan satu scenario, satu feature, satu kategori `@flow:` di dalam feature, atau satu submodule/child group beserta seluruh descendant feature-nya, pada satu env per run. Server memvalidasi keanggotaan dan identitas source untuk setiap pilihan. Filter tag hanya menyaring katalog dan bukan target run.
 - FR-16. Run lokal mengeksekusi checkout yang sedang terbuka dan hanya memperbarui hasil lokal. Hasil lokal tidak disalin ke hosted. Setelah merge, scenario baru atau berubah di hosted berstatus `not run` sampai dijalankan di hosted; referensi evidence lama dilepas agar tidak tampak berasal dari isi scenario terbaru. Scenario yang tidak berubah mempertahankan hasil hosted terakhirnya.
 - FR-17. Tampilan run menunjukkan tahap, status scenario dan langkah, serta preview browser seperti preview saat ini. Posisi antrean, worker container, dan antrean tahan restart belum diperlukan dan ditunda.
 - FR-18. MVP tidak mengulang scenario secara otomatis; status hasil per scenario hanya `passed`, `failed`, atau `skipped`. Retry terjadwal belum termasuk cakupan dan dibahas kembali bersama fitur jadwal.
@@ -275,6 +275,6 @@ Semua tabel berkunci `project_id` agar siap multi-Project.
 - Konfigurasi Playwright BDD (`playwright.bdd.config.ts`) dengan baseURL dan kredensial dari env yang disuntikkan app.
 - Reporter kustom yang menulis result contract (JSON) untuk diingest app; menggantikan penulisan catalog Markdown.
 - `.agents/skills/` berisi skill hasil adaptasi + `playwright-cli` dan referensinya.
-- `docs/prd/<module>/<submodule>.md` untuk PRD target; scenario dan kategori flow berada di `<submodule>.feature`.
+- `docs/prd/<module>/<submodule>.md` untuk PRD target; scenario dan kategori flow berada di `<submodule>.feature` atau child files di `<module>/<submodule>/`, sesuai [test organization](automation/test-organization.md).
 - MSW untuk scenario `@mock`, `package.json`, dan `tsconfig` minimal.
 - Tidak ada `.env.local` di repo; semua nilai env datang dari app.
