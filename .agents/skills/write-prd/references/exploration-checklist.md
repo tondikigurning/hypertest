@@ -21,7 +21,7 @@ Exploration finds possible journeys. It does not prove the PRD is complete. Ever
 - [ ] Available context for roles, accounts, data, mutation permission and known issues has been gathered; gaps are recorded (Step 0b).
 - [ ] Credentials come from the environment's configured variables. Never print or echo them.
 - [ ] You know whether E2E-owned records may be created or deleted here. If unknown, stay read-only.
-- [ ] A named `playwright-cli` session exists for this pass, and you can name it in the exploration log.
+- [ ] The host's managed Q-Rex browser or an owned terminal CLI session is ready. Identify it accurately in the log; do not invent an unavailable session name.
 - [ ] If reference material was supplied, list its statements so you can compare them with the live app.
 
 ## Ground rules
@@ -32,7 +32,7 @@ Exploration finds possible journeys. It does not prove the PRD is complete. Ever
 4. Navigate from the app's own navigation, not by guessing URLs.
 5. Snapshot first, then search the saved snapshot for the element you need. Do not read the whole tree.
 6. Drive interactions with the `eNN` refs from the latest snapshot. Re-snapshot after any change that re-renders the page.
-7. Use `requests` and `request <n>` to capture the real method, path and status of what each action calls.
+7. Use supported request evidence for method/path/status. Terminal hosts may inspect `request <n>`; Q-Rex exposes request listings only. Record missing contract fields as unverified.
 8. Screenshots show what you saw. They are never a locator source.
 9. When the UI shows real data, describe it generically. Do not copy real names, emails, phone numbers or order numbers into notes or evidence names.
 
@@ -79,7 +79,7 @@ For each action the sub-module supports (create, edit, delete, activate/deactiva
 - [ ] Submit result (only if mutation is permitted): success message, where the user lands, how the list or detail updates.
 - [ ] Failure result: error message text and where it appears (field, banner, toast).
 - [ ] Side effects visible in the UI (status change, counters, related lists).
-- [ ] The request the action sends: method, path, status (from `requests`).
+- [ ] The action's available request evidence: method/path/status only where returned. Note unavailable body/response details.
 
 If mutation is not permitted, open the form and observe it, but do not submit. Record the submit result as unverified.
 
@@ -146,7 +146,7 @@ Then write the PRD line in the format from [prd-template.md](prd-template.md). K
 
 ## Evidence
 
-- Save safe evidence to a locally accessible path and refer to that path; use an available evidence tool only if one is actually provided. Do not commit large binaries to the repository unless the user asks. If evidence cannot safely be retained, add a dated, sanitized factual entry to the exploration log, reference it from the observation, and record the limitation without claiming a retained artifact.
+- Save safe evidence only through capabilities the host actually exposes. Q-Rex cannot capture screenshots/traces: use dated sanitized factual log entries with available snapshot/network context. Terminal hosts may retain safe artifacts at their real returned paths. Reference actual evidence and record limits without claiming an artifact exists. Do not commit large binaries unless requested.
 - Name evidence `<CODE>-<area>-<NN>`, for example `STL-create-01`. Names must not contain customer names, emails, tokens or other personal data.
 - One evidence item per observation that matters. Do not screenshot every step.
 - Before saving a screenshot, check it for visible real customer data or secrets. If present, do not store it as evidence; describe the observation in words instead.

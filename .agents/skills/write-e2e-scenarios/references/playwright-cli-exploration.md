@@ -1,30 +1,50 @@
-# Playwright CLI for exploration
+# Browser exploration by host
 
-Prefer `playwright-cli` for exploration: it saves snapshots to disk and returns element refs. If it is unavailable, use the availability fallback below.
+Read the [shared workflow contract](../../ask-qa/references/workflow-contract.md) for scope/environment/entity defaults and approval boundaries, and [data safety](data-safety.md) before interaction. Select the profile from the tools actually exposed, not commands mentioned in a reference.
 
-The full command list is in the `playwright-cli` skill (`.agents/skills/playwright-cli/SKILL.md`). Verify command availability with the installed CLI's help. Key commands for this workflow:
+## Q-Rex managed browser
 
-| Need                   | Command                                                                                      |
-| ---------------------- | -------------------------------------------------------------------------------------------- |
-| Open the browser       | `playwright-cli -s=qa-task open` (use `--persistent` only when persisted state is needed)    |
-| Navigate               | `playwright-cli goto <url>`                                                                  |
-| Accessibility snapshot | `playwright-cli snapshot` (saves a file and returns `eNN` refs)                              |
-| Search a snapshot      | `playwright-cli find "<text>"` or grep the saved file                                        |
-| Interact               | `click <ref>`, `fill <ref> "<text>"`, `press <key>`, `check <ref>`, `select <ref> "<value>"` |
-| Confirm API shape      | `playwright-cli requests`, `playwright-cli request <n>`                                      |
-| Console errors         | `playwright-cli console`                                                                     |
-| Evidence for `@fixme`  | `playwright-cli tracing-start` / `tracing-stop`, or `screenshot`                             |
-| Command help           | `playwright-cli --help`                                                                      |
+Use the provided `playwright_cli` tool. The runtime owns the authenticated named session and starts it on demand; do not open another session, perform a separate login, inspect secret files or request credentials in chat. Missing configuration is resolved through the selected environment and browser Variables.
 
-## Rules
+| Need | Supported action |
+| --- | --- |
+| Current element refs | `snapshot`; `find` with target text; read returned snapshot files with `read_file` |
+| Navigation | `goto` with a URL/path within the selected target origin |
+| Interaction | `click`, `fill`, `press`, `check`, `uncheck`, `select`, with the required `dataOwner` and native approval |
+| Locator verification | `generate-locator` with a current element ref |
+| Available network/console context | `requests`, `console` |
+| Session cleanup | `close` for this managed browser only |
 
-1. Use one named session for the pass and log in once using configured credentials. Preserve other sessions and avoid exposing credentials.
-2. Read saved snapshots with grep for the section you need. Never read the full tree inline.
-3. Use `eNN` refs from the latest snapshot directly. Do not hand-write selectors from memory.
-4. When the accessibility tree is ambiguous (for example Shadow DOM), inspect live element attributes through supported `playwright-cli` commands and confirm the locator against the page. If it cannot be verified, record the gap; do not guess.
-5. Use `requests` to confirm real API routes, methods and status codes before you write any `@mock` scenario.
-6. Screenshots are for visual sanity checks only.
+These tools do not expose shell/help commands, `request <n>` or full bodies/headers, DOM `eval`, `run-code`, screenshots, tracing, recording, network routing/mocking, storage operations or arbitrary browser JavaScript. Do not express an unsupported operation through another argument or tool. A terminal CLI's larger command set is not a bridge capability.
 
-## Availability
+Use snapshots and locator generation for verified alternatives. Request listings establish only the fields they actually return; do not infer request bodies, response schemas or hidden attributes. For a mock whose contract remains unknown, inspect relevant existing reviewed test contracts and report any remaining implementation gap rather than inventing one.
 
-Check `playwright-cli --version` and `playwright-cli --help`. If unavailable, inspect locally installed tools and use a supported alternative where possible. Do not install or upgrade automatically.
+For evidence, record a dated sanitized factual observation, environment, screen/role, exact visible outcome, and available snapshot/request context in the existing PRD log or review output. State that an image/trace/full request was not captured when unavailable. Never fabricate a saved artifact path. An unsupported evidence format alone need not block documenting an otherwise observed defect or PRD.
+
+## Terminal CLI
+
+Read [playwright-cli](../../playwright-cli/SKILL.md) and verify the installed `playwright-cli --help`/command help; use the `.cmd` shim if PowerShell blocks `.ps1`. Do not automatically install or upgrade. Use one owned named session consistently:
+
+```bash
+playwright-cli -s=qa-task open <url>
+playwright-cli -s=qa-task snapshot
+playwright-cli -s=qa-task find "<text>"
+playwright-cli -s=qa-task click <ref>
+playwright-cli -s=qa-task requests
+playwright-cli -s=qa-task request <index>
+playwright-cli -s=qa-task generate-locator <ref>
+playwright-cli -s=qa-task close
+```
+
+Log in with configured credentials without printing them. Use a persistent profile only when needed, preserve other sessions and protect stored authentication. Use supported element inspection when snapshots are insufficient. Capture safe screenshots/traces where useful and supported; retain their real returned paths. Generic CLI examples do not override project authoring or data-safety gates.
+
+## Evidence loop for both hosts
+
+1. Navigate through the app's accessible navigation, using PRD/test artifacts as leads rather than guessing routes.
+2. Snapshot and find the relevant section; use current `eNN` refs. Search/page large snapshots instead of loading the whole tree.
+3. Follow the authorized journey and re-snapshot after navigation or material rerenders. Prefer observable state over sleeps or blanket network-idle waits.
+4. Verify locators against the current page; if no supported alternative verifies one, record the gap.
+5. Inspect available request evidence before asserting API/mock contracts. A response or request listing does not prove the visible state promised by a scenario.
+6. Record inaccessible roles, unavailable data, blocked mutations and tooling limits individually. Protect credentials, customer data and sensitive request contents in notes and artifacts.
+
+If no supported browser is available, retain the draft and exact blocker. PRD import text can be prepared, but review-ready PRDs and scenario discovery still require their scoped live exploration. Do not present a PRD-only inventory as browser discovery or author scenarios before that prerequisite.

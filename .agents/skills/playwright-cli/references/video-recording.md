@@ -1,5 +1,7 @@
 # Video Recording
 
+Terminal-host reference only. Q-Rex uses a managed browser with a smaller tool surface; follow [host capabilities](../../write-e2e-scenarios/references/playwright-cli-exploration.md) instead of requesting these commands there. In a terminal host use the task's owned named session consistently, verify installed command support, and preserve the same scope/data-safety authorization.
+
 Capture browser automation sessions as video for debugging, documentation, or verification. Produces WebM (VP8/VP9 codec).
 
 Check installed CLI and browser capabilities before using the optional screencast APIs below; they may not exist in the project's installed Playwright version. Use the CLI's supported recording commands when sufficient. Record only the requested scope, protect sensitive information, and keep existing browser sessions intact.

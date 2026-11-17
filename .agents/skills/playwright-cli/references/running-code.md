@@ -1,5 +1,7 @@
 # Running Custom Playwright Code
 
+Terminal-host reference only. Q-Rex uses a managed browser with a smaller tool surface; follow [host capabilities](../../write-e2e-scenarios/references/playwright-cli-exploration.md) instead of requesting these commands there. In a terminal host use the task's owned named session consistently, verify installed command support, and preserve the same scope/data-safety authorization.
+
 Use `run-code` to execute arbitrary Playwright code for advanced scenarios not covered by CLI commands.
 
 ## Syntax

@@ -1,7 +1,7 @@
 # E2E data safety: E2E-owned data only
 
 **Default rule: automation never edits, updates or deletes data it did not create.** Seed data (existing non-E2E
-data) in the shared environment is read-only unless the user explicitly approves a scoped exception below.
+data) in the shared environment is read-only unless the scoped exception below receives approval under the host's applicable decision mode.
 A record being visible, or a change being restorable, is never permission to mutate it.
 
 Read-only journeys (list, filter, search, sort, view detail, open a dialog and cancel) may use seed data freely.
@@ -9,7 +9,13 @@ Mutation journeys (create, edit, delete, suspend, activate, remove, unlock, rese
 status transitions) must target a record the E2E suite created, marked with an `E2E` prefix, unless the explicit
 approval process below has been completed.
 
-## Three-tier strategy (default, no approval needed)
+## Authorization before choosing data
+
+Establish the task, environment and permitted operations from the current request and prior answers. A request to write tests does not itself authorize live create/delete exploration. Reuse explicit authorization for E2E-owned operations in that scope instead of asking the same business question again; ask once if that consequential permission is missing. Ownership eligibility, scenario/flow review and native file/browser approvals remain separate. Q-Rex may request approval even for a read-only click or fill; describe it truthfully and use the host's configured approval mode under the [shared contract](../../ask-qa/references/workflow-contract.md#hosts-and-review-gates).
+
+## Three-tier strategy (within authorized scope)
+
+Once owned-data operations are authorized, these tiers need no additional **seed-data exception**. They still honor the operation scope and host approvals.
 
 ```
 Tier 1: search for the "E2E" prefix  -> reuse an E2E entity from a previous run, mutate it
@@ -20,14 +26,14 @@ Tier 3: skip                         -> no E2E-owned record: skip with a clear r
 Never add an implicit fourth tier. There is no "fall back to the first visible row". The default remains
 search → create → skip. If the data required by a scenario cannot be found among E2E-owned records and cannot
 be created or otherwise provisioned within the authorized scope, the agent must recognize this limitation,
-explain it and ask whether the user permits non-E2E data for that specific scenario before concluding Tier 3.
+explain it and present the scoped non-E2E exception for that specific scenario under the approval procedure below before concluding Tier 3.
 This is an explicit approval gate, not automatic fallback permission. Without approval, skip the mutation.
 
 Apply these tiers to every entity based on capabilities verified in the current UI and reviewed PRD, not a predefined
 module or entity list. Discover the supported lookup, creation or provisioning flow, required permissions and
 state, and whether it is feasible within the authorized scope. Do not assume a dialog, wizard or upstream flow
 exists based on the module name. If neither Tier 1 nor Tier 2 can produce an E2E-owned record, the mutation
-scenario is Tier 3 and skips unless the user explicitly approves the scoped exception below.
+scenario is Tier 3 and skips unless the scoped exception below receives the applicable approval.
 
 ## Exception review: required E2E data cannot be found or provisioned
 
@@ -42,12 +48,12 @@ do not assume it from a module name or from the absence of a search or create co
    creation or upstream flow that produces E2E-owned data when feasible within the authorized scope.
    Use E2E-owned source records for upstream prerequisite actions when possible.
    Do not expand into another platform or mutate an upstream seed record without authorization.
-3. If no usable E2E-owned record can be found or provisioned, ask whether the user permits non-E2E data for this
-   specific scenario and propose a verified existing record under the approval process below. Explain why the
+3. If no usable E2E-owned record can be found or provisioned, propose a verified existing record for this
+   specific scenario under the approval process below. Explain why the
    required data cannot be provided, any upstream dependency, the intended changes and downstream effects,
    and the cleanup limits. If no suitable existing record can be identified, report that gap and ask the user
    to identify one as part of the same request; permission alone does not supply or identify a valid record.
-   Ask for explicit confirmation before any non-E2E mutation, including upstream prerequisite actions.
+   Obtain the applicable scoped approval before any non-E2E mutation, including upstream prerequisite actions.
 4. While confirmation is pending, continue independent read-only work only. On refusal or without approval,
    skip the affected mutation with the dependency and approval reason recorded. Never report it as verified.
 
@@ -61,8 +67,7 @@ Example confirmation (replace placeholders with verified details before asking):
 > 1. Yes, approve this record and operation.
 > 2. No, skip this mutation.
 
-Use the available permitted interactive question tool where possible and allow an explanation or requested change.
-The approval is required even when restoration is possible.
+In manual mode use the permitted interactive question tool and allow an explanation/change. In Q-Rex's configured automatic mode, provide the same verified scope and use native approval without an extra manual question. Approval is required even when restoration is possible; automatic decisions must be recorded as automatic.
 
 ## Test data values
 
@@ -83,39 +88,13 @@ The stamp is `DDMMYYYYHHmm` in local time (`271020261108` = 27-10-2026 11:08). K
 `maxLength` and allowed-character rules, and keep the `E2E` token at the start so search-first reuse by the `E2E`
 keyword still matches. An update/copy value appends the operation: `E2E user group 271020261108 edited`.
 
-### Helper
+### Helper and collision handling
 
-Add `e2e/tests/bdd/utils/e2e-test-data.ts` on first use when it does not exist:
+Inspect and reuse `e2e/tests/bdd/utils/e2e-test-data.ts`: `e2eTimestamp(date?)` returns the local-time stamp, and `e2eValue(label, date?)` returns `E2E <label> <stamp>`. If the helper is absent, implement that contract once in the utility rather than copying date logic into POMs. The helper formats values; minute precision alone does not guarantee uniqueness.
 
-```ts
-const pad = (value: number): string => String(value).padStart(2, "0");
+For operations requiring distinct records, use operation-relevant readable labels, and check the proposed unique value against available owned records. Two creates in the same minute can use `survey template customer feedback` and `survey template service follow-up`. For a repeated logical create whose label is already taken, use a readable attempt distinction within the words, such as `survey template customer feedback second attempt`, preserving the exact prefix/stamp shape, field constraints and approved scenario meaning. Plain free text remains unstamped.
 
-/** Local-time stamp DDMMYYYYHHmm (e.g. 271020261108). */
-export function e2eTimestamp(date: Date = new Date()): string {
-  return [
-    pad(date.getDate()),
-    pad(date.getMonth() + 1),
-    date.getFullYear(),
-    pad(date.getHours()),
-    pad(date.getMinutes()),
-  ].join("");
-}
-
-/** `E2E <label> <stamp>` — e.g. e2eValue("profanity word") -> "E2E profanity word 271020261108". */
-export function e2eValue(label: string, date: Date = new Date()): string {
-  return `E2E ${label} ${e2eTimestamp(date)}`;
-}
-```
-
-Usage:
-
-```ts
-import { e2eTimestamp, e2eValue } from "../../utils/e2e-test-data";
-
-const word = e2eValue("profanity word"); // E2E profanity word 271020261108
-const renamed = `${e2eValue("user group")} edited`; // E2E user group 271020261108 edited
-const description = "Permission set for the customer support team."; // plain free text
-```
+If a create is conclusively rejected as duplicate, allow at most one scoped retry with a checked distinct readable label, then report/skip the blocked create if still unavailable. Do not retry an uncertain submission: first establish whether it created the exact intended record. Never resolve collisions by deleting an existing record, using a random/epoch suffix, changing the timestamp format or assuming that a matching existing name proves a fresh create succeeded. If no valid distinct value or target identity can be established, report the limitation instead of claiming the create passed.
 
 ### Align existing code in scope
 
@@ -125,15 +104,14 @@ in the same pass and lists the changed files in the summary. Do not sweep module
 
 ## Explicit approval for non-E2E data
 
-A mutation may touch a non-E2E record **only** when the user explicitly approves the specific record and operation.
+A mutation may touch a non-E2E record **only** after the specific record and operation receive the applicable scoped approval. In manual mode this is an explicit user decision; Q-Rex automatic mode must still present the complete scoped native request and record it as automatic rather than human approval.
 During scenario or code work, record the approval in the `.feature` header or applicable flow section before the
 live mutation or authoring the affected scenario or implementation. During PRD-only exploration, record the scoped
 approval in the conversation before mutation; record only a sanitized summary in the PRD exploration log. If the
 scenario is later authored, its current-session approval must also be recorded in the `.feature`. Approval may be
 requested when the dependency is discovered; it is not limited to the initial interview.
 
-During Phase 0 (`write-e2e-scenarios`) or Phase 1 (`write-e2e-code`), explain these facts, then ask one focused
-confirmation question with explicit **Yes** and **No** choices:
+During Phase 0 (`write-e2e-scenarios`) or Phase 1 (`write-e2e-code`), prepare the following facts for one scoped approval. In manual mode ask a focused confirmation with **Yes** and **No** choices; in Q-Rex automatic mode use the native approval without a competing manual question:
 
 1. The environment, scenario, entity type and exact record identity the scenario would mutate.
 2. Why no E2E-owned record can be used, including unavailable lookup/create flows and any upstream dependency.
@@ -143,17 +121,17 @@ confirmation question with explicit **Yes** and **No** choices:
 
 Rules for the answer:
 
-- **Default is no.** Silence, a preselected choice, "you decide", or an ambiguous answer is not approval. Keep a
-  pending confirmation unresolved until the user responds; do not perform dependent mutations while waiting.
+- **Manual default is no.** Silence, a preselected choice, "you decide", or an ambiguous answer is not approval. Keep a
+  pending manual confirmation unresolved until the user responds; do not perform dependent mutations while waiting. Only the host's explicitly enabled automatic mode can supply an automatic decision.
 - Approval must be explicit and scoped to the environment, scenario, exact record and operation. Never treat it
   as blanket permission or fall back to another record if the approved one is unavailable.
-- Approval never carries over to another scenario, another record, another feature or a later session.
+- Approval never carries over to another scenario, another record, another feature or a later draft/task session. A later turn within the same session may reuse only the still-current exact scoped decision; automatic mode does not create a transferable manual approval.
 - Without recorded approval in the file, the step must not target seed data; make it skip instead.
 
 Record the approval in the feature file header (or the flow section it applies to):
 
 ```gherkin
-# seed-data-mutation-approved: <YYYY-MM-DD> <approver> — <environment> — <scenario ID> — <entity/record ID> — <mutation> — <reason> — <cleanup and irreversible effects>
+# seed-data-mutation-approved: <YYYY-MM-DD> <approver; manual or automatic> — <environment> — <scenario ID> — <entity/record ID> — <mutation> — <reason> — <cleanup and irreversible effects>
 ```
 
 The comment records authorization; it does not enforce it at runtime. Before each live execution, ensure that
@@ -182,7 +160,7 @@ ask for scoped permission under the exception review above; without approval, sk
   system). If real data cannot be provisioned and no scoped exception is approved, use `@mock` with a success
   handler only where the reviewed scenario and mock policy permit; otherwise skip. A mock does not verify the
   real upstream integration. See `write-e2e-code/references/msw-mocking.md`.
-- Read-only journeys. They do not mutate anything, so seed data is fine and no approval is needed.
+- Read-only journeys. Seed data may be read within scope without a seed-mutation exception; applicable host interaction approvals still apply.
 
 Prefer dynamic "first available" selection for read-only reference choices, where the scenario permits it,
 before resorting to `@mock`. Selecting a reference value does not authorize mutation of that referenced record.

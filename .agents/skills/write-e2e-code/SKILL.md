@@ -5,92 +5,55 @@ description: Implement or technically maintain e2e playwright-bdd steps, Page Ob
 
 # Write E2E Code (Phase 1)
 
-**Entity options input:** Select `Converge` by default whenever an Entity options input is encountered, unless the user explicitly requests a different entity. This default does not override data-safety or approval requirements.
+Implement one approved Gherkin batch as reusable steps, page/component objects, fixtures and reviewed mocks. Read the [shared workflow contract](../ask-qa/references/workflow-contract.md) for host-specific approval, scope, completion evidence and external verification handoff. Use [E2E conventions](../write-e2e-scenarios/references/e2e-conventions.md) and [data safety](../write-e2e-scenarios/references/data-safety.md) for identity and test data.
 
-Generates the code behind an approved `.feature` file. Input is the reviewed Gherkin. Output is steps, POM methods, optional COMs, fixture wiring and mocks for one sub-module, or one flow in it.
+For new/changed intent, verify approval of the **current** feature snapshot and exact scenario IDs before implementation. In Q-Rex, chat approval is insufficient: use the actual Changes-panel decision or configured automatic mode. Existing implemented scenarios can receive intent-preserving technical repairs/refactors without a new scenario-design gate; preserve their contract and IDs and inspect data safety.
 
-For new or changed scenario intent, Phase 0 (`write-e2e-scenarios`) must produce an approved `.feature` first. Apply that workflow in the same conversation if needed; stop at its review gate. A technical repair or refactor of an existing implemented scenario may proceed from its established contract without a new design review when intent and IDs remain unchanged. If the intended behavior must change, return to Phase 0.
+Preserve the requested module/submodule. Resolve feature candidates by contents and product evidence, not sibling proximity. If no matching approved scenario exists, apply [write-e2e-scenarios](../write-e2e-scenarios/SKILL.md) yourself for that target, including its PRD/discovery/review prerequisites. Reuse context; ask only when target or approval remains materially ambiguous. Do not ask the user to pick an unrelated feature or invoke the handoff again.
 
-**Keep the requested target:** Resolve the user's named module and sub-module against the PRD, app navigation and feature contents. A feature in the same module is not automatically a candidate: offer or use it only when its contents or other evidence establish that it covers the requested target. Never substitute an unrelated sibling feature merely because the requested feature is missing. If the target is unambiguous and no matching approved feature exists, explain that Phase 0 is required and apply `write-e2e-scenarios` for that same target without asking the user to select a different scope or reconfirm the handoff. Follow Phase 0's PRD prerequisite, interview, flow-list confirmation and scenario review gates; do not implement until approval. Ask a focused question only if the target, matching feature location, or applicable approval genuinely remains ambiguous, and present only evidence-supported candidates plus the permitted free-text fallback. A user-provided feature path still needs its target and approval verified before Phase 1.
+## Step 0 — Resolve approved scope
 
-**Data safety:** Use E2E-owned records for mutations; seed data and shared settings are read-only by default. Follow search → create → skip. If the required E2E data cannot be found or provided within scope, explain the limitation and ask permission to use non-E2E data for that specific scenario under [data-safety.md](../write-e2e-scenarios/references/data-safety.md). Record approval before mutation; restoration alone does not grant permission. Without approval, skip the affected mutation.
-
-Implement **approved batches only**, using the exact reviewed scenario IDs and flow categories from the current conversation registry and `.feature` review. Check that the current scope is `approved` before implementation. Each batch is implemented and verified before the next one starts. Intent-preserving technical repairs to an existing scenario do not require a new approval when its contract and IDs remain unchanged; preserve its scenario and check data safety.
-
-Implement the reviewed business journeys and consequential branches in the approved scenarios. Do not expand them into field-by-field or component-level checks; route missing business journeys back to `write-e2e-scenarios`. An approved or verified batch does not prove that the whole business flow or sub-module has been discovered or covered.
-
-Conventions: [../write-e2e-scenarios/references/e2e-conventions.md](../write-e2e-scenarios/references/e2e-conventions.md). Data safety: [../write-e2e-scenarios/references/data-safety.md](../write-e2e-scenarios/references/data-safety.md). MSW: [references/msw-mocking.md](references/msw-mocking.md). Troubleshooting: [references/troubleshooting.md](references/troubleshooting.md).
-
-## Step 0 — Resolve scope and context
-
-Follow the shared [question and approval guidance](../write-e2e-scenarios/SKILL.md#step-0--interview-for-scope-required). Use the reviewed scenarios, prior answers, conversation registry and project evidence to establish scope and context; do not re-interview for information already established by the scenario handoff. Ask only when a consequential decision remains unresolved after that inspection. Establish:
-
-- The matching module, sub-module, feature and exact approved batch or existing scenario contract. A supplied path still needs target and approval verification.
-- The test data, prerequisites and cleanup needed for mutations, following [data-safety.md](../write-e2e-scenarios/references/data-safety.md).
-- Reusable steps, page/component objects, UI constraints, relevant mock contracts, environment and known defects. Inspect project files and browser evidence first; ask about unresolved product decisions or access.
-
-Derive file names from the established project patterns. If target or approval is ambiguous, resolve it before dependent implementation. If the target has no approved scenario, apply Phase 0 for that target.
+Identify the exact batch files, scenario/source identities, flow categories and applicable approval, or the existing contract for a technical repair. Read prior answers and reviewed context instead of re-interviewing. Establish environment, prerequisites, owned-data scope, cleanup and unresolved product decisions under the shared contract. Complete and verify this batch before starting the next; when execution is unavailable, produce the concrete handoff below.
 
 ## Step 1 — Read before writing
 
-1. Read every approved `.feature` in the batch, the owning submodule's other feature files and shared context. Resolve nested files through [test organization](../../../docs/automation/test-organization.md); all children use the single parent submodule PRD and ID namespace. Missing child requirements belong in a refresh of that parent PRD through `write-prd`, not in a new child PRD. Keep every `@ID`, `@flow:` and `@ref:` tag and scenario intent unchanged. Intent-preserving file splits retain inherited tags, backgrounds, examples, safety notes and flow order, and reuse existing step/POM bindings.
-2. Read the shared fixtures, utilities, `steps/_shared/` and components relevant to the scope. Follow the [test-data convention](../write-e2e-scenarios/references/data-safety.md#test-data-values) when adding or changing values.
-3. Read the existing POM and steps for the same module (for example `pages/user-management/UsersPage.ts`, `steps/user-management/users.steps.ts`) and copy their style.
-4. Read every `@ref:TEN_COM_*` master in `features/_components/` that the scope links to. Its steps are the contract you must implement.
+1. Read every approved feature and the owning submodule's flat/nested features. Follow [test organization](../../../docs/automation/test-organization.md): children share one parent PRD and ID namespace. Preserve IDs, `@flow:`, `@ref:`, assertions and intent; splits retain inherited tags, backgrounds/examples, safety notes and flow order. Missing requirements belong in a refresh/review of that parent through `write-prd`.
+2. Read relevant shared fixtures/utilities, `steps/_shared/`, components and the existing module's steps/POMs and callers. Reuse their style and bindings. Read each linked `@ref:TEN_COM_*` master: its step text is the contract.
+3. Inspect actual mock contracts before applying [MSW guidance](references/msw-mocking.md). Consult [troubleshooting](references/troubleshooting.md) only for a matching symptom; do not copy known weak assertions merely because they exist.
 
-## Step 2 — Verify locators before writing the POM
+## Step 2 — Verify locators
 
-Do not write a locator from memory. Open a named `playwright-cli` session, navigate to the page and take a `snapshot`. Search it for the role, text or `data-testid`; when needed, inspect live element attributes using supported CLI commands and confirm the locator against the page.
+Read [browser capabilities](../write-e2e-scenarios/references/playwright-cli-exploration.md). Use the host's managed/owned session, navigate to the scoped page and inspect a current snapshot. Verify roles, labels and test IDs with supported inspection or `generate-locator`; refresh refs after navigation/material changes. Q-Rex has no `eval`/`run-code` or element-attribute command. Use verified alternatives and mark remaining gaps instead of inventing locators.
 
-If a locator cannot be verified, say so in the summary and mark the gap. Do not guess.
+If live access is missing, preserve usable existing verified code and complete independent work. Report new locator-dependent implementation as incomplete where evidence cannot be established.
 
-## Step 2b — Align test data values in the files you touch
+## Step 3 — Align scoped data values
 
-The data-value convention is enforced on every pass, not only for new scenarios. Two rules, decided per field:
+Apply the single [test-data convention](../write-e2e-scenarios/references/data-safety.md#test-data-values), including readable names, minute stamps, plain free text and collision handling. Inspect step/POM files in scope, including those being extended, and align violating values in the same pass using the existing helper. Preserve scenario assertions/intent and avoid unrelated module sweeps. Report aligned files/fields.
 
-- **Rule A — unique or findable test record** (name, subject, title, login email): `E2E <relevant words> <DDMMYYYYHHmm>`
-  — `E2E profanity word 271020261108`. An updated value appends the operation (`E2E user group 271020261108 edited`).
-- **Rule B — plain free text** (description, comment, remarks, body/content, notes): a realistic domain sentence with no
-  `E2E` flag and no stamp — `Access role for the customer support team.`
+Data eligibility does not grant mutation permission. Preserve exact target identity through each action; a successful generic search or arbitrary first row does not establish ownership. Missing owned data follows search → supported provisioning → scoped exception review → skip without approval. Inspect notification/downstream effects and restoration limits before any approved exception.
 
-Scan the step and POM files for the scope, including files you are only extending, and update every value that breaks
-either rule: `Date.now()`/epoch suffixes, module codes or UUIDs as the readable part, and `E2E` or timestamp noise on
-plain free text. Build Rule A values with `e2eTimestamp()` / `e2eValue("<relevant words>")` from
-`utils/e2e-test-data.ts`, adding that helper from the snippet in
-[../write-e2e-scenarios/references/data-safety.md](../write-e2e-scenarios/references/data-safety.md#test-data-values)
-when it does not exist.
+## Step 4 — Implement the reviewed contract
 
-Do not change scenario intent, flow IDs or assertions, and do not sweep modules outside the current scope. List the
-aligned files and fields in the summary.
+- Steps delegate to POMs/COMs: `Given` establishes prerequisites, `When` acts, `Then` asserts. Put assertions in Then steps or POM `expect*` methods; COMs own shared UI interaction. Shared step text belongs in `steps/_shared/`, not `steps/_components/`.
+- Reuse shared/stateful components and register injectable POMs/COMs in `fixtures/base.fixture.ts`. Extend existing classes without breaking their other callers.
+- Implement consumer-visible journeys and consequential branches from the approved scenarios. Do not expand scope into field-by-field/component tests. Route missing journeys or changed intent through `write-e2e-scenarios` with the same scope and prior answers, stopping at its applicable review gate.
+- Use actual request evidence for reviewed `@mock` handlers. Mocks verify the promised UI contract, not real backend integration. Preserve the no-mock smoke rule.
+- Assert the approved observable outcome on the identified target. Feedback/network evidence can supplement it; do not substitute a mocked HTTP status for visible UI feedback or silently strengthen/change an approved assertion. Report a contract gap for scenario review.
+- Keep cleanup and target guards effective after failures wherever feasible. A previous approval comment is not current-session seed authorization.
 
-## Steps 3–7 — Implement the approved scenarios
+## Step 5 — Validate with available capabilities
 
-- Reuse existing shared steps and page/component objects. Steps delegate to POMs or COMs; `Given` sets preconditions, `When` acts and `Then` asserts. Place assertions in `Then` or POM `expect*` methods, not COMs. Shared step text belongs in `steps/_shared/`; keep `steps/_components/` empty.
-- Express user-visible actions and expectations in the POM, using verified locators and the existing module style. Extend existing classes without breaking other flows. Use COMs for shared or stateful UI where appropriate and register injectable objects in `fixtures/base.fixture.ts`.
-- Follow [MSW guidance](references/msw-mocking.md) for reviewed `@mock` scenarios. Confirm the actual request contract before implementing a mock; report mocks separately from real integration coverage.
-- Mutation assertions must verify an observable data-changing outcome. Dynamic selection is suitable for reference values, not an unverified mutation target. Follow [data-safety.md](../write-e2e-scenarios/references/data-safety.md) for target identity, scoped exceptions and cleanup, including after failures.
+**Terminal host:** inspect `e2e/package.json`, invoked runner and config before choosing commands. Check affected bindings, collection and types. Register split/nested implementation paths and check collection of every moved ID. Before live execution inspect selected setup/steps/POMs/tags, establish the intended environment and follow data safety. Verify the exact selection; an unfiltered `pnpm test:bdd` runs the suite and may sync catalog, import results and upload evidence. Do not generate BDD concurrently with the Automation runner, which shares generated files.
 
-## Step 8 — Verify
+**Q-Rex:** inspect source/bindings and finish feasible code, then use the shared contract's implementation handoff. Collection, standalone types and draft BDD execution are unavailable. Keep `approved` with an “implementation draft; checks pending” progress note until external evidence validates this exact source. Identify branch/base, current full Changes snapshot or supplied source revision/diff, files/scenario IDs, supported commands for a terminal reviewer, intended selection/environment and all pending checks. This is a useful completed drafting deliverable, not a claim that the batch is implemented/verified. The explorer checkout runner cannot validate it.
 
-Check step bindings, collection and types for the affected scenarios. When features are split or nested, update the runner's explicit paths/globs for implemented files and check collection for every moved scenario ID. Before any live execution, inspect their setup, steps, POMs, tags and environment and follow [data-safety.md](../write-e2e-scenarios/references/data-safety.md). Select only the authorized scenarios and verify the selection using the active runner's options. Do not run BDD generation concurrently with the Automation local runner: they share generated files.
+External results may advance only the matching current source and complete reviewed scope under the shared contract. If live execution is unsafe/unavailable, do feasible non-live work and record the exact unverified branches. No host may treat generation, an empty/partial selection or a successful process alone as a complete pass.
 
-Inspect `e2e/package.json` and the runner script before choosing a command. `pnpm test:bdd` generates and runs BDD and can sync the catalog, import results and upload evidence when configured; an unfiltered invocation runs the suite. Report those effects and do not use the full suite as a default. If live execution is unavailable or unsafe, perform feasible non-live checks and report the exact blocker and unverified scope.
+## Step 6 — Report and stop
 
-## Step 9 — Report and stop
+Report per scenario: relevant PRD requirement, source ID/path, implementation written, locator/binding gaps, collection/types, actual execution and evidence source. Advance `implemented` only after bindings and collection/type checks succeed; advance `verified` only after every required scenario passes in the intended environment. Record failures, skips, quarantine, mocks and unavailable checks separately. Preserve the valid prior registry state when evidence is incomplete.
 
-Report implementation and verification per scenario. Update the affected conversation registry scope to `implemented` only after steps and bindings exist and collection/type validation succeeds; use `verified` only after every required scenario in that reviewed scope passes in the intended environment. Preserve `approved` or `implemented` when verification is incomplete, and record skips, quarantine, unavailable data, failures and unverified branches individually. Record actual commands and outcomes; `bddgen` success alone is generation, not proof that imports resolve or TypeScript compiles. A successful process or partial selection is insufficient to claim the whole batch passed. A verified batch does not prove complete business-flow coverage. Do not create a separate `.flows.md` file.
+List material files, reused/added steps/POMs/COMs, fixture/mock wiring, data-value alignment and commands actually run or still required. Distinguish mocked UI coverage from real backend coverage. Do not create `.flows.md` files or change scenario intent in this phase.
 
-Distinguish UI execution with mocked responses from verification of real backend behavior. State which scenarios used `@mock`, the actual backend coverage, and any unverified integration outcomes. Do not treat an old approval as approval of new scenario intent.
-
-Report: files created or changed, scenario IDs implemented, steps added, POM methods added, COMs added or reused, fixture entries, `@mock` handlers registered, existing data values aligned to the convention (files and fields), locator gaps still open, and the commands that need to run.
-
-Do not change `.feature` scenario intent or flow IDs in this phase. If the feature file looks wrong, stop and send the user back to `write-e2e-scenarios`.
-
-Then stop. Do not start the next batch in the same session.
-
-## Related
-
-- MSW rules and helpers: [references/msw-mocking.md](references/msw-mocking.md)
-- Troubleshooting: [references/troubleshooting.md](references/troubleshooting.md)
-- Exploring and writing the `.feature`: `write-e2e-scenarios`
-- Not sure which workflow applies: `ask-qa`
+End the turn with the batch result or concrete external-check handoff. A later turn in the same draft may resume the next batch only when the previous batch's required review and verification evidence is complete. Do not add another approval question merely to report an unavailable check.

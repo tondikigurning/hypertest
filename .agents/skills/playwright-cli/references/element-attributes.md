@@ -1,6 +1,8 @@
 # Inspecting Element Attributes
 
-When the snapshot doesn't show an element's `id`, `class`, `data-*` attributes, or other DOM properties, use `eval` to inspect them.
+In Q-Rex, use a current snapshot and `generate-locator <ref>` through the managed browser tool. DOM `eval` and arbitrary JavaScript are unavailable. If the specific attribute cannot be verified, use another verified locator or record the gap; do not guess it. See [host capabilities](../../write-e2e-scenarios/references/playwright-cli-exploration.md).
+
+In a terminal host with the command supported, `eval` may inspect a known element's attributes. Use the task's named session (`-s=qa-task`) consistently; inspect only the needed attributes and avoid exposing tokens or personal data.
 
 ## Examples
 

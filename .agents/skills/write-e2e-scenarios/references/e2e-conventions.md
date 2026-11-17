@@ -23,7 +23,7 @@ Child names describe test scope; only module and submodule names mirror the prod
 ## Scenario IDs
 
 - Sub-module and module scenarios: `TEN_<CODE>_<FLG>_E2E_<NNN>`
-  - `<CODE>` is 3 characters: the sub-module code when the module has sub-modules, otherwise the module code.
+  - New `<CODE>` allocations are exactly 3 uppercase letters: the submodule code when the module has submodules, otherwise the module code. Reuse the established PRD/feature code and preserve legacy IDs.
   - `<FLG>` is exactly 3 characters: the abbreviated flow section.
   - `<NNN>` restarts at `001` for each `<FLG>` section.
 - Component masters: `TEN_COM_<CMP>_E2E_<NNN>` (no `<FLG>`; one file per component).
@@ -42,8 +42,8 @@ Two rules, decided per field:
 - **Plain free text** (description, comment, remarks, body, notes): a realistic domain sentence with no `E2E` flag and
   no stamp.
 
-Shared helper: `e2e/tests/bdd/utils/e2e-test-data.ts` (`e2eTimestamp()`, `e2eValue("<relevant words>")`),
-added on first use if absent. Full rules and the helper source: [data-safety.md](data-safety.md#test-data-values).
+Shared helper: `e2e/tests/bdd/utils/e2e-test-data.ts` (`e2eTimestamp()`, `e2eValue("<relevant words>")`).
+Inspect its implementation; minute precision is formatting, not guaranteed uniqueness. Full rules, readable collision handling and missing-helper guidance: [data-safety.md](data-safety.md#test-data-values).
 
 When a workflow touches a step or POM file, align the data values in that file to these rules in the same pass.
 

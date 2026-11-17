@@ -1,5 +1,7 @@
 # Tracing
 
+Terminal-host reference only. Q-Rex uses a managed browser with a smaller tool surface; follow [host capabilities](../../write-e2e-scenarios/references/playwright-cli-exploration.md) instead of requesting these commands there. In a terminal host use the task's owned named session consistently, verify installed command support, and preserve the same scope/data-safety authorization.
+
 Tracing captures browser activity and may contain sensitive DOM, screenshots, network traffic and credentials. Use an owned browser session, keep evidence in an appropriate location and avoid exposing its contents.
 
 ```bash

@@ -7,6 +7,6 @@ from the submodule level. Record incomplete child coverage as unverified and ref
 are missing. Follow
 [test organization](../automation/test-organization.md) for ownership and cross-menu/platform dependencies.
 
-Keep a PRD in `draft` until the user explicitly approves its review gate. Only then set its front matter to `reviewed` and mark explicitly approved items `validated`. `write-e2e-scenarios` requires a matching reviewed PRD covering the requested scope and reuses its answered context; unvalidated observations and assumptions remain unconfirmed. When the PRD is missing, draft, or insufficient for the scope, use `write-prd` to create, review or refresh it before scenario discovery.
+Keep a PRD in `draft` until its review gate accepts the complete proposed version. Manual review is the default; Q-Rex's explicitly configured automatic mode records automatic acceptance rather than human confirmation. Record `review_method` and the actual reviewer/mode, and validate only accepted items; unresolved conflicts stay `needs-review`. `write-e2e-scenarios` requires a matching reviewed PRD covering the requested scope and reuses its answered context. When the PRD is missing, draft, or insufficient, use `write-prd` to create, review or refresh it before scenario discovery. See the [shared review contract](../../.agents/skills/ask-qa/references/workflow-contract.md#hosts-and-review-gates).
 
 Do not include credentials, tokens, personal data, or real customer records in a PRD.

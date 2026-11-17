@@ -6,11 +6,12 @@ Paths are relative to the repository root. Follow callers and imports when the r
 
 | Topic | Start here |
 | --- | --- |
-| Local preview, setup, secrets and runner limits | `README.md`, `docs/SPEC.md` |
+| Local preview, setup, secrets and runner limits | `README.md`, `docs/automation/README.md`; `docs/SPEC.md` describes the hosted draft |
+| Shared scope, host capabilities, approvals and batch completion | `.agents/skills/ask-qa/references/workflow-contract.md` |
 | Contributor rules | `AGENTS.md`, `CLAUDE.md` |
 | E2E business-flow discovery and review gates | `.agents/skills/write-e2e-scenarios/SKILL.md`, its `references/flow-discovery.md`, matching reviewed `docs/prd/` PRD and scoped `.feature` files |
 | Sub-module PRD authoring and product context | `.agents/skills/write-prd/SKILL.md`, `docs/prd/` |
-| Scenario IDs, tags, data safety and reusable contracts | `.agents/skills/write-e2e-scenarios/references/e2e-conventions.md`, `references/data-safety.md`, `e2e/tests/bdd/features/_components/` |
+| Scenario IDs, tags, data safety and reusable contracts | `.agents/skills/write-e2e-scenarios/references/e2e-conventions.md`, `.agents/skills/write-e2e-scenarios/references/data-safety.md`, `e2e/tests/bdd/features/_components/` |
 | Submodule ownership, child feature groups, integration journeys and file splits | `docs/automation/test-organization.md` |
 | Reviewed step definitions, page objects, fixtures and mocks | `.agents/skills/write-e2e-code/SKILL.md` and its relevant references |
 | Browser inspection and authenticated sessions | `.agents/skills/playwright-cli/SKILL.md` and its relevant references |
@@ -21,7 +22,7 @@ Paths are relative to the repository root. Follow callers and imports when the r
 | --- | --- |
 | Explorer, scenario details, filters and catalog loading | `src/app/`, `src/features/scenarios/`, `server/modules/catalog/` |
 | Run selection, execution, progress and cancellation | `src/features/runs/`, `server/modules/runs/`, `e2e/playwright.bdd.config.ts` |
-| Evidence viewing and Drive upload | `src/features/evidence/`, `server/modules/evidence/`, `packages/internal/test-utils/src/export/evidence-cli.ts` |
+| Evidence viewing, R2 and Drive upload | `src/features/evidence/`, `server/modules/evidence/`, `packages/internal/test-utils/src/export/evidence-cli.ts` |
 | Agent sessions and draft review | `src/features/agent/`, `server/modules/agent/` |
 | Commands and build configuration | `package.json`, `e2e/package.json`, `vite.config.ts`, `pnpm-workspace.yaml` |
 

@@ -11,6 +11,8 @@ Use this for E2E execution, scenario maintenance, test infrastructure and Automa
 
 ## Run BDD scenarios
 
+These execution steps apply to a terminal host with the checkout runner. Q-Rex has no shell or draft execution tool: inspect the selected source safely and provide the [external verification handoff](workflow-contract.md#turns-batches-and-completion). Do not treat an explorer checkout run as verification of unmerged draft changes or express a shell command through browser tools.
+
 1. Read the selected .feature setup, steps, tags and page/component objects. Follow .agents/skills/write-e2e-scenarios/references/data-safety.md before scenarios that can mutate live data.
 2. Establish the target environment and credentials without printing secret values. A configured fallback URL does not prove that it is the intended environment.
 3. Check the working tree and report the command, selection and material side effects before running.
@@ -27,9 +29,9 @@ The runner skips @quarantine scenarios unless RUN_QUARANTINE=1 is set. Inspect t
 
 ## Maintain the Automation app
 
-Read README.md, docs/SPEC.md, package.json and vite.config.ts before changes to the app or runner. Trace UI, server, catalog, result and evidence consumers as applicable. The local preview is loopback-only and is not a hosted execution service.
+Read README.md, docs/automation/README.md, docs/SPEC.md, package.json and vite.config.ts before changes to the app or runner. Trace UI, server, catalog, result and evidence consumers as applicable. The local preview is loopback-only and is not a hosted execution service.
 
-Use the checks appropriate to the changed code: pnpm exec biome check src server vite.config.ts drizzle.config.ts, pnpm typecheck, and pnpm build. Use the browser skill when browser behavior needs inspection. Run BDD scenarios only when requested or needed for the change, after checking data safety.
+Use available checks appropriate to the changed code: pnpm exec biome check src server vite.config.ts drizzle.config.ts, pnpm typecheck, and pnpm build. Q-Rex reports these as pending when no execution evidence is supplied; naming a command is not running it. Use the browser skill when browser behavior needs inspection. Run BDD scenarios only when requested or needed for the change, after checking data safety.
 
 For reporter or catalog changes, trace authored feature metadata → PostgreSQL catalog sync, and Playwright execution → result JSON → evidence handling. For runner or CI changes, inspect working directories, environment names, selection, failure propagation and artifact paths. A workflow definition is not evidence of a successful run.
 

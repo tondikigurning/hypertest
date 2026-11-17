@@ -19,7 +19,7 @@ The exact structure for `docs/prd/<module>/<submodule>.md`. Copy the skeleton, f
 ---
 module: <module as named in the app navigation>
 submodule: <sub-module as named in the app navigation>
-code: <SHORT_CODE>            # uppercase, 2-5 letters, prefixes every requirement ID
+code: <SHORT_CODE>            # new allocations: exactly 3 uppercase letters; preserve existing codes/IDs
 status: draft                 # draft | reviewed
 sources:
   - type: interview           # interview | upload | exploration
@@ -31,13 +31,14 @@ last_explored:                # one entry per area actually re-checked
     date: YYYY-MM-DD
 reviewed_by:                  # empty until the review gate passes
 reviewed_at:                  # empty until the review gate passes
+review_method:                # empty until accepted; manual | automatic (Q-Rex configured mode only)
 ---
 ```
 
 Rules:
 
-- `code` reuses the prefix in existing scenario IDs when available. Otherwise propose a short code from the sub-module name and record it here so `write-e2e-scenarios` can reuse it.
-- `status` stays `draft` until the review gate in Step 6 passes. Only then set `reviewed`, `reviewed_by` and `reviewed_at`. A reviewed PRD may retain `needs-review` items: stated `spec` remains attributed to its source, while conflicting requirements, unvalidated observations and assumptions do not establish intended behavior.
+- `code` reuses an established prefix when available. For a new allocation, inspect existing feature/PRD codes and choose an unused three-letter uppercase code compatible with the scenario convention. Preserve legacy codes and IDs instead of renumbering them.
+- `status` stays `draft` until Step 6's gate accepts the proposed version. In Q-Rex the reviewed payload is proposed to the native write approval before saving; include `reviewed_by`, `reviewed_at` and `review_method` for the actual decision mode. Automatic acceptance is not human confirmation. A reviewed PRD may retain `needs-review` items: stated `spec` stays attributed, while conflicts and unvalidated observations/assumptions do not establish intent. Use the [shared review contract](../../ask-qa/references/workflow-contract.md#hosts-and-review-gates).
 - `sources` lists every origin of content: each uploaded file, the interview, and each exploration pass. Never include credentials or URLs that embed tokens.
 - `last_explored` is updated per area, never for the whole PRD at once, unless every area was re-checked.
 
@@ -199,11 +200,11 @@ A statement states one behavior. Split compound statements ("shows X and also al
 | Review | Meaning |
 | --- | --- |
 | `needs-review` | Not yet confirmed by the user, or changed, or in conflict |
-| `validated` | Confirmed by the user at the review gate |
+| `validated` | Accepted through the review gate; `review_method` distinguishes manual confirmation from configured automatic acceptance |
 
 - New and changed items start as `needs-review`; retain validation for unchanged items during refresh.
-- Only the review gate in Step 6 sets `validated`. Never set it while drafting, even when an observation matches a spec.
-- An `observed` item that was `validated` stays `observed`; validation records that the user accepted it as intended, not that the provenance changed.
+- Only Step 6's accepted review sets saved content to `validated`. A Q-Rex native write proposal may contain its intended validations, but it is not an accepted version until the write's review gate succeeds. Matching observations/specs alone do not validate a draft.
+- An `observed` item that was `validated` stays `observed`; validation records acceptance under the recorded review method, not a change to its source provenance. Automatic acceptance must not be described as a human establishing product intent.
 - When agreement between spec and observation exists, keep the item with its strongest source (`spec`) and cite the observation as evidence.
 
 ## ID rules
@@ -263,6 +264,7 @@ last_explored:
     date: 2026-11-09
 reviewed_by:
 reviewed_at:
+review_method:
 ---
 
 # Store List PRD

@@ -5,196 +5,90 @@ description: Use a reviewed sub-module PRD and playwright-cli exploration to dis
 
 # Write E2E Scenarios (Phase 0 + maintenance)
 
-**Entity options input:** Select `Converge` by default whenever an Entity options input is encountered, unless the user explicitly requests a different entity. This default does not override data-safety or approval requirements.
+Discover the requested business journeys, reconcile existing coverage and produce one reviewable Gherkin batch. This phase writes `.feature` files, not steps/POMs/mocks. Keep candidate flows, scope and review progress in conversation; the feature's `@flow:` tags are the catalog category source. Do not create `.flows.md` files.
 
-Maintains the scoped flow registry from confirmed flow discovery and the `@flow:` categories in `.feature` files, then produces reviewed scenarios. The feature file is the source of truth for catalog categories; the catalog groups scenarios by category and lets users collapse each group. Keep discovery notes and unrepresented candidate flows in the conversation and review output. Do not create a separate `.flows.md` registry file. Step definitions and page objects come next, in `write-e2e-code`, and only after scenario approval.
-
-Conventions (IDs, flow tags, tag order, tag policy) are in [references/e2e-conventions.md](references/e2e-conventions.md). Data-safety rules are in [references/data-safety.md](references/data-safety.md). Browser commands are in [references/playwright-cli-exploration.md](references/playwright-cli-exploration.md).
-
-For discovery in every mode, read [references/flow-discovery.md](references/flow-discovery.md). It defines how to explore the scoped UI, reconcile the PRD and existing tests, record unknowns and revisit discoveries across batches.
-
-**Data safety:** Use E2E-owned records for mutations; seed data and shared settings are read-only by default. Follow search → create → skip. If the required E2E data cannot be found or provided within scope, explain the limitation and ask permission to use non-E2E data for that specific scenario under [data-safety.md](references/data-safety.md). Record approval before mutation; restoration alone does not grant permission. Without approval, skip the affected mutation.
+Read the [shared workflow contract](../ask-qa/references/workflow-contract.md) for scope reuse, host-specific approvals, states and batch boundaries. Read [flow discovery](references/flow-discovery.md) in every mode, [E2E conventions](references/e2e-conventions.md) before assigning IDs/tags, and [data safety](references/data-safety.md) plus [browser capabilities](references/playwright-cli-exploration.md) before exploration.
 
 ## Step 0 — Interview for scope (required)
 
-Resolve scope and context from the request, prior answers, reviewed PRD and project evidence. Ask only for decisions that materially affect the work and cannot be established or reasonably assumed. Reuse answers across skill handoffs; report assumptions and unresolved gaps. An observation or code alone does not establish product intent or permission.
+Resolve module/submodule and consequential context gaps using the shared contract, prior answers, supplied documents and existing artifacts. If the parent is unclear, investigate PRDs, features and navigation before asking one combined scope question. Derive routes and file names; do not ask the user to supply discoverable paths. Default to a full pass; use smoke-only when requested or established by the user.
 
-For questions across these E2E skills, follow the active harness's interaction rules. When choices help, offer meaningful alternatives, explain any recommendation and allow a free-text answer. Ask focused questions and avoid repeating answers. Continue independent work while a response is pending; wait for the answer before dependent work. A preselected option, silence or delegation is not consent.
+Before discovery in **any mode**, read the owning submodule's single `docs/prd/<module>/<submodule>.md`. In Q-Rex use file tools with that virtual database identifier. `status: reviewed` and relevant coverage are mandatory, including for child groups. If absent, draft or insufficient, apply [write-prd](../write-prd/SKILL.md) to that same parent and stop at its review gate. Other submodules' PRDs provide supporting context only. Record the PRD path, status, relevant requirement IDs and gaps for flow review.
 
-Keep the PRD review, flow-list confirmation, scenario review and scoped live-data approval distinct. Reuse an explicit approval only when it covers the current artifact, scope and session under the applicable gate. Prepare the relevant artifact or safety details before requesting approval. Never infer approval from a general instruction to continue.
+Use validated items according to their recorded review method and unvalidated `spec` as attributed requirements. Unvalidated observations, assumptions and unresolved conflicts do not establish intent. Reuse the shared context checklist; ask only consequential unanswered decisions. Include supported in-scope CRUD happy paths and other main business functions when discussing release priorities. Recommend their happy paths as smoke; do not infer “no smoke” from undocumented P0 priorities. Reuse authorized data scope and inspect owned-data prerequisites; a missing ticket or inaccessible branch remains an explicit gap.
 
-Resolve these scope decisions from the available evidence; ask when a material ambiguity remains:
+## Step 1 — Discover and choose an approach
 
-1. **Module and sub-module**: resolve both together from the user's input, prior answers, PRD index, existing features and accessible navigation. A sub-module is required when the module has sub-modules. If both are clear, state the resolved scope and do not ask again. If either remains ambiguous, ask one combined question for the missing scope, offering evidenced choices where possible.
-2. **Requested scope or constraints**: infer the approach from discovery and existing artifacts; ask only when an unresolved decision materially affects the work.
+1. Resolve ownership and target paths using [test organization](../../../docs/automation/test-organization.md). Read the submodule's flat feature and all descendant features; inventory IDs and `@flow:` tags, including known retired identities. File boundaries do not create new namespaces.
+2. Rebuild the scoped conversation registry from current features and prior confirmed discovery. Keep unrepresented candidates and limitations visible; existing tags alone do not prove complete journeys.
+3. Read PRD candidates, discrepancies and unverified areas. Read every current `features/_components/` master contract and decide which applies. Inspect scoped steps/POMs so reviewed Gherkin can reuse existing contracts.
+4. Explore accessible scoped UI before confirming flows: navigation, tabs, menus, dialogs and conditional actions. Reconcile user goals, PRD requirements and UI observations with existing scenarios by outcomes and consequential branches. Record inaccessible roles, data, integrations, unsafe mutations and other gaps with evidence and reasons.
+5. Choose the approach from complexity, breadth, dependencies, roles/data and reviewability; explain the evidence. Flow count is informational, never a threshold. Reassess as exploration expands.
 
-Do **not** ask for these. Derive them, and state what you derived:
+| Mode | Deliverable |
+| --- | --- |
+| A — Registry only | Reconcile/confirm inventory and report covered, missing, stale and unresolved journeys; no Gherkin edits |
+| B — Author confirmed flows | Explore one coherent missing/approved-to-extend batch, write scenarios and stop for review |
+| C — Single pass | Discover/reconcile/confirm, explore and write the scoped scenarios for review together |
+| D — Review existing flows | Re-explore affected journeys and review/extend existing scenarios, preserving IDs |
 
-- **Routes**: discover through the app navigation and browser, using the PRD and existing E2E artifacts as leads. Ask only when the target remains ambiguous.
-- **Environment configuration**: use the project's configured base URL and credentials without printing them. If configuration is missing, explain how to configure it locally; never ask for secrets in chat.
-- **Smoke-only**: default is the full pass. Ask only if the user's wording implies a quick or critical-path-only pass.
+About 15 scenarios is a planning guide, not a cap. Group by meaningful journeys/outcomes; keep one flow ID when a flow spans files or batches, and record partial scope. Smoke-only writes supported CRUD and other release-gating happy paths; list remaining journeys as deferred. Implement and verify a reviewed batch before the next batch starts under the shared contract.
 
-If only a sub-module is named, resolve its parent using the PRD, existing feature files and app navigation; ask only if the scope remains ambiguous.
-
-### Choose the working approach
-
-First satisfy the mandatory matching reviewed PRD prerequisite in Step 0b. PRD creation and review may use browser exploration before this scenario workflow resumes.
-
-Use the reviewed PRD, existing E2E artifacts and live `playwright-cli` exploration for every scope. Explore accessible UI for candidate journeys before flow-list confirmation. Observe entry points and possible outcomes; follow journeys further where access, data and safety allow. Distinguish PRD requirements, UI observations and blocked branches. Apply data-safety rules from the start.
-
-Choose the approach based on journey complexity, breadth of the PRD and UI, roles, data and dependencies, estimated scenario volume, reviewability and whether work must span sessions. Flow count is informational only and never a threshold. Explain the choice and its evidence. Reassess as discovery progresses: when the scope is too large for one review, split it into coherent batches and keep the exact scope, evidence and unresolved gaps in the flow registry notes in the conversation and review output. The registry is a workflow inventory, not a separate file; existing categories are represented by `@flow:` tags in `.feature` files.
-
-- **Mode A — Registry only:** reconcile discovered journeys with existing scenarios, confirm the flow inventory, and report covered, missing, stale and unresolved areas. Do not write Gherkin in this mode.
-- **Mode B — Author confirmed flows:** after flow-list confirmation, choose a coherent batch of missing or approved-to-extend flows, explore it in depth, write scenarios and stop for review. Implement and verify the approved batch before starting the next.
-- **Mode C — Single pass:** reconcile and confirm the flow list, explore journeys in depth and write the scenarios for review together. Compare existing scenarios with discovered behavior and preserve their IDs.
-- **Mode D — Review existing flows:** re-explore affected journeys, compare existing scenarios with business outcomes, and review or extend scenarios while preserving IDs. Report partial coverage and unresolved branches.
-
-Modes may be split into batches when needed. Use the confirmed inventory and exact approved scenario IDs to identify each batch. Keep flow categories and IDs in the `.feature` file; keep unrepresented discovery notes and review progress in the conversation. Never create or update a separate `.flows.md` file.
-
-Track each flow's workflow state in the conversation registry so the scenario and implementation gates remain explicit. These are workflow states, not catalog badges or `.feature` tags:
-
-| State | Meaning | Next action |
-| ----- | ------- | ----------- |
-| `pending` | Confirmed flow with no authored scenario yet | Mode B |
-| `written` | New or changed scenarios are awaiting review | Stop for the scenario review gate |
-| `approved` | The user explicitly approved the current scenario changes | Phase 1 may implement them |
-| `implemented` | Steps and bindings exist and collection/type validation succeeded | Verify in the intended environment |
-| `verified` | All required scenarios in the reviewed scope passed in the intended environment | Report scope and remaining gaps |
-| `fixme` | The reviewed scope is blocked by a real product defect, with `@fixme @ref:<ticket>` on affected scenarios | Re-verify when the defect is fixed |
-| `legacy` | A scenario already existed before this registry review | Mode D to assess coverage |
-| `obsolete` | The journey no longer exists | Retire the scenario and never reuse its ID |
-
-Keep state and evidence per reviewed scenario scope in the conversation, not as a separate per-flow file. A flow split across batches retains one `@flow:` ID; never infer that every branch is implemented or verified from one batch's state. `written` is not approval, `approved` is not implementation, and a passing subset does not make an incomplete scope `verified`.
-
-Group related journeys by complexity and reviewability; about 15 scenarios is a planning guide, not a cap. A complex flow may be a batch alone and several simple flows may be grouped. Do not split a flow merely to hit the guide; if needed, partition by meaningful journeys or outcomes while retaining the same `@flow:` category and recording partial scope in the review summary.
-
-Modifier: `smoke-only` restricts output to `@smoke` scenarios, including the supported CRUD baseline and other release-gating paths. Non-smoke journeys are listed as "for a later pass", not written.
-
-When the user names an existing flow, find its `@flow:` category in the feature file and compare its scenarios with discovered behavior. Review or extend the existing scenarios while preserving IDs. A pass interrupted between turns resumes from the feature file, conversation registry notes and review output; repeat only the review gate invalidated by a material change.
-
-For review or extension of existing scenarios, compare their observed outcomes with requirements and meaningful alternate paths. Preserve IDs and report any scoped step/POM files with test-data values that violate [data-safety.md](references/data-safety.md#test-data-values) for Phase 1.
-
-## Step 0b — Context interview (required)
-
-In Q-Rex, PRD paths identify database documents. Use the agent file tools to read them; PRD content is not part of the Git diff.
-
-Scope tells the agent _where_ to look. Product context tells it _what matters_. Use the topics below as a checklist for discovery. Consult the PRD, existing scenarios and user context first; ask only consequential unresolved questions. Record unknowns and assumptions without presenting them as confirmed requirements. Explicit review and data-safety gates still apply.
-
-Before scenario discovery in any mode, resolve the owning product submodule and read its single `docs/prd/<module>/<submodule>.md`. Every child group and feature file uses this same PRD. A `status: reviewed` PRD covering the requested scope is mandatory. If it is absent, draft, or does not cover the child scope, apply [write-prd](../write-prd/SKILL.md) to create, review or refresh the parent document; stop at its review gate and resume this workflow only after the applicable PRD review is explicitly approved. Other submodule PRDs can provide supporting context but do not replace the owning PRD. If ownership is ambiguous, resolve it first. Reuse answered context. Treat validated items as confirmed product context and unvalidated `spec` items as stated requirements; keep unvalidated observations and assumptions visibly unconfirmed. Do not use unresolved conflicts or assumptions as intended behavior. Record the PRD path, status, relevant item IDs and gaps in the flow-list review. PRD approval does not approve the flow list or scenarios.
-
-1. **Purpose and requirements:** what this sub-module does for the business, and where the spec lives (PRD, Jira keys such as `HYPCRE-123`, or a document path). The agent reads the spec before browsing.
-2. **Business flows:** identify the sub-module's main functions and their release-gating (`@smoke`) happy paths. At minimum, include each supported, in-scope create, read, update and delete happy path; also identify other main business functions from requirements, discovery and context, and recommend their happy paths as smoke. CRUD is a minimum, not the complete smoke list. Do not recommend no smoke merely because P0 is undocumented. Ask only about unresolved priorities or explicit exceptions, and reuse the user's stated decisions.
-3. **Expected rules:** validation rules, duplicate rules, and the exact success and error messages the UI must show.
-4. **Access:** which roles can open this page and which must be denied. Use the test account in `e2e/.env.local` unless told otherwise.
-5. **Data and mutations — required for any mutation flow:** which records must exist first, and whether the agent may create and delete `E2E`-prefixed records in this environment. Use E2E-owned data. When unavailable, investigate upstream provisioning; explain any dependency and obtain explicit scoped approval before touching seed data, recording it in the `.feature` file. Without approval, skip (see [references/data-safety.md](references/data-safety.md)).
-6. **Known issues and scope:** bugs or expected-broken behavior with ticket IDs (these become `@fixme @ref:<JIRA-ID>`), and flows to leave out of this pass.
-
-Rules:
-
-- Never re-ask a question the user has already answered, in this message or earlier in the conversation. Reuse the answer. Ask only for what is still missing.
-- If the user answers "skip", "none", or "you decide", continue and record every assumption in the final summary.
-- Answers guide the work. If an answer contradicts the PRD or observed UI, record the discrepancy and resolve the intended behavior with the user.
-
-## Step 1 — PRD and browser discovery
-
-1. Resolve the owning submodule and read its flat feature and all descendant `.feature` files that exist, following [test organization](../../../docs/automation/test-organization.md). List existing IDs and `@flow:` categories across those files before choosing the target files for this batch. These tags are the source of truth for catalog flow categories.
-2. Rebuild the scoped flow registry from the confirmed flow list in the current conversation and existing feature scenarios. Track candidate flows that do not yet have scenarios, review scope and unresolved discovery gaps in the conversation; do not create a separate registry file.
-3. Read the reviewed PRD's requirements, candidate flows, discrepancies and unverified areas. Use them to guide browser exploration, following [references/flow-discovery.md](references/flow-discovery.md). Include in-page tabs, menus, dialogs, conditional actions and state-dependent journeys.
-4. Read **every** file in `e2e/tests/bdd/features/_components/`. That folder is an open-ended inventory of reusable contracts (pipeline, filter, filter-search, sort, view-detail, and whatever has been added since). Decide which ones apply to this scope before you browse.
-5. Check the existing step and POM files for the module, so you know which steps already exist.
-6. Use `playwright-cli` to explore accessible scoped UI for possible journeys before flow-list review, following Step 2 and the discovery reference. Reconcile PRD candidates, UI observations and existing scenarios. Record observed entry points, possible outcomes, inaccessible or unverified branches and reasons. Report the count for information only; choose and explain the working approach using the criteria above.
-
-For broad work, explore in manageable chunks and keep the exact confirmed scope and remaining discovery gaps in the conversation. If the browser or environment is unavailable, preserve the draft inventory and exact blocker; do not present PRD-only work as complete discovery or proceed to scenario authoring. Resume browser discovery when available.
+If live exploration is unavailable, retain a draft inventory and the exact blocker. Do not call PRD-only work complete discovery or proceed to authoring. Resume from feature contents, conversation scope and review output; repeat only a gate invalidated by changed artifacts or scope.
 
 ## Step 1b — Confirm the flow list (required for every authoring scope)
 
-After defining the flows in Step 1, present the discovered in-scope flow list with a short description of each, the total count, explicitly excluded flows and unresolved discovery gaps. Do not claim the list is exhaustive when access, PRD coverage or environment limitations prevent verification. For existing features, include their current `@flow:` categories and any proposed additions, changes or removals.
+Present the discovered flows with IDs, short goals/outcomes, exact feature files, total count, exclusions, relevant PRD IDs and unresolved gaps. For existing features include retained categories and proposed additions/changes/removals. Do not claim completeness beyond available evidence.
 
-Ask the user explicitly: "Are these flows exactly right for this scope, with none missing and none extra?" Offer **Yes** and **No**, with optional explanation or requested changes, with a short explanation of what is being approved. Use an interactive choice tool when available and permitted; otherwise show the numbered choices. Stop and wait for an explicit confirmation. Silence, a general instruction to proceed, or approval of a previous scope or batch is not confirmation of this list. If the user requests changes, revise the list and ask again. Discovery browsing happens before this gate. Do not write or update scenarios or proceed to detailed batch work until the user confirms the current list.
+Use the shared contract's **flow confirmation** procedure: Q-Rex calls `confirm_flows` for each affected file with its owning reviewed PRD; terminal agents explicitly ask whether the list has missing or extra flows and wait for confirmation. A chat answer is not a replacement for the Q-Rex tool. Confirmation approves only that described inventory, not scenarios or live mutations. Before detailed batch work or authoring, obtain the applicable decision. Reconfirm affected work if later discovery materially changes the inventory; preserve IDs.
 
-If exploration later reveals a missing, extra or materially changed flow, pause and present the revised flow list for explicit confirmation before continuing with the affected work. Preserve existing flow IDs and the separate scenario review gate in Step 6. Flow-list confirmation does not approve scenarios or authorize Phase 1.
+## Step 2 — Explore selected journeys in depth
 
-## Step 2 — Explore the live app (all approaches)
+Use the same [host-specific browser loop](references/playwright-cli-exploration.md) for initial discovery and detailed exploration. Trace each selected journey from entry to observable business outcome and inspect meaningful alternate paths, within data-safety scope. Use current snapshot refs and verified locators; inspect available network evidence before assuming a mock contract. Record what the tools cannot establish. Missing access/data is not evidence that a journey does not exist.
 
-Use this loop for initial discovery before flow-list confirmation and again for detailed scenario exploration after confirmation. Initial discovery identifies possible journeys; detailed exploration checks selected journeys and outcomes. Do not author scenarios before the confirmation gate.
+If the product contradicts intended requirements, preserve intent and record the discrepancy/defect. If a newly discovered child requirement is absent from the parent PRD, refresh/review that parent through `write-prd` before affected authoring.
 
-Use `playwright-cli` when available. The command reference and availability fallback are in [references/playwright-cli-exploration.md](references/playwright-cli-exploration.md).
+## Step 3 — Reconcile and author business outcomes
 
-Core loop:
+Classify each journey by evidence:
 
-1. Open one named `playwright-cli` session for the pass, then log in using the configured credentials. Use a persistent profile only when the task requires it. Keep the session for the pass.
-2. Navigate to each route in scope. Snapshot, then grep the saved snapshot file for the section you need. Do not read the full tree inline.
-3. Drive interactions with `eNN` refs from the latest snapshot.
-4. Use `requests` and `request <n>` to confirm the real API shape and status before you assume a mock contract.
-5. Take a screenshot only as a visual sanity check. Never use it as the locator source.
-6. Pull locators (roles, text, `data-testid`) from the snapshot. Do not invent them.
+| Status | Action |
+| --- | --- |
+| Covered | Existing scenarios cover the relevant outcomes/branches; record any unverified scope separately |
+| Partially covered | Extend missing consequential journeys while preserving IDs |
+| Missing | Add the journey with new permanent scenario IDs and a stable flow category |
+| Stale | Update mismatched scenarios in place, preserving scenario/flow IDs |
+| Obsolete | Retire the journey and permanently reserve its IDs |
+| Reusable match | Reuse the master step text and link its `@ref:TEN_COM_*` contract |
 
-For each batch, check the relevant states, conditional entry points and outcomes in the discovery reference. Record inaccessible or unverified branches with their reason; absence from the current account or data is not evidence that a flow does not exist. Reconcile new discoveries with the confirmed flow list.
+- Group scenarios by meaningful business goals and lifecycle outcomes. Include consequential changes to outcome, permissions, decisions or integration boundaries; do not enumerate every field, button, endpoint or visual variation as E2E.
+- Tag supported in-scope CRUD happy paths and other main release-gating business success journeys `@smoke`, honoring explicit exclusions. Use `@regression` for consequential alternatives. Do not invent unsupported CRUD operations or tag every validation/error as smoke. Report blocked baseline operations.
+- For consequential API error/delay/auth-failure cases, use reviewed `@mock` contracts and applicable shared master steps/references. Never put `@mock` on `@smoke`; report mocked coverage separately from real backend behavior. See [mock policy](../write-e2e-code/references/msw-mocking.md) when deciding a mock-dependent scenario.
+- A mutation must assert its data-changing outcome on the identified record, such as an appearing/disappearing row or changed detail/status. A toast may supplement that result; when persistence cannot be observed, explicitly limit the promised outcome rather than claiming it was verified. Preserve existing approved intent until its own review changes it.
+- Dynamic “first available” values are suitable for reference choices, not unverified mutation targets. Use exact owned or explicitly approved identities under data-safety rules, including pipeline/membership changes.
+- Follow [test-data values](references/data-safety.md#test-data-values), including same-minute collision handling. Phase 0 reports scoped step/POM values needing alignment; only Phase 1 edits implementation.
+- Use `Scenario Outline` with `Examples` only for reusable component contracts or their `@ref:TEN_COM_*` mirrors. Use plain scenarios for data-dependent business journeys. Note unavailable variants instead of inventing data.
 
-If the UI contradicts the spec, PRD or ticket (a real product bug, not an environment quirk), do not write the scenario to match the broken behavior. See Step 4.
+## Step 4 — Record product defects
 
-## Step 3 — Decide per journey
+Describe expected versus actual behavior with the requirement source. Use `@fixme @ref:<real-ticket>` for a confirmed product defect, not the broken behavior as an assertion. If the ticket is missing, ask for it and leave the affected scenario as a documented candidate until it can carry a valid reference; continue independent work. Never invent a ticket or use quarantine as a substitute.
 
-For every journey found, classify it:
+Capture safe trace/screenshot evidence only when the host exposes it. In Q-Rex, use a dated sanitized observation with available snapshot/network context and state that no trace/image was captured. Record evidence limitations under [browser capabilities](references/playwright-cli-exploration.md). Quarantine remains for demonstrated test unreliability.
 
-| Status                | Meaning                                                                                                    | Action                                                                   |
-| --------------------- | ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| **Covered**           | Existing scenarios were compared with the discovered behavior and cover the relevant journeys and variants | No change; record any unverified branches separately                     |
-| **Partially covered** | A flow has scenarios but discovered journeys or meaningful variants are missing                            | Preserve IDs and extend the existing scenarios                           |
-| **Missing**           | No `@flow` covers this journey                                                                             | Add a scenario with a new `@flow:` tag                                   |
-| **Stale**             | `@flow` exists but the title or steps no longer match                                                      | Update in place. Keep the `@ID` and `@flow` stable. Never rename a flow. |
-| **Obsolete**          | `@flow` exists for a route or journey that no longer exists                                                | Retire the scenario. Leave the ID unused forever.                        |
-| **Reusable match**    | The interaction matches a `_components/` contract                                                          | Add `@ref:TEN_COM_<CMP>_E2E_<NNN>`                                       |
+## Step 5 — Write the feature batch
 
-Authoring rules:
+Use `<module>/<submodule>.feature` for small scopes or files beneath `<module>/<submodule>/` for child groups, following test organization. All children share the parent PRD and scenario namespace. Preserve inherited tags, backgrounds, examples, safety notes, flow order and existing bindings when splitting files. Register implementation paths during Phase 1 only.
 
-- Group in-scope business journeys supported by evidence with meaningful alternate outcomes and lifecycle paths. Represent each journey with a stable `@flow:` tag in its scenarios. Keep E2E scenarios focused on business outcomes; do not equate every UI action or technical endpoint with a business flow.
-- Treat each supported, in-scope CRUD happy path as a minimum sub-module release-gating smoke baseline, not an exhaustive list. Identify and recommend happy paths for other main business functions of the sub-module as smoke too; use requirements, discovery and user context to assess them, and resolve genuinely unclear priorities in the interview. Apply `@smoke` to the resulting meaningful success scenarios, and use `@regression` for consequential non-smoke variants. Do not invent unsupported CRUD operations or tag every validation, error or exploratory UI check as smoke. Record unavailable or blocked operations and their reasons; existing review, real-backend and data-safety rules still apply. An explicit user exception takes precedence.
-- When a consequential business journey needs an API error, delay, or auth-failure scenario, add `@mock`. Reuse applicable `_components/` step text and add `@ref` to the component master. Never write duplicate mock Gherkin. `@mock` never goes on `@smoke`.
-- Mutations (create, edit, delete, add/remove member, activate/suspend) must assert the **data-changing outcome**: a success toast, a row that appears or disappears, a changed value. Asserting only that a dialog closed is not enough.
-- Use dynamic value selection ("first available role", "first available job title"). Do not hard-code environment data.
-- Test-data values follow the two rules in [references/data-safety.md](references/data-safety.md#test-data-values): a unique or findable test record reads `E2E <relevant words> <DDMMYYYYHHmm>` (`E2E profanity word 271020261108`), and a plain free-text field (description, comment, remarks, body) is a realistic sentence with no `E2E` flag and no stamp. This phase does not edit step/POM code: list any scoped files whose existing values break the rules in the summary, and Phase 1 aligns them.
-- `Scenario Outline` + `Examples` is for reusable component masters (`@ref:TEN_COM_*`) only. Use a plain `Scenario` for data-dependent journeys. If only one realistic variant exists, keep one `Scenario` and note the limitation.
-- Use E2E-owned records; seed mutations require explicit scoped approval recorded as described in [references/data-safety.md](references/data-safety.md), plus restoration and verification wherever possible.
-- Pipeline states and membership follow the same rule; restoration does not replace approval.
-
-## Step 4 — Product bugs found during exploration
-
-If the real behavior contradicts the spec, PRD or ticket:
-
-1. Do not write the scenario to match the broken behavior.
-2. Tag it `@fixme @ref:<JIRA-ID>`. If no ticket exists, tell the user to open one and ask for the ID. Do not invent one.
-3. Save a trace or screenshot as evidence (`playwright-cli tracing-start` / `tracing-stop`, or `screenshot`) and record the path.
-4. Note expected vs. actual behavior in the summary.
-
-`@fixme` is for real product defects. Use `quarantine` only for demonstrated E2E test unreliability. Never use the tags interchangeably.
-
-## Step 5 — Write the `.feature` file
-
-Use `e2e/tests/bdd/features/<module>/<submodule>.feature` for a small scope, or child files under
-`e2e/tests/bdd/features/<module>/<submodule>/` when the submodule needs several files or test groups.
-Follow [test organization](../../../docs/automation/test-organization.md) for integration ownership and splitting.
-Keep the matching reviewed PRD at `docs/prd/<module>/<submodule>.md` for every child; refresh its reviewed scope
-before authoring an integration it does not cover. Include exact target feature paths in flow confirmation and batch review.
-
-Follow the header and tag order in [references/e2e-conventions.md](references/e2e-conventions.md). Scenario IDs are `TEN_<CODE>_<FLG>_E2E_NNN`; allocate numbers across the owning submodule, including all child files and known retired IDs. Each distinct flow abbreviation has its own sequence; a file boundary never restarts it.
+Follow the conventions' header and tag order. Allocate `TEN_<CODE>_<FLG>_E2E_NNN` across all submodule files and known retired IDs, with a sequence per flow abbreviation; never restart due to a new file. Record a requirement-to-scenario mapping in the review summary, not a separate registry file.
 
 ## Step 6 — Output and stop
 
-Output a summary table:
+Report journey status/action, PRD requirement IDs → exact feature/scenario IDs → promised outcome, flow categories added/retained/extended/retired, applicable master references, masters judged inapplicable, locator gaps, defects and evidence. Keep unrepresented candidates and unverified branches visible. Update only affected registry scopes to `written`, including scenarios carrying `@fixme`; preserve unrelated states. Approval applies to the current snapshot and exact batch only.
 
-| Journey | Status | Action taken |
-| ------- | ------ | ------------ |
-
-Also report the flow-registry delta: categories added, retained, extended or retired, linked to their scenario IDs. The `.feature` tags record categories that have scenarios; unrepresented candidates, discovery evidence and unresolved gaps remain in the conversation and review output. Also report reusable components linked via `@ref`, components judged not applicable, locator gaps (missing role labels or `data-testid`), and any new product bugs with their `@ref` and evidence path. Do not represent a PRD-only or blocked inventory as fully explored.
-
-Before stopping, update only the affected flow scopes in the conversation registry to `written`, including changes containing `@fixme`. Record existing and new scenario IDs and the IDs changed in this pass. Preserve all other states. After explicit scenario approval, mark the reviewed scope `approved` before Phase 1; approval does not change unrelated batches.
-
-Then **stop**. Do not write step definitions or POM code. Ask the user to review the batch, or the `.feature` file if this is a single-pass run. Offer **Yes, approve** and **No**, with optional explanation or requested changes, with a short explanation of what is being approved. Use an interactive choice tool when available and permitted; otherwise show the numbered choices. Wait for an explicit response; on No, revise and request review again. Phase 1 (`write-e2e-code`) starts only after approval for that batch, and must not change scenario intent or flow IDs.
-
-For a batch, end with the next step: "Batch N is written. Approve it, or tell me what to change. After approval, run `write-e2e-code` for these scenarios before starting the next batch." Do not start the next batch in the same session.
+Use the shared contract's **scenario approval** procedure. In Q-Rex, call `show_diff`, direct the user to Changes > Approve scenarios and end the turn; do not ask for a competing chat Yes. In terminal hosts, present the concrete batch and request explicit approval. In manual mode, implementation resumes on a later user turn after that gate. Explain the next action without requiring another slash command. If Q-Rex's automatic mode is active, follow its configured gate handling and label the decision automatic. This phase never writes implementation.
 
 ## Related
 
-- Write the step definitions, POM and MSW mocks for the approved scenarios: `write-e2e-code`
-- Not sure which workflow applies: `ask-qa`
+- Product context: [write-prd](../write-prd/SKILL.md)
+- Approved implementation: [write-e2e-code](../write-e2e-code/SKILL.md)
+- General testing/app work: [ask-qa](../ask-qa/SKILL.md)

@@ -57,6 +57,10 @@ The default workflow uses the review gates below. When an approval is pending, *
    verification; arbitrary browser JavaScript is unavailable.
 6. Agent workspace scenarios cannot be executed in this preview. The explorer runner runs the current checkout only and does not verify unmerged agent changes.
 
+When Q-Rex finishes code without collection/type/execution tools, it reports an **implementation draft; checks pending** and retains the registry's `approved` state. This is a completed drafting handoff, not a verified batch. The handoff identifies branch/base, current source revision and full Changes snapshot/patch, exact files and scenario IDs, locator gaps and pending commands. External verification must identify that same source and complete selection, actual commands/results and intended environment before advancing `implemented` or `verified`. Changed source invalidates affected evidence. The next batch waits for the previous batch's required verification; another turn alone does not satisfy it. A later user turn may resume in the same persisted draft when its gates are complete.
+
+The shared skill contract is [workflow-contract.md](../../.agents/skills/ask-qa/references/workflow-contract.md). PRD versions record `review_method: manual` or `automatic`; automatic acceptance is not human product confirmation. New documents use the appropriate reviewer label, while older review metadata remains historical. Questions resolve consequential item choices; the native PRD write review handles approval of the complete proposed version, without a competing blanket chat approval.
+
 Live browser interactions request separate data-safety approval. Seed/shared data remains read-only
 unless a specific browser operation receives scoped approval under the skill's data-safety rules.
 File/command permissions, flow confirmation,
@@ -69,6 +73,10 @@ to the skill document but tool paths are relative to the worktree root. The mode
 80-step turn; reaching that limit saves context and asks for a follow-up without claiming completion.
 There is no standalone draft TypeScript-check tool; Q-Rex must report that check as unperformed
 unless it has separate execution evidence.
+
+The managed browser exposes snapshots/find, locator generation, selected interactions, navigation, request listings and console. Terminal references may show full request inspection, DOM JavaScript, screenshots/traces, storage or mocking commands; those are not Q-Rex actions. Record dated sanitized observations and explicitly unavailable evidence instead of inventing an artifact or request schema.
+
+Skill edits in the explorer checkout are not injected into existing committed-base worktrees. To use revised skills in Q-Rex, include them in the draft's selected committed base through the normal reviewed repository workflow, or explicitly review draft skill changes. Restart the API to load runtime-adapter changes after active agent work finishes. Do not reset unfinished drafts to propagate instructions.
 
 ## Verification
 
@@ -86,6 +94,8 @@ pnpm build
 The agent tests drive the real AI SDK streaming/tool loop with a deterministic local provider and
 temporary Git repositories. They cover PRD review, skill handoffs, flow confirmation, scenario
 approval, workspace selection, redaction, and the absence of workspace scenario execution.
+
+For skill changes, the [decision exercise protocol and recorded comparison](agent-skills-evaluation.md) use the actual skill documents with independent agents and synthetic requests. These exercises supplement runtime enforcement tests; they do not establish production-provider or live-tenant reliability.
 
 The scenario and run-selection tests cover nested menu grouping, parent PRD identity, source-path filtering,
 and server rejection of stale, missing or ambiguous group selections. They use local fixtures and do not run tenant BDD.
