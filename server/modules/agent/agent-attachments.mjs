@@ -99,7 +99,6 @@ export async function readUploadedAttachment(item) {
       for (let page = 1; page <= pdf.numPages; page++) {
         const text = await (await pdf.getPage(page)).getTextContent();
         pages.push(`Page ${page}:\n${text.items.map((part) => part.str || "").join(" ")}`);
-        if (Buffer.byteLength(pages.join("\n")) > 64000) throw new Error("too much text");
       }
       content = pages.join("\n\n");
       await pdf.destroy();
@@ -122,8 +121,7 @@ export async function readUploadedAttachment(item) {
               )
               .join("\t")}`,
           );
-          if (rows.length > 10000 || Buffer.byteLength(rows.join("\n")) > 64000)
-            throw new Error("too much spreadsheet data");
+          if (rows.length > 10000) throw new Error("too much spreadsheet data");
         });
       });
       content = rows.join("\n");
@@ -135,7 +133,5 @@ export async function readUploadedAttachment(item) {
   }
   if (!content?.trim())
     throw new Error("A context file contains no readable text. Scanned PDFs need OCR before attaching.");
-  if (Buffer.byteLength(content) > 64000)
-    throw new Error("A context file has too much text. Keep combined context under 64 KB.");
   return { content };
 }

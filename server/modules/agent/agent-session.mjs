@@ -1841,7 +1841,6 @@ export function createSession({
     )
       throw new Error("Attached files exceed the 10 MB total limit.");
     const resolved = [];
-    let totalBytes = 0;
     for (const item of attachments) {
       let content = "";
       let source = "";
@@ -1956,8 +1955,6 @@ export function createSession({
         source = "User-provided context";
         content = item.text.trim();
       }
-      totalBytes += Buffer.byteLength(content);
-      if (totalBytes > 64000) throw new Error("Attached context is too large. Keep the combined context under 64 KB.");
       resolved.push({ id: item.id, kind: item.kind, label, source, content, image });
     }
     return resolved;
