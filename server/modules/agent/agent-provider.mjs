@@ -7,6 +7,7 @@ import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { generateText, stepCountIs, tool } from "ai";
 import { Agent } from "undici";
 import { z } from "zod";
+import { agentEffortProfile } from "./agent-effort.mjs";
 
 export const agentProviders = [
   {
@@ -161,6 +162,24 @@ export function isCompatibleAgentProvider(value) {
   return agentProviders.some((provider) => provider.id === value && provider.compatibleEndpoint === true);
 }
 
+export function agentReasoningSettings(provider, effort, model, profile) {
+  if (effort === undefined) return {};
+  if (profile?.provider !== provider || profile.model !== model || !profile.levels?.includes(effort))
+    throw new Error("This reasoning effort is not available for the selected provider and model.");
+  if (provider === "openai") return { providerOptions: { openai: { reasoningEffort: effort } } };
+  if (provider === "anthropic")
+    return {
+      providerOptions: {
+        anthropic: { effort, ...(profile.adaptiveThinking ? { thinking: { type: "adaptive" } } : {}) },
+      },
+    };
+  if (provider === "deepseek" && effort === "none")
+    return { providerOptions: { openaiCompatible: { thinking: { type: "disabled" } } } };
+  if (isCompatibleAgentProvider(provider))
+    return { providerOptions: { openaiCompatible: { reasoningEffort: effort } } };
+  throw new Error("Choose a supported provider.");
+}
+
 export function modelIsListed(provider, modelId) {
   if (!modelIdPattern.test(modelId || "")) return false;
   return isAgentProvider(provider);
@@ -236,7 +255,7 @@ export function createAgentLanguageModel({ provider, modelId, apiKey, baseUrl })
   return model;
 }
 
-export async function discoverCompatibleModels({ provider, apiKey, baseUrl }) {
+async function readCompatibleModels({ provider, apiKey, baseUrl }) {
   if (!isCompatibleAgentProvider(provider)) throw new Error("Model discovery is not available for this provider.");
   const { agent, safeFetch } = compatibleConnection({ apiKey, baseUrl });
   try {
@@ -264,14 +283,42 @@ export async function discoverCompatibleModels({ provider, apiKey, baseUrl }) {
     }
     const data = JSON.parse(Buffer.concat(chunks).toString("utf8"));
     if (!Array.isArray(data?.data)) throw new Error("The provider did not return a compatible model list.");
-    return [
-      ...new Set(
-        data.data.map((item) => item?.id).filter((id) => typeof id === "string" && modelIsListed(provider, id)),
-      ),
-    ].slice(0, 1000);
+    return data.data;
   } finally {
     await agent.close().catch(() => {});
   }
+}
+
+export async function discoverCompatibleModels(connection) {
+  const models = await readCompatibleModels(connection);
+  return [
+    ...new Set(
+      models.map((item) => item?.id).filter((id) => typeof id === "string" && modelIsListed(connection.provider, id)),
+    ),
+  ].slice(0, 1000);
+}
+
+export async function discoverAgentEffortProfile({ provider, modelId, apiKey, baseUrl }) {
+  if (!modelIsListed(provider, modelId)) throw new Error("Choose a supported provider and model.");
+  let metadata;
+  if (isCompatibleAgentProvider(provider)) {
+    const matches = (await readCompatibleModels({ provider, apiKey, baseUrl })).filter((item) => item?.id === modelId);
+    if (matches.length === 1) metadata = matches[0];
+  } else if (provider === "anthropic") {
+    metadata = await readProviderModels(`https://api.anthropic.com/v1/models/${encodeURIComponent(modelId)}`, {
+      "anthropic-version": "2026-10-21",
+      "x-api-key": apiKey,
+    });
+    if (metadata?.id !== modelId) metadata = undefined;
+  } else if (provider === "openai") {
+    metadata = await readProviderModels(`https://api.openai.com/v1/models/${encodeURIComponent(modelId)}`, {
+      authorization: `Bearer ${apiKey}`,
+    });
+    if (metadata?.id !== modelId) metadata = undefined;
+  }
+  // OpenAI and Google model APIs do not currently advertise effort enums.
+  // Do not infer them from model names, documentation tables, or SDK defaults.
+  return agentEffortProfile(provider, modelId, metadata);
 }
 
 async function readProviderModels(url, headers) {

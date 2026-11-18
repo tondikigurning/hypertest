@@ -19,6 +19,22 @@ Skill files and product/test sources are read from the selected draft's committe
 Preparing a workspace uses the locally cached target branch without contacting GitHub. Synchronizing a
 draft fetches the target branch from origin and may require Git authentication.
 
+The Q-Rex header lets you choose a model from the current provider and checks tool support before
+switching, just like Provider settings. Configure a different provider in Provider settings.
+The header offers reasoning effort only when the provider's model API explicitly returns supported
+levels for the selected model. There is no hardcoded model table or fallback list. Without that
+metadata (or if loading fails), the control is hidden and requests omit effort, using the provider's
+default. OpenAI and Google model APIs currently do not expose effort levels, so their controls are
+hidden even for reasoning models. Anthropic levels come from `capabilities.effort` in its model API.
+Compatible endpoints may advertise `reasoning_efforts` (strings) or `supported_reasoning_efforts`
+(strings or objects with `reasoning_effort`) on each `/models` entry. These are optional extensions,
+not guaranteed by the OpenAI-compatible contract; `supported_parameters` alone is insufficient.
+The server fetches metadata again before accepting an explicit effort and rejects stale model
+selections or unavailable levels. Anthropic uses `output_config.effort`, with adaptive thinking when
+advertised; compatible endpoints receive `reasoning_effort`. DeepSeek's `none` uses its thinking
+toggle instead. The tool-calling check does not verify effort support. The choice is scoped to the
+selected provider and model and is not saved across reloads.
+
 For tenant exploration, select the environment and enter `E2E_USERNAME` and `E2E_PASSWORD` in browser
 Variables. Chat sends these variables separately to the local API, including when starting from
 `ask-qa`; the runtime uses them for browser authentication and redacts their

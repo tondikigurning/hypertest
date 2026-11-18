@@ -8,6 +8,7 @@ import { resolveLocalPreviewIdentity } from "./agent-identity.mjs";
 import {
   agentProviders,
   createAgentLanguageModel,
+  discoverAgentEffortProfile,
   discoverAgentModels,
   modelIsListed,
   verifyToolCalling,
@@ -119,7 +120,7 @@ export function createAgentRouter({ resolveSession = sessionFor, resolveIdentity
   router.use(
     Router().use((req, res, next) => {
       if (req.method !== "POST" && req.method !== "PUT") return next();
-      if (Number(req.headers["content-length"]) > 12000000)
+      if (Number(req.headers["content-length"]) > 15000000)
         return res.status(413).json({ error: "Request body is too large." });
       const chunks = [];
       let bodyBytes = 0;
@@ -127,7 +128,7 @@ export function createAgentRouter({ resolveSession = sessionFor, resolveIdentity
       req.on("data", (chunk) => {
         if (tooLarge) return;
         bodyBytes += chunk.length;
-        if (bodyBytes > 12000000) {
+        if (bodyBytes > 15000000) {
           tooLarge = true;
           res.status(413).json({ error: "Request body is too large." });
           return;
@@ -307,6 +308,19 @@ export function createAgentRouter({ resolveSession = sessionFor, resolveIdentity
   router.get("/model", async (req, res) => {
     const snapshot = req.agentSession.snapshot();
     res.json({ provider: snapshot.provider, model: snapshot.model });
+  });
+  router.get("/effort-levels", async (req, res) => {
+    const { provider, model } = req.agentSession.snapshot();
+    res.set("Cache-Control", "no-store");
+    try {
+      if (!provider || !model) return res.json({ provider, model, levels: null });
+      const credential = await getProviderCredential(req.agentIdentity.userId, provider);
+      if (!credential) return res.json({ provider, model, levels: null });
+      const { levels } = await discoverAgentEffortProfile({ provider, modelId: model, ...credential });
+      return res.json({ provider, model, levels });
+    } catch {
+      return res.status(503).json({ error: "Could not load effort options from the provider." });
+    }
   });
   router.get("/models", async (req, res) => {
     try {
@@ -525,6 +539,8 @@ export function createAgentRouter({ resolveSession = sessionFor, resolveIdentity
         req.body?.skill,
         req.body?.environment ? resolveAgentEnvironment(req.body.environment) : undefined,
         resolveAgentVariables(req.body?.variables),
+        req.body?.effort,
+        req.body?.effortTarget,
       );
       touchLocalDraft(req.agentIdentity.userId, req.agentDraftId);
       res.status(202).json({ ...req.agentSession.snapshot(), draft: req.agentDraft });

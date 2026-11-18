@@ -2078,10 +2078,55 @@ body:has(dialog[open]) .agent-widget:not(:has(.agent-confirm-dialog[open])) {
   gap: 6px;
   white-space: nowrap;
 }
-.agent-header > .agent-model-fallback,
 .agent-header > .agent-draft-toolbar,
 .agent-header > .agent-header-actions {
   flex: 0 0 auto;
+}
+.agent-model-controls {
+  display: flex;
+  flex: 0 1 auto;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  max-width: 100%;
+}
+.agent-header-model {
+  min-width: 0;
+}
+.agent-model-controls .filter-select {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  min-width: 0;
+  max-width: 220px;
+  height: 30px;
+  padding: 0 8px;
+  border: 1px solid var(--agent-border);
+  border-radius: 7px;
+  background: #fafbfc;
+  color: #526078;
+  font: inherit;
+  font-size: 11px;
+}
+.agent-model-controls .filter-select > span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.agent-model-controls .filter-select:focus-visible {
+  outline: 2px solid #7054bf;
+  outline-offset: 2px;
+}
+.agent-model-controls .filter-select[data-disabled] {
+  opacity: 0.65;
+}
+.agent-header-model-error {
+  color: #a04d42;
+  font-size: 11px;
+}
+.agent-header-model-error button {
+  text-decoration: underline;
 }
 .agent-draft-toolbar label,
 .agent-draft-toolbar button {
@@ -2279,6 +2324,9 @@ body:has(dialog[open]) .agent-widget:not(:has(.agent-confirm-dialog[open])) {
   }
 }
 @container (max-width: 380px) {
+  .agent-header-model .filter-select {
+    max-width: 120px;
+  }
   .agent-model-fallback {
     max-width: 120px;
   }

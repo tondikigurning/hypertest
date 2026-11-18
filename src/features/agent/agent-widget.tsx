@@ -1,7 +1,7 @@
 ﻿import { Icon } from "@hyperscal/icons";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router";
-import { Modal, TextAreaInput, TextInput } from "../../components";
+import { Modal, SelectInput, TextAreaInput, TextInput } from "../../components";
 import { readVariables } from "../runs/run-variables";
 import { useActiveRun } from "../runs/use-active-run";
 import { useDraftRuns } from "../runs/use-draft-runs";
@@ -17,6 +17,7 @@ import {
   AgentContextResults,
   AgentContextSearch,
 } from "./components/agent-context-controls";
+import { AgentModelSelect } from "./components/agent-model-select";
 import {
   AgentAlert,
   AgentModelButton,
@@ -120,6 +121,23 @@ interface DraftFeature {
   scenarios: Array<{ id: string; title: string; line: number; steps: Array<string> }>;
 }
 const endpoint = "/api/agent";
+
+function effortOptions(levels: Array<string>) {
+  const labels: Record<string, string> = {
+    none: "No reasoning",
+    default: "Default effort",
+    low: "Low effort",
+    medium: "Medium effort",
+    high: "High effort",
+    max: "Max effort",
+    minimal: "Minimal effort",
+    xhigh: "Extra high effort",
+  };
+  return [
+    { value: "provider-default", label: "Provider default" },
+    ...levels.map((value) => ({ value, label: labels[value] || value })),
+  ];
+}
 
 function formatHistoryDate(value: string | undefined) {
   if (!value) return undefined;
@@ -264,6 +282,7 @@ export function AgentWidget({
   const widgetDrag = useWidgetDrag(!home);
   const [view, setView] = useState<"chat" | "changes" | "history" | "settings">("chat");
   const [message, setMessage] = useState("");
+  const [effortSelection, setEffortSelection] = useState({ provider: "", model: "", value: "" });
   const [waves, setWaves] = useState(0);
   const [selectedSkill, setSelectedSkill] = useState<string>();
   const [contexts, setContexts] = useState<Array<ContextAttachment>>(() => initialContexts(scenario, feature, group));
@@ -396,6 +415,41 @@ export function AgentWidget({
   }, [open, home]);
   const [session, setSession] = useState<Session>();
   const [activeDraftId, setDraftIdState] = useState(() => getActiveDraftId());
+  const [effortProfile, setEffortProfile] = useState<{
+    draftId: string;
+    provider?: string;
+    model?: string;
+    levels: Array<string> | null;
+  }>();
+  useEffect(() => {
+    if (!session?.provider || !session.model) return;
+    const controller = new AbortController();
+    setEffortProfile(undefined);
+    void agentFetch(`${endpoint}/effort-levels`, { signal: controller.signal, cache: "no-store" })
+      .then(async (response) => {
+        if (!response.ok) throw new Error("Could not load reasoning effort options.");
+        return (await response.json()) as { provider?: string; model?: string; levels: Array<string> | null };
+      })
+      .then((profile) => {
+        if (!controller.signal.aborted) setEffortProfile({ ...profile, draftId: activeDraftId });
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setEffortProfile(undefined);
+      });
+    return () => controller.abort();
+  }, [session?.provider, session?.model, activeDraftId]);
+  const effortLevels =
+    effortProfile?.draftId === activeDraftId &&
+    effortProfile?.provider === session?.provider &&
+    effortProfile?.model === session?.model
+      ? effortProfile?.levels
+      : undefined;
+  const effort =
+    effortSelection.provider === session?.provider &&
+    effortSelection.model === session?.model &&
+    effortLevels?.includes(effortSelection.value)
+      ? effortSelection.value
+      : "";
   const [drafts, setDrafts] = useState<Array<LocalDraft>>([]);
   const [draftsLoading, setDraftsLoading] = useState(false);
   const [draftError, setDraftError] = useState("");
@@ -427,6 +481,7 @@ export function AgentWidget({
   }, [message, open, home, view, session?.userRequest]);
   const [error, setError] = useState("");
   const [sending, setSending] = useState(false);
+  const [selectingModel, setSelectingModel] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [reviewing, setReviewing] = useState(false);
   const [reviewConfirmation, setReviewConfirmation] = useState<"reset" | "finalize">();
@@ -790,6 +845,7 @@ export function AgentWidget({
     if (
       !message.trim() ||
       sending ||
+      selectingModel ||
       readingFile ||
       reviewing ||
       !session ||
@@ -820,6 +876,8 @@ export function AgentWidget({
           contexts,
           environment,
           variables: readVariables(),
+          effort: effort || undefined,
+          effortTarget: effort ? { provider: session.provider, model: session.model } : undefined,
         }),
       });
       const result = (await response.json()) as Session & { error: string };
@@ -1179,29 +1237,31 @@ export function AgentWidget({
             }[mood];
   const sendBlockedReason = sending
     ? "Sending your message…"
-    : draftRunStarting || draftRun
-      ? "Wait for the draft scenario run and evidence capture to finish."
-      : draftsLoading && !selectedDraft
-        ? "Loading local drafts…"
-        : draftError && !selectedDraft
-          ? "Retry preparing the workspace before chatting."
-          : !selectedDraft
-            ? "Preparing your workspace?"
-            : selectedDraft.status === "archived"
-              ? "Workspace is unavailable."
-              : readingFile
-                ? "Reading the attached file…"
-                : reviewing
-                  ? "Loading workspace changes…"
-                  : !session || connectionError
-                    ? "Connecting to Q-Rex…"
-                    : session.busy
-                      ? "The agent is working. Stop it before sending another message."
-                      : !session.provider || !session.model
-                        ? "Configure and select a tested provider model in Provider settings."
-                        : !message.trim()
-                          ? "Enter a message."
-                          : undefined;
+    : selectingModel
+      ? "Checking model tool support…"
+      : draftRunStarting || draftRun
+        ? "Wait for the draft scenario run and evidence capture to finish."
+        : draftsLoading && !selectedDraft
+          ? "Loading local drafts…"
+          : draftError && !selectedDraft
+            ? "Retry preparing the workspace before chatting."
+            : !selectedDraft
+              ? "Preparing your workspace?"
+              : selectedDraft.status === "archived"
+                ? "Workspace is unavailable."
+                : readingFile
+                  ? "Reading the attached file…"
+                  : reviewing
+                    ? "Loading workspace changes…"
+                    : !session || connectionError
+                      ? "Connecting to Q-Rex…"
+                      : session.busy
+                        ? "The agent is working. Stop it before sending another message."
+                        : !session.provider || !session.model
+                          ? "Configure and select a tested provider model in Provider settings."
+                          : !message.trim()
+                            ? "Enter a message."
+                            : undefined;
   return (
     <div ref={widgetDrag.ref} style={widgetDrag.style} className={home ? "agent-widget agent-home" : "agent-widget"}>
       {(open || home) && (
@@ -1239,13 +1299,46 @@ export function AgentWidget({
                 </span>
               </span>
             </div>
-            {session?.provider && session.model ? (
-              <AgentModelButton onClick={() => setView("settings")} title="Change the provider or model">
-                {session.provider} · {session.model}
-              </AgentModelButton>
-            ) : (
-              <AgentModelButton onClick={() => setView("settings")}>Configure AI provider</AgentModelButton>
-            )}
+            <div className="agent-model-controls">
+              {session?.provider && session.model && activeDraftId ? (
+                <AgentModelSelect
+                  key={`${activeDraftId}:${session.provider}`}
+                  draftId={activeDraftId}
+                  provider={session.provider}
+                  model={session.model}
+                  disabled={
+                    view === "settings" ||
+                    connectionError ||
+                    selectedDraft?.status !== "active" ||
+                    Boolean(session.busy || sending || reviewing || draftRunStarting || draftRun)
+                  }
+                  onSelecting={setSelectingModel}
+                  onSelected={(model) => {
+                    latestResponse.current = ++requestNumber.current;
+                    setSession((current) => current && { ...current, model });
+                  }}
+                />
+              ) : (
+                <AgentModelButton onClick={() => setView("settings")}>Configure AI provider</AgentModelButton>
+              )}
+              {!!effortLevels?.length && (
+                <div className="agent-effort" title="Effort levels reported by this provider for the selected model.">
+                  <SelectInput
+                    label="Reasoning effort"
+                    value={effort || "provider-default"}
+                    disabled={!effortLevels?.length}
+                    onChange={(value) =>
+                      setEffortSelection({
+                        provider: session?.provider || "",
+                        model: session?.model || "",
+                        value: value === "provider-default" ? "" : value,
+                      })
+                    }
+                    options={effortOptions(effortLevels || [])}
+                  />
+                </div>
+              )}
+            </div>
             <div className="agent-header-actions">
               {!home && (
                 <button
@@ -1345,7 +1438,7 @@ export function AgentWidget({
           </nav>
           {view === "settings" && (
             <AgentSettings
-              key={`${activeDraftId}:${Boolean(selectedDraft && session && !connectionError && selectedDraft.status === "active")}`}
+              key={`${activeDraftId}:${session?.provider}:${session?.model}:${Boolean(selectedDraft && session && !connectionError && selectedDraft.status === "active")}`}
               available={Boolean(selectedDraft && session && !connectionError && selectedDraft.status === "active")}
               unavailableReason={
                 connectionError
@@ -1354,7 +1447,7 @@ export function AgentWidget({
                     ? "Workspace is unavailable."
                     : "Prepare the workspace to manage provider settings."
               }
-              agentBusy={Boolean(session?.busy || sending || draftRunStarting || draftRun)}
+              agentBusy={Boolean(session?.busy || sending || selectingModel || draftRunStarting || draftRun)}
               onSessionSaved={(saved) => {
                 setSession((current) => current && { ...current, provider: saved.provider, model: saved.model });
               }}
@@ -2034,13 +2127,10 @@ export function AgentWidget({
                         setContextError("This file type is not supported. Use an image, PDF, DOCX, XLSX or text file.");
                         return;
                       }
-                      if (
-                        !file.size ||
-                        file.size > 4_000_000 ||
-                        total + file.size > 8_000_000 ||
-                        file.name.length > 180
-                      ) {
-                        setContextError("Choose a non-empty file up to 4 MB; attachments can total up to 8 MB.");
+                      if (!file.size || total + file.size > 10_000_000 || file.name.length > 180) {
+                        setContextError(
+                          "Choose a non-empty file with a name up to 180 characters; attachments can total up to 10 MB.",
+                        );
                         return;
                       }
                       setReadingFile(true);

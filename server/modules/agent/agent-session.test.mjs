@@ -136,6 +136,11 @@ test("agent loop pauses for a user answer and redacts provider keys", async (t) 
   let calls = 0;
   const requestBodies = [];
   const server = createServer((req, res) => {
+    if (req.url === "/v1/models") {
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify({ data: [{ id: "test/model", reasoning_efforts: ["low", "high"] }] }));
+      return;
+    }
     let body = "";
     req.setEncoding("utf8");
     req.on("data", (chunk) => {
@@ -190,7 +195,28 @@ test("agent loop pauses for a user answer and redacts provider keys", async (t) 
     },
   });
   await session.setModel("9router", "test/model");
-  await session.send("Please help with QA.");
+  const effortTarget = { provider: "9router", model: "test/model" };
+  await assert.rejects(
+    session.send("Hello", undefined, undefined, [], undefined, undefined, undefined, "high"),
+    /different provider or model/,
+  );
+  await assert.rejects(
+    session.send("Hello", undefined, undefined, [], undefined, undefined, undefined, "max", effortTarget),
+    /not available/,
+  );
+  assert.equal(session.snapshot().busy, false);
+  assert.equal(session.snapshot().messages.length, 0);
+  await session.send(
+    "Please help with QA.",
+    undefined,
+    undefined,
+    [],
+    undefined,
+    undefined,
+    undefined,
+    "high",
+    effortTarget,
+  );
   const question = await waitUntil(() => session.snapshot().userRequest);
   assert.equal(session.snapshot().busy, true);
   assert.match(question.questions[0].question, /\[redacted\]/);
@@ -199,6 +225,11 @@ test("agent loop pauses for a user answer and redacts provider keys", async (t) 
   await waitUntil(() => !session.snapshot().busy);
   assert.equal(session.snapshot().error, "");
   assert.equal(calls, 2);
+  assert.ok(requestBodies.every((body) => JSON.parse(body).reasoning_effort === "high"));
+  await session.send("Continue with the provider default.");
+  await waitUntil(() => !session.snapshot().busy);
+  assert.equal(calls, 3);
+  assert.equal(Object.hasOwn(JSON.parse(requestBodies[2]), "reasoning_effort"), false);
   assert.match(JSON.stringify(session.snapshot().messages), /Done\. \[redacted\]/);
   assert.doesNotMatch(JSON.stringify(session.snapshot()), /fake-private-provider-value/);
   assert.doesNotMatch(requestBodies.join("\n"), /fake-private-provider-value/);

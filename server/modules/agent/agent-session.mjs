@@ -9,8 +9,13 @@ import { stepCountIs, streamText } from "ai";
 import { automationCatalog, parseFeature } from "../catalog/scenario-catalog.mjs";
 import { getCurrentRunSnapshot } from "../runs/run-controller.mjs";
 import { resolveSelection } from "../runs/run-selection.mjs";
-import { readUploadedAttachment } from "./agent-attachments.mjs";
-import { closeAgentLanguageModel, createAgentLanguageModel } from "./agent-provider.mjs";
+import { readUploadedAttachment, uploadedAttachmentSize } from "./agent-attachments.mjs";
+import {
+  agentReasoningSettings,
+  closeAgentLanguageModel,
+  createAgentLanguageModel,
+  discoverAgentEffortProfile,
+} from "./agent-provider.mjs";
 import { startIsolatedDraftRun as createDraftRun } from "./agent-sandbox.mjs";
 import { agentSkillNames, agentWorkflowInstructions } from "./agent-skills.mjs";
 import { getProviderCredential, isModelVerified, recordAgentUsage } from "./agent-store.mjs";
@@ -1337,12 +1342,27 @@ export function createSession({
     resolveAnswer(`${answerTexts.join("\n")}${configNotice}`);
   }
 
-  async function send(input, scenario, feature, contextItems = [], selectedSkill, environment, variables) {
+  async function send(
+    input,
+    scenario,
+    feature,
+    contextItems = [],
+    selectedSkill,
+    environment,
+    variables,
+    effort,
+    effortTarget,
+  ) {
     if (busy || committing || draftStarting || draftRunner)
       throw new Error("Wait for the current operation before sending another message.");
     if (typeof input !== "string" || !input.trim() || input.length > 8000)
       throw new Error("Enter a message of up to 8000 characters.");
     if (!provider || !model) throw new Error("Choose a provider and model in Provider settings before chatting.");
+    const turnProvider = provider;
+    const turnModel = model;
+    const turnVersion = resetVersion;
+    if (effort !== undefined && (effortTarget?.provider !== provider || effortTarget?.model !== model))
+      throw new Error("The selected effort belongs to a different provider or model. Select it again.");
     const match = input.trim().match(/^\/([\w-]+)(?:\s|$)/);
     const skill = match?.[1] ?? selectedSkill ?? requestedSkill ?? "ask-qa";
     if (!skills.has(skill))
@@ -1351,6 +1371,25 @@ export function createSession({
     if (!credential) throw new Error("The selected provider key was removed. Configure it again in Provider settings.");
     if (!(await modelVerified(userId, provider, model)))
       throw new Error("Test this model's tool-calling support again before continuing.");
+    const effortProfile =
+      effort === undefined
+        ? undefined
+        : await (runtime.discoverAgentEffortProfile || discoverAgentEffortProfile)({
+            provider: turnProvider,
+            modelId: turnModel,
+            ...credential,
+          });
+    const reasoningSettings = agentReasoningSettings(turnProvider, effort, turnModel, effortProfile);
+    if (
+      resetVersion !== turnVersion ||
+      provider !== turnProvider ||
+      model !== turnModel ||
+      busy ||
+      committing ||
+      draftStarting ||
+      draftRunner
+    )
+      throw new Error("The session changed while preparing the message. Send it again.");
     const secrets = [variables?.E2E_USERNAME, variables?.E2E_PASSWORD, credential.apiKey];
     turnSecrets = secrets;
     const toolSecrets = { ...variables, providerApiKey: credential.apiKey };
@@ -1642,6 +1681,7 @@ export function createSession({
           .join("\n\n");
       const result = streamText({
         model: aiModel,
+        ...reasoningSettings,
         system: systemForStep(),
         messages: [...conversationBeforeTurn, currentModelMessage],
         prepareStep: ({ messages: stepMessages }) => ({
@@ -1793,12 +1833,10 @@ export function createSession({
   async function resolveContextItems(items, catalog, resolveScenario) {
     const attachments = validateContextItems(items);
     if (
-      attachments.reduce(
-        (sum, item) => sum + (item.kind === "upload" && typeof item.data === "string" ? item.data.length : 0),
-        0,
-      ) > 10_666_672
+      attachments.reduce((sum, item) => sum + (item.kind === "upload" ? uploadedAttachmentSize(item.data) : 0), 0) >
+      10_000_000
     )
-      throw new Error("Attached files exceed the 8 MB total limit.");
+      throw new Error("Attached files exceed the 10 MB total limit.");
     const resolved = [];
     let totalBytes = 0;
     for (const item of attachments) {

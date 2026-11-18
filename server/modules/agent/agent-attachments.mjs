@@ -48,6 +48,19 @@ function validateOfficeArchive(buffer) {
   }
 }
 
+export function uploadedAttachmentSize(data) {
+  if (
+    typeof data !== "string" ||
+    data.length % 4 !== 0 ||
+    /[^A-Za-z0-9+/=]/.test(data) ||
+    /=/.test(data.slice(0, -2)) ||
+    (data.at(-2) === "=" && !data.endsWith("==")) ||
+    (data.endsWith("=") && !/[A-Za-z0-9+/](?:[A-Za-z0-9+/]=|==)$/.test(data))
+  )
+    throw new Error("A context file is invalid. Attach it again.");
+  return (data.length / 4) * 3 - (data.endsWith("==") ? 2 : data.endsWith("=") ? 1 : 0);
+}
+
 export async function readUploadedAttachment(item) {
   if (
     typeof item.title !== "string" ||
@@ -57,14 +70,8 @@ export async function readUploadedAttachment(item) {
     [...item.title].some((character) => character.charCodeAt(0) < 32)
   )
     throw new Error("A context file name is invalid.");
-  if (
-    typeof item.data !== "string" ||
-    item.data.length > 5_333_336 ||
-    !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(item.data)
-  )
-    throw new Error("A context file is invalid. Attach it again.");
+  if (!uploadedAttachmentSize(item.data)) throw new Error("A context file must not be empty.");
   const buffer = Buffer.from(item.data, "base64");
-  if (!buffer.length || buffer.length > 4_000_000) throw new Error("A context file must be between 1 byte and 4 MB.");
   const ext = extname(item.title).toLowerCase();
   const imageType = imageTypes.get(ext);
   if (imageType) {
