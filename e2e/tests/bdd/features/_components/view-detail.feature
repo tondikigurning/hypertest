@@ -4,7 +4,7 @@
 # ID prefix: TEN_COM_VDT_E2E_NNN
 #
 # Reference page: /user-management/users
-# Submodule features mirror with TEN_* IDs and @ref:TEN_COM_VDT_E2E_*.
+# Menu features mirror with TEN_* IDs and @ref:TEN_COM_VDT_E2E_*.
 #
 Feature: View Detail — Component
 
@@ -16,7 +16,7 @@ Feature: View Detail — Component
     And the detail panel header shows a title
 
   # Master contract only covers the shared "Details" tab.
-  # Submodule features extend this outline with their own tabs (Users, User Groups, …).
+  # Menu features extend this outline with their own tabs (Users, User Groups, …).
   @TEN_COM_VDT_E2E_002 @regression @flow:TEN_COM_VIEW_DETAIL_FLOW @type:ui-interaction
   Scenario Outline: Each detail panel tab displays its content section
     Given a list page with detail panel layout is open

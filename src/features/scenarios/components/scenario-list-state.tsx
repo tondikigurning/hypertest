@@ -34,7 +34,7 @@ export function ScenarioListState(props: ScenarioListStateProps) {
     return (
       <div className="empty">
         <strong>No scenarios yet</strong>
-        <span>View this submodule's PRD to review its requirements or start authoring scenarios with Q-Rex.</span>
+        <span>View this menu's PRD to review its requirements or start authoring scenarios with Q-Rex.</span>
       </div>
     );
   }

@@ -44,20 +44,20 @@ test("PRD versions can be managed in the draft workspace", async (t) => {
   assert.deepEqual((await session.prdVersions("sales", "orders")).items, []);
   const created = await session.createPrdVersion({
     module: "sales",
-    submodule: "orders",
+    menu: "orders",
     initialContent: "# Orders\n",
   });
   assert.equal(created.items[0].content, "# Orders\n");
   await session.updatePrdVersion({
     module: "sales",
-    submodule: "orders",
+    menu: "orders",
     versionId: "v1",
     name: "First",
     content: "# Updated\n",
   });
   assert.equal(await readFile(join(workspace, "docs/prd/sales/orders.md"), "utf8"), "# Updated\n");
   assert.equal((await session.prdVersions("sales", "orders")).items[0].name, "First");
-  await session.deletePrdVersion({ module: "sales", submodule: "orders", versionId: "v1" });
+  await session.deletePrdVersion({ module: "sales", menu: "orders", versionId: "v1" });
   assert.deepEqual((await session.prdVersions("sales", "orders")).items, []);
 });
 

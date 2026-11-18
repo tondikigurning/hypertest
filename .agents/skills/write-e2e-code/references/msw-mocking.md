@@ -8,7 +8,7 @@ The BDD suite uses `@msw/playwright` (`msw` and `@msw/playwright` v0.6+) for tag
 features/_components/*.feature     master contracts (happy path + @mock error/delay scenarios)
         |  @ref:TEN_COM_*_E2E_*
         v
-features/<module>/*.feature        submodule scenarios reuse master Gherkin via @ref + @mock
+features/<module>/*.feature        menu scenarios reuse master Gherkin via @ref + @mock
         |
         v
 steps/_shared/*.steps.ts           context-aware Given/When/Then (filter, search, sort, pipeline, view-detail)
@@ -20,7 +20,7 @@ steps/<module>/*.steps.ts          module-specific mutation and auth mocks (crea
 | Layer                                       | Responsibility                                                                         | Examples                                                       |
 | ------------------------------------------- | -------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
 | Component masters (`features/_components/`) | Define reusable interaction and error/delay contracts once                             | `filter-search.feature`, `sort.feature`, `view-detail.feature` |
-| Submodule features                          | Mirror masters with submodule IDs. Link via `@ref`. Do not duplicate step text         | `users.feature` `@ref:TEN_COM_FSR_E2E_002`                     |
+| Menu features                          | Mirror masters with menu IDs. Link via `@ref`. Do not duplicate step text         | `users.feature` `@ref:TEN_COM_FSR_E2E_002`                     |
 | Shared steps (`steps/_shared/`)             | Generic Gherkin (`the search API ...`) resolved to the right list API by `pageContext` | `filter-search.steps.ts`, `feedback-state.steps.ts`            |
 | Module steps                                | Page-specific mutation or auth endpoints the list helpers do not cover                 | `users.steps.ts`, `authentication.steps.ts`                    |
 
@@ -39,7 +39,7 @@ Add `@mock` to a `@regression` scenario when either:
 1. The scenario simulates an API error, delay or auth failure the real backend cannot reliably reproduce, or
 2. The scenario performs a volatile mutation whose side effects can break later pipeline runs.
 
-Component master error and delay scenarios in `features/_components/` always carry `@mock`. Submodule mirrors use `@mock @ref:TEN_COM_*_E2E_*` so the same shared steps hit the correct list API.
+Component master error and delay scenarios in `features/_components/` always carry `@mock`. Menu mirrors use `@mock @ref:TEN_COM_*_E2E_*` so the same shared steps hit the correct list API.
 
 ## Timing: which pattern to use
 
@@ -54,7 +54,7 @@ Scenario: Search shows error state when the API returns 500 server error
   Then the application shows an error state
 ```
 
-A submodule mirror uses the same steps with its own ID and `@ref`, for example `@TEN_USR_LST_E2E_006 @regression @mock @flow:TEN_USR_LIST_FLOW @type:negative @ref:TEN_COM_FSR_E2E_002`.
+A menu mirror uses the same steps with its own ID and `@ref`, for example `@TEN_USR_LST_E2E_006 @regression @mock @flow:TEN_USR_LIST_FLOW @type:negative @ref:TEN_COM_FSR_E2E_002`.
 
 **Navigation-triggered** (initial load, auth redirect). Register the handler in a `Given` step before the `When` navigation. Use a raw `page.goto` that does not wait for the table. The POM `navigateTo()` waits for table rows, which would never resolve.
 

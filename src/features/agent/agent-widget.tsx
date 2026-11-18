@@ -149,7 +149,7 @@ function summarizePatch(patch: string | undefined) {
 const contextStorageKey = "automation-agent-contexts";
 const commands = [
   { name: "ask-qa", description: "Ask about testing or investigate a scenario." },
-  { name: "write-prd", description: "Import, explore, or review a sub-module PRD." },
+  { name: "write-prd", description: "Import, explore, or review a menu PRD." },
   { name: "write-e2e-scenarios", description: "Discover, write or review E2E scenarios." },
   { name: "write-e2e-code", description: "Implement or repair E2E test code." },
 ];
@@ -226,7 +226,7 @@ function selectionAttachment(
       ref: `group:${group.path}`,
       label: group.title,
       title: group.title,
-      text: `Selected submodule or test group in the explorer: ${group.path}. Scope includes its feature, if present, and all descendant feature files. Resolve the matching sources and single submodule PRD in your workspace before editing; the explorer selection may differ from the committed draft base.`,
+      text: `Selected menu or test group in the explorer: ${group.path}. Scope includes its feature, if present, and all descendant feature files. Resolve the matching sources and single menu PRD in your workspace before editing; the explorer selection may differ from the committed draft base.`,
       auto: true,
     };
   }
@@ -331,37 +331,37 @@ export function AgentWidget({
       sessionStorage.removeItem("automation-prd-context");
       if (storedContext) {
         try {
-          const menu: unknown = JSON.parse(storedContext);
+          const contextValue: unknown = JSON.parse(storedContext);
           let selected: ContextAttachment | undefined;
           if (
-            menu &&
-            typeof menu === "object" &&
-            "module" in menu &&
-            "submodule" in menu &&
-            typeof menu.module === "string" &&
-            typeof menu.submodule === "string"
+            contextValue &&
+            typeof contextValue === "object" &&
+            "module" in contextValue &&
+            "menu" in contextValue &&
+            typeof contextValue.module === "string" &&
+            typeof contextValue.menu === "string"
           ) {
             const scope = selectionAttachment(undefined, undefined, {
-              path: `${menu.module}/${menu.submodule}`,
-              title: `${displayLabel(menu.module)} / ${displayLabel(menu.submodule)}`,
+              path: `${contextValue.module}/${contextValue.menu}`,
+              title: `${displayLabel(contextValue.module)} / ${displayLabel(contextValue.menu)}`,
             });
             if (scope) selected = { ...scope, id: contextId(), auto: false };
           } else if (
-            menu &&
-            typeof menu === "object" &&
-            "module" in menu &&
-            "file" in menu &&
-            "title" in menu &&
-            typeof menu.module === "string" &&
-            typeof menu.file === "string" &&
-            typeof menu.title === "string"
+            contextValue &&
+            typeof contextValue === "object" &&
+            "module" in contextValue &&
+            "file" in contextValue &&
+            "title" in contextValue &&
+            typeof contextValue.module === "string" &&
+            typeof contextValue.file === "string" &&
+            typeof contextValue.title === "string"
           ) {
             selected = {
               id: contextId(),
               kind: "feature" as const,
-              ref: menu.file,
-              label: menu.title,
-              value: { module: menu.module, file: menu.file, title: menu.title },
+              ref: contextValue.file,
+              label: contextValue.title,
+              value: { module: contextValue.module, file: contextValue.file, title: contextValue.title },
             };
           }
           if (selected) {
@@ -1539,7 +1539,7 @@ export function AgentWidget({
                         }
                       />
                       <AgentStarterButton
-                        title="Create a sub-module PRD"
+                        title="Create a menu PRD"
                         description="Import a document or explore a module"
                         onSelect={() => selectPrompt("/write-prd Help me create or import a PRD for ")}
                       />

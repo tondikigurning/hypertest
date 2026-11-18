@@ -1475,7 +1475,7 @@ export function createSession({
           "\nThe exploration browser has not been authenticated. If this workflow needs live exploration, ask the user to select an environment and set E2E_USERNAME and E2E_PASSWORD in Variables, then send a follow-up; never request their values in chat. PRD import text can be drafted without credentials, but review-ready PRDs and scenario discovery still require scoped live exploration.";
       if (skill === "write-e2e-scenarios")
         context +=
-          "\nBefore asking product-context questions, search docs/prd/ for a PRD matching the current module and sub-module and read it. Reuse its answered context. Treat validated items in a reviewed PRD as confirmed; keep unvalidated observed items and assumptions visibly unconfirmed. A draft PRD does not satisfy its review gate. Ask only for context the PRD and conversation do not answer.";
+          "\nBefore asking product-context questions, search docs/prd/ for a PRD matching the current module and menu and read it. Reuse its answered context. Treat validated items in a reviewed PRD as confirmed; keep unvalidated observed items and assumptions visibly unconfirmed. A draft PRD does not satisfy its review gate. Ask only for context the PRD and conversation do not answer.";
       context +=
         "\nBefore changing scenario intent, use confirm_flows to present the discovered flow list, the feature path, and its matching reviewed PRD. Wait for explicit flow confirmation. Flow confirmation is separate from scenario review and live-data permission; include every affected existing and new flow ID.";
       const currentScenarios = await scenarioChanges(workspace, baseCommit);
@@ -1658,7 +1658,7 @@ export function createSession({
           skillInstructions,
           ...(prdStore
             ? [
-                "PRDs are stored in the database. The identifier docs/prd/<module>/<submodule>.md is a virtual reference for list_files, read_file, write_file, edit_file and confirm_flows; it is not a repository file or Git change. Review PRDs through the PRD interface and PRD approval, not the Git diff. Existing checkout PRD files are not database records.",
+                "PRDs are stored in the database. The identifier docs/prd/<module>/<menu>.md is a virtual reference for list_files, read_file, write_file, edit_file and confirm_flows; it is not a repository file or Git change. Review PRDs through the PRD interface and PRD approval, not the Git diff. Existing checkout PRD files are not database records.",
               ]
             : []),
           agentWorkflowInstructions,
@@ -1828,7 +1828,7 @@ export function createSession({
     if (!prdStore || typeof query !== "string" || query.trim().length < 2) return files;
     const terms = query.toLowerCase().trim().split(/\s+/).slice(0, 6);
     const prds = (await prdStore.list())
-      .map(({ module, submodule }) => `docs/prd/${module}/${submodule}.md`)
+      .map(({ module, menu }) => `docs/prd/${module}/${menu}.md`)
       .filter((path) => terms.every((term) => path.toLowerCase().includes(term)));
     return [...new Set([...files.filter((path) => !prdIdentity(path)), ...prds])].sort().slice(0, 30);
   }
@@ -2061,11 +2061,11 @@ export function createSession({
     cancel,
     contextFiles,
     prds: () => (prdStore ? prdStore.list() : workspace ? listPrds(workspace) : Promise.resolve([])),
-    prdVersions: (module, submodule) =>
+    prdVersions: (module, menu) =>
       prdStore
-        ? prdStore.versions(module, submodule)
+        ? prdStore.versions(module, menu)
         : withPrdVersionWorkspace(({ workspace: currentWorkspace, safePath }) =>
-            listPrdVersions({ workspace: currentWorkspace, safePath, module, submodule }),
+            listPrdVersions({ workspace: currentWorkspace, safePath, module, menu }),
           ),
     createPrdVersion: (input) =>
       prdStore

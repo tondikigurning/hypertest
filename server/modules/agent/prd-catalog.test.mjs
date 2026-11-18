@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { test } from "node:test";
 import { listPrds } from "./prd-catalog.mjs";
 
-test("lists only regular submodule Markdown files and preserves their review state", async () => {
+test("lists only regular menu Markdown files and preserves their review state", async () => {
   const root = await mkdtemp(join(tmpdir(), "hypertest-prd-"));
   try {
     assert.deepEqual(await listPrds(root), []);
@@ -16,7 +16,7 @@ test("lists only regular submodule Markdown files and preserves their review sta
     assert.equal(result.length, 1);
     assert.equal(result[0].status, "draft");
     assert.match(result[0].content, /\[observed\]/);
-    assert.equal(result[0].submodule, "orders");
+    assert.equal(result[0].menu, "orders");
   } finally {
     await rm(root, { recursive: true, force: true });
   }

@@ -4,7 +4,7 @@
 # ID prefix: TEN_COM_PIP_E2E_NNN
 #
 # Reference page (golden path): /user-management/users
-# Submodule features (e.g. users.feature) link via @ref:TEN_COM_PIP_E2E_* — do not duplicate these steps.
+# Menu features (e.g. users.feature) link via @ref:TEN_COM_PIP_E2E_* — do not duplicate these steps.
 #
 Feature: Pipeline Renderer — Component
 

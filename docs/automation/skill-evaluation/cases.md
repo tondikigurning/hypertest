@@ -20,7 +20,7 @@ Use the same restricted browser actions as Case 1. The snapshot contains the aff
 
 ## Case 5
 Host: terminal coding agent. User: Create the product context for Article Management; I have supplied the business rules.
-The matching submodule has no existing PRD or scenario IDs. Browser exploration can be performed safely in the requested environment; no results have yet been supplied in this exercise. Need a proposed submodule code that will pass into scenario authoring. No mutation permission is established.
+The matching menu has no existing PRD or scenario IDs. Browser exploration can be performed safely in the requested environment; no results have yet been supplied in this exercise. Need a proposed menu code that will pass into scenario authoring. No mutation permission is established.
 
 ## Case 6
 Host: terminal coding agent. User: Draft two create scenarios for survey templates using our data convention.

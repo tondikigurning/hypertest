@@ -20,7 +20,7 @@ interface PrdVersionsResult {
 
 const empty: PrdVersionsResult = { items: [], activeVersionId: "", error: "", loading: false };
 
-export function usePrdVersions(module: string, submodule: string, draft: string) {
+export function usePrdVersions(module: string, menu: string, draft: string) {
   const [result, setResult] = useState<PrdVersionsResult>({ ...empty, loading: Boolean(draft) });
 
   useEffect(() => {
@@ -32,7 +32,7 @@ export function usePrdVersions(module: string, submodule: string, draft: string)
     async function load() {
       setResult({ ...empty, loading: true });
       try {
-        const query = new URLSearchParams({ module, submodule });
+        const query = new URLSearchParams({ module, menu });
         const response = await agentFetch(`/api/agent/prd-versions?${query}`, {
           signal: controller.signal,
           cache: "no-store",
@@ -59,7 +59,7 @@ export function usePrdVersions(module: string, submodule: string, draft: string)
     }
     void load();
     return () => controller.abort();
-  }, [draft, module, submodule]);
+  }, [draft, module, menu]);
 
   async function mutate(path: string, method: "POST" | "PUT" | "DELETE", body?: Record<string, unknown>) {
     if (!draft) throw new Error("Select an active draft to manage PRD versions.");
@@ -81,18 +81,18 @@ export function usePrdVersions(module: string, submodule: string, draft: string)
   return {
     ...result,
     create: (name: string, initialContent: string) =>
-      mutate("/api/agent/prd-versions", "POST", { module, submodule, name, initialContent }),
+      mutate("/api/agent/prd-versions", "POST", { module, menu, name, initialContent }),
     update: (versionId: string, name: string, content?: string) =>
       mutate(`/api/agent/prd-versions/${encodeURIComponent(versionId)}`, "PUT", {
         module,
-        submodule,
+        menu,
         name,
         ...(content === undefined ? {} : { content }),
       }),
     activate: (versionId: string) =>
-      mutate(`/api/agent/prd-versions/${encodeURIComponent(versionId)}/activate`, "POST", { module, submodule }),
+      mutate(`/api/agent/prd-versions/${encodeURIComponent(versionId)}/activate`, "POST", { module, menu }),
     remove: (versionId: string) => {
-      const query = new URLSearchParams({ module, submodule });
+      const query = new URLSearchParams({ module, menu });
       return mutate(`/api/agent/prd-versions/${encodeURIComponent(versionId)}?${query}`, "DELETE");
     },
   };

@@ -18,26 +18,26 @@ export interface ScenarioGroup {
 
 export interface ScenarioModule {
   name: string;
-  submodules: Array<ScenarioGroup>;
+  menus: Array<ScenarioGroup>;
 }
 
-/** A flat submodule file and its descendants share one menu identity. */
+/** A menu's flat feature and descendant feature files form one selectable scope. */
 export function isScenarioInScope(file: string, scopePath: string) {
   return file === `${scopePath}.feature` || file.startsWith(`${scopePath}/`);
 }
 
 export function groupModules(
   scenarios: Array<Scenario>,
-  prds: Array<{ module: string; submodule: string }> = [],
+  prds: Array<{ module: string; menu: string }> = [],
 ): Array<ScenarioModule> {
   const modules = new Map<string, ScenarioModule>();
   function ensureGroup(module: string, segments: Array<string>, increment: number) {
     let group = modules.get(module);
     if (!group) {
-      group = { name: module, submodules: [] };
+      group = { name: module, menus: [] };
       modules.set(module, group);
     }
-    let children = group.submodules;
+    let children = group.menus;
     let path = module;
     let node: ScenarioGroup | undefined;
     for (const segment of segments) {
@@ -60,19 +60,19 @@ export function groupModules(
     const node = ensureGroup(scenario.module, segments, 1);
     if (node) node.file = scenario.file;
   }
-  for (const prd of prds) ensureGroup(prd.module, [prd.submodule], 0);
+  for (const prd of prds) ensureGroup(prd.module, [prd.menu], 0);
   function sortGroups(groups: Array<ScenarioGroup>) {
     groups.sort((a, b) => a.title.localeCompare(b.title));
     for (const group of groups) sortGroups(group.children);
   }
-  for (const module of modules.values()) sortGroups(module.submodules);
+  for (const module of modules.values()) sortGroups(module.menus);
   return [...modules.values()].sort((a, b) => a.name.localeCompare(b.name));
 }
 
 export function findScenarioGroup(modules: Array<ScenarioModule>, path: string | undefined) {
   if (!path) return undefined;
   const [module, ...segments] = path.split("/");
-  let children = modules.find((item) => item.name === module)?.submodules;
+  let children = modules.find((item) => item.name === module)?.menus;
   let currentPath = module;
   let group: ScenarioGroup | undefined;
   for (const segment of segments) {

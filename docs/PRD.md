@@ -6,7 +6,7 @@
 
 Automation Workspace adalah aplikasi web internal bagi FE Test Engineer dan QA Engineer di Hyperscal untuk **membuat, menjalankan, dan memelihara automation test Playwright BDD** dengan bantuan **AI Agent**. Agent menjalankan workflow skill yang sudah ada (`write-e2e-scenarios`, `write-e2e-code`, `ask-qa`) dan satu skill baru (`write-prd`), memakai API key AI milik pengguna sendiri (BYOK).
 
-Produk ini hidup di **repo terpisah** dari aplikasi FE yang dites, sehingga agent tidak bisa membaca source FE. Pengetahuan tentang aplikasi target datang dari **PRD per sub-module** (di-upload atau dihasilkan agent lewat eksplorasi `playwright-cli`) dan dari eksplorasi UI langsung.
+Produk ini hidup di **repo terpisah** dari aplikasi FE yang dites, sehingga agent tidak bisa membaca source FE. Pengetahuan tentang aplikasi target datang dari **PRD per menu** (di-upload atau dihasilkan agent lewat eksplorasi `playwright-cli`) dan dari eksplorasi UI langsung.
 
 Aplikasi target pertama adalah **Converge** (`converge.<env>.hyperscal.com`, env `dev`, `stt`, `stt1`, `pp`).
 
@@ -36,7 +36,7 @@ Aplikasi target pertama adalah **Converge** (`converge.<env>.hyperscal.com`, env
 
 **Metrik keberhasilan**
 
-- M1. Waktu dari PRD sub-module sampai PR test siap review.
+- M1. Waktu dari PRD menu sampai PR test siap review.
 - M2. Proporsi kategori flow yang memiliki setidaknya satu scenario `passed` pada hasil terbaru per environment, dihitung dari tag `@flow:` di file `.feature`. Angka ini hanya mencakup kategori yang sudah ditulis dan bukan bukti cakupan bisnis penuh.
 - M3. Rasio scenario berstatus `passed` dari scenario yang memiliki hasil terbaru per environment.
 - Target numerik ditetapkan setelah baseline 4 minggu pertama.
@@ -61,7 +61,7 @@ Izin tulis ke repo tetap dibatasi izin GitHub milik pengguna.
 - **Run lokal**: satu eksekusi test dari checkout yang sedang terbuka, pada satu env. Preview menyimpan hasil dan evidence terbaru per scenario/env.
 - **Hasil resmi**: hasil hosted untuk versi scenario yang saat ini ada di branch target. Jika merge menambah atau mengubah scenario, statusnya `not run` sampai scenario itu dijalankan di hosted. Hasil dari preview lokal tidak disalin sebagai hasil resmi.
 - **Evidence**: screenshot, video, dan file bukti lain yang dihasilkan runner, disimpan di object storage privat.
-- **PRD (target)**: dokumen Markdown per sub-module di repo yang menjelaskan perilaku aplikasi target.
+- **PRD (target)**: dokumen Markdown per menu di repo yang menjelaskan perilaku aplikasi target.
 - **Skill**: folder instruksi di `.agents/skills/` yang dimuat agent.
 
 ## 6. Prinsip Desain
@@ -76,7 +76,7 @@ Izin tulis ke repo tetap dibatasi izin GitHub milik pengguna.
 ## 7. Alur Kerja Utama
 
 1. Engineer membuat **draft** baru (branch dari branch target) dan membuka sesi chat.
-2. **PRD**: upload PRD (dikonversi ke Markdown) atau minta `write-prd` menghasilkannya lewat wawancara dan eksplorasi. Hasil di `docs/prd/<module>/<submodule>.md`.
+2. **PRD**: upload PRD (dikonversi ke Markdown) atau minta `write-prd` menghasilkannya lewat wawancara dan eksplorasi. Hasil di `docs/prd/<module>/<menu>.md`.
 3. **Scenario**: `write-e2e-scenarios` menemukan dan mengonfirmasi daftar flow, menulis scenario dengan tag `@flow:` ke `.feature`, lalu berhenti di gerbang review. Catalog menampilkan flow sebagai kategori yang bisa di-collapse.
 4. **Code**: setelah approve, `write-e2e-code` menulis steps, POM, COM, fixture, dan mock, lalu menjalankan test di env yang dipilih.
 5. **Run**: Engineer atau Viewer menjalankan scenario; hasil dan evidence masuk ke DB dan R2.
@@ -101,7 +101,7 @@ Izin tulis ke repo tetap dibatasi izin GitHub milik pengguna.
 
 ### 8.3 Catalog
 
-- FR-9. The scenario explorer uses module → submodule → optional child test groups/files, a scenario list, and a detail panel for the selected scenario. Integration journeys and split files remain beneath their owning submodule. One PRD at the submodule level covers its child groups/files; it is viewed and managed from the submodule. Selecting a submodule or child group lists its descendant scenarios and can run the full group after server-side selection validation. Follow [test organization](automation/test-organization.md) for paths and ownership. The list groups scenarios by collapsible `@flow:` category and source file. Each row shows the title, ID or an unavailable-ID label, compact metadata (type, priority, and tags), execution availability, and the latest status for the selected environment. The detail panel shows category, type, latest status and run time, duration, expected result when distinct from the steps, Gherkin steps, example outcomes for scenario outlines, available evidence, and run actions. The list does not need to display every detail field as a column.
+- FR-9. The scenario explorer uses module → menu → optional child test groups/files, a scenario list, and a detail panel for the selected scenario. Integration journeys and split files remain beneath their owning menu. One PRD at the menu level covers its child groups/files; it is viewed and managed from the menu. Selecting a menu or child group lists its descendant scenarios and can run the full group after server-side selection validation. Follow [test organization](automation/test-organization.md) for paths and ownership. The list groups scenarios by collapsible `@flow:` category and source file. Each row shows the title, ID or an unavailable-ID label, compact metadata (type, priority, and tags), execution availability, and the latest status for the selected environment. The detail panel shows category, type, latest status and run time, duration, expected result when distinct from the steps, Gherkin steps, example outcomes for scenario outlines, available evidence, and run actions. The list does not need to display every detail field as a column.
 - FR-10. The explorer supports cross-feature search by ID, title, feature, module, category, and tag; filtering by tag, flow, priority, type, and status; and sorting by source order, ID, flow, tag, title, type, priority, status, or last-run time. Environment is selected as a global context and determines the displayed status and results; it is not a separate catalog filter.
 - FR-11. Catalog resmi mengikuti branch target dan di-parse ulang saat PR di-merge atau sync manual. Scenario definition baru atau berubah dikenali dari source feature dan identitas scenario yang stabil; jangan menganggap ID saja unik. Statusnya menjadi `not run` pada setiap env dan referensi evidence terbarunya dihapus. Jika pencocokan identitas ambigu, jangan gunakan hasil lama. Scenario yang tidak berubah mempertahankan hasil hosted terakhirnya.
 - FR-12. Catalog draft di-parse dari workspace draft dan hanya terlihat pemilik draft.
@@ -110,7 +110,7 @@ Izin tulis ke repo tetap dibatasi izin GitHub milik pengguna.
 
 ### 8.4 Run dan evidence (perilaku preview lokal saat ini)
 
-- FR-15. Preview lokal menerima pilihan satu scenario, satu feature, satu kategori `@flow:` di dalam feature, atau satu submodule/child group beserta seluruh descendant feature-nya, pada satu env per run. Server memvalidasi keanggotaan dan identitas source untuk setiap pilihan. Filter tag hanya menyaring katalog dan bukan target run.
+- FR-15. Preview lokal menerima pilihan satu scenario, satu feature, satu kategori `@flow:` di dalam feature, atau satu menu/child group beserta seluruh descendant feature-nya, pada satu env per run. Server memvalidasi keanggotaan dan identitas source untuk setiap pilihan. Filter tag hanya menyaring katalog dan bukan target run.
 - FR-16. Run lokal mengeksekusi checkout yang sedang terbuka dan hanya memperbarui hasil lokal. Hasil lokal tidak disalin ke hosted. Setelah merge, scenario baru atau berubah di hosted berstatus `not run` sampai dijalankan di hosted; referensi evidence lama dilepas agar tidak tampak berasal dari isi scenario terbaru. Scenario yang tidak berubah mempertahankan hasil hosted terakhirnya.
 - FR-17. Tampilan run menunjukkan tahap, status scenario dan langkah, serta preview browser seperti preview saat ini. Posisi antrean, worker container, dan antrean tahan restart belum diperlukan dan ditunda.
 - FR-18. MVP tidak mengulang scenario secara otomatis; status hasil per scenario hanya `passed`, `failed`, atau `skipped`. Retry terjadwal belum termasuk cakupan dan dibahas kembali bersama fitur jadwal.
@@ -124,7 +124,7 @@ Izin tulis ke repo tetap dibatasi izin GitHub milik pengguna.
 
 Fitur jadwal ditunda dan belum tersedia di preview lokal. Kebutuhan berikut dicatat untuk fase setelah MVP:
 
-- FR-24. Jadwal cron per Project: pilih env, target (tag, flow, atau sub-module), dan branch target.
+- FR-24. Jadwal cron per Project: pilih env, target (tag, flow, atau menu), dan branch target.
 - FR-25. Run terjadwal memakai identitas sistem dan memperbarui catalog resmi.
 - FR-26. Notifikasi email saat run terjadwal gagal; penerima diatur per jadwal.
 
@@ -159,10 +159,10 @@ Fitur jadwal ditunda dan belum tersedia di preview lokal. Kebutuhan berikut dica
 ### 8.9 Skill baru: write-prd
 
 - FR-46. **Jalur upload**: PDF, DOCX, Markdown, atau teks dikonversi ke Markdown mengikuti template PRD, lalu ditinjau pengguna.
-- FR-47. **Jalur eksplorasi**: wawancara singkat + eksplorasi `playwright-cli` per sub-module. Tiap butir diberi label sumber: `spec` (dari dokumen atau pengguna), `observed` (teramati, belum divalidasi), atau `assumed`.
+- FR-47. **Jalur eksplorasi**: wawancara singkat + eksplorasi `playwright-cli` per menu. Tiap butir diberi label sumber: `spec` (dari dokumen atau pengguna), `observed` (teramati, belum divalidasi), atau `assumed`.
 - FR-48. Gerbang review: butir `observed` baru menjadi `validated` setelah Engineer menyetujui. PRD tidak menyimpulkan niat bisnis dari perilaku UI saja.
-- FR-49. Output: `docs/prd/<module>/<submodule>.md` dengan front matter (module, submodule, status, sumber, env dan tanggal eksplorasi terakhir).
-- FR-50. Template PRD sub-module memetakan topik wawancara konteks `write-e2e-scenarios` (tujuan dan kebutuhan, flow bisnis dan happy path smoke, aturan validasi dan pesan, akses atau role, data dan mutasi, known issue dan di luar cakupan) agar skill scenario dapat memakai ulang jawaban dan tidak menanyakannya lagi.
+- FR-49. Output: `docs/prd/<module>/<menu>.md` dengan front matter (module, menu, status, sumber, env dan tanggal eksplorasi terakhir).
+- FR-50. Template PRD menu memetakan topik wawancara konteks `write-e2e-scenarios` (tujuan dan kebutuhan, flow bisnis dan happy path smoke, aturan validasi dan pesan, akses atau role, data dan mutasi, known issue dan di luar cakupan) agar skill scenario dapat memakai ulang jawaban dan tidak menanyakannya lagi.
 
 ### 8.10 Akses dan audit
 
@@ -174,7 +174,7 @@ Fitur jadwal ditunda dan belum tersedia di preview lokal. Kebutuhan berikut dica
 
 Skill tetap di repo test dan perlu disesuaikan karena source FE tidak tersedia dan cakupan MVP hanya E2E:
 
-- **write-e2e-scenarios**: ganti penelusuran route dari source (`_protected+/...`) dengan PRD + eksplorasi UI; module dan sub-module ditentukan dari PRD atau navigasi UI; wawancara memakai ulang jawaban dari PRD; konvensi ID (`TEN_<CODE>_<FLG>_E2E_NNN`) menjadi prefix yang dikonfigurasi per Project. Gerbang dan format pertanyaan tetap.
+- **write-e2e-scenarios**: ganti penelusuran route dari source (`_protected+/...`) dengan PRD + eksplorasi UI; module dan menu ditentukan dari PRD atau navigasi UI; wawancara memakai ulang jawaban dari PRD; konvensi ID (`TEN_<CODE>_<FLG>_E2E_NNN`) menjadi prefix yang dikonfigurasi per Project. Gerbang dan format pertanyaan tetap.
 - **write-e2e-code**: verifikasi locator hanya lewat snapshot `playwright-cli` (tanpa membaca source FE); perintah run mengikuti repo baru; langkah catalog Markdown dan laporan agregat unit test dihapus; hasil run keluar sebagai result contract untuk diingest app.
 - **ask-qa**: dipangkas menjadi panduan workflow E2E (PRD → scenario → code → run → PR); bagian Automation app lama, Vitest, dan CI dihapus.
 - **write-prd**: skill baru (bagian 8.9).
@@ -190,7 +190,7 @@ Semua tabel berkunci `project_id` agar siap multi-Project.
 - `user_ai_credentials` (provider, key terenkripsi) dan `ai_usage`.
 - `drafts` (branch, base\_ref, status: active, finalized, archived, owner), `draft_sessions`, dan `messages`.
 - `flows` dan `scenarios` (scenario\_id, flow\_id, judul, tag, prioritas, langkah, source\_path, ref, commit\_sha). Catalog resmi = ref branch target; catalog draft di-cache per draft + SHA.
-- `prds` (index: module, submodule, status, path, commit\_sha).
+- `prds` (index: module, menu, status, path, commit\_sha).
 - `latest_results` (satu baris per scenario dan env: run ID, status passed/failed/skipped, waktu eksekusi, durasi, dan status/referensi evidence). Tidak ada tabel riwayat run pada MVP.
 - Objek evidence terbaru di R2 (kunci, jenis, ukuran) dengan prefix terpisah per env dan scenario; upload terbaru mengganti set sebelumnya. Tidak ada retensi berbasis waktu pada MVP.
 - `pull_requests` (draft, nomor PR, status, url) dan `audit_log`.
@@ -275,6 +275,6 @@ Semua tabel berkunci `project_id` agar siap multi-Project.
 - Konfigurasi Playwright BDD (`playwright.bdd.config.ts`) dengan baseURL dan kredensial dari env yang disuntikkan app.
 - Reporter kustom yang menulis result contract (JSON) untuk diingest app; menggantikan penulisan catalog Markdown.
 - `.agents/skills/` berisi skill hasil adaptasi + `playwright-cli` dan referensinya.
-- `docs/prd/<module>/<submodule>.md` untuk PRD target; scenario dan kategori flow berada di `<submodule>.feature` atau child files di `<module>/<submodule>/`, sesuai [test organization](automation/test-organization.md).
+- `docs/prd/<module>/<menu>.md` untuk PRD target; scenario dan kategori flow berada di `<menu>.feature` atau child files di `<module>/<menu>/`, sesuai [test organization](automation/test-organization.md).
 - MSW untuk scenario `@mock`, `package.json`, dan `tsconfig` minimal.
 - Tidak ada `.env.local` di repo; semua nilai env datang dari app.

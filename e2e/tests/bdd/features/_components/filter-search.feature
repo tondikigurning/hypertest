@@ -4,7 +4,7 @@
 # ID prefix: TEN_COM_FSR_E2E_NNN
 #
 # Reference page: /user-management/users
-# Submodule features link via @ref:TEN_COM_FSR_E2E_* — do not duplicate these steps.
+# Menu features link via @ref:TEN_COM_FSR_E2E_* — do not duplicate these steps.
 #
 Feature: Filter Search — Component
 

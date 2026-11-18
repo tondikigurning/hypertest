@@ -1,6 +1,6 @@
 ---
 name: write-e2e-scenarios
-description: Use a reviewed sub-module PRD and playwright-cli exploration to discover tenant business flows and write or maintain Gherkin scenarios with stable IDs and reusable references. Use for E2E discovery or scenario-intent changes; stops for review before implementation.
+description: Use a reviewed menu PRD and playwright-cli exploration to discover tenant business flows and write or maintain Gherkin scenarios with stable IDs and reusable references. Use for E2E discovery or scenario-intent changes; stops for review before implementation.
 ---
 
 # Write E2E Scenarios (Phase 0 + maintenance)
@@ -11,15 +11,15 @@ Read the [shared workflow contract](../ask-qa/references/workflow-contract.md) f
 
 ## Step 0 — Interview for scope (required)
 
-Resolve module/submodule and consequential context gaps using the shared contract, prior answers, supplied documents and existing artifacts. If the parent is unclear, investigate PRDs, features and navigation before asking one combined scope question. Derive routes and file names; do not ask the user to supply discoverable paths. Default to a full pass; use smoke-only when requested or established by the user.
+Resolve module/menu and consequential context gaps using the shared contract, prior answers, supplied documents and existing artifacts. If the parent is unclear, investigate PRDs, features and navigation before asking one combined scope question. Derive routes and file names; do not ask the user to supply discoverable paths. Default to a full pass; use smoke-only when requested or established by the user.
 
-Before discovery in **any mode**, read the owning submodule's single `docs/prd/<module>/<submodule>.md`. In Q-Rex use file tools with that virtual database identifier. `status: reviewed` and relevant coverage are mandatory, including for child groups. If absent, draft or insufficient, apply [write-prd](../write-prd/SKILL.md) to that same parent and stop at its review gate. Other submodules' PRDs provide supporting context only. Record the PRD path, status, relevant requirement IDs and gaps for flow review.
+Before discovery in **any mode**, read the owning menu's single `docs/prd/<module>/<menu>.md`. In Q-Rex use file tools with that virtual database identifier. `status: reviewed` and relevant coverage are mandatory, including for child groups. If absent, draft or insufficient, apply [write-prd](../write-prd/SKILL.md) to that same parent and stop at its review gate. Other menus' PRDs provide supporting context only. Record the PRD path, status, relevant requirement IDs and gaps for flow review.
 
 Use validated items according to their recorded review method and unvalidated `spec` as attributed requirements. Unvalidated observations, assumptions and unresolved conflicts do not establish intent. Reuse the shared context checklist; ask only consequential unanswered decisions. Include supported in-scope CRUD happy paths and other main business functions when discussing release priorities. Recommend their happy paths as smoke; do not infer “no smoke” from undocumented P0 priorities. Reuse authorized data scope and inspect owned-data prerequisites; a missing ticket or inaccessible branch remains an explicit gap.
 
 ## Step 1 — Discover and choose an approach
 
-1. Resolve ownership and target paths using [test organization](../../../docs/automation/test-organization.md). Read the submodule's flat feature and all descendant features; inventory IDs and `@flow:` tags, including known retired identities. File boundaries do not create new namespaces.
+1. Resolve ownership and target paths using [test organization](../../../docs/automation/test-organization.md). Read the menu's flat feature and all descendant features; inventory IDs and `@flow:` tags, including known retired identities. File boundaries do not create new namespaces.
 2. Rebuild the scoped conversation registry from current features and prior confirmed discovery. Keep unrepresented candidates and limitations visible; existing tags alone do not prove complete journeys.
 3. Read PRD candidates, discrepancies and unverified areas. Read every current `features/_components/` master contract and decide which applies. Inspect scoped steps/POMs so reviewed Gherkin can reuse existing contracts.
 4. Explore accessible scoped UI before confirming flows: navigation, tabs, menus, dialogs and conditional actions. Reconcile user goals, PRD requirements and UI observations with existing scenarios by outcomes and consequential branches. Record inaccessible roles, data, integrations, unsafe mutations and other gaps with evidence and reasons.
@@ -77,9 +77,9 @@ Capture safe trace/screenshot evidence only when the host exposes it. In Q-Rex, 
 
 ## Step 5 — Write the feature batch
 
-Use `<module>/<submodule>.feature` for small scopes or files beneath `<module>/<submodule>/` for child groups, following test organization. All children share the parent PRD and scenario namespace. Preserve inherited tags, backgrounds, examples, safety notes, flow order and existing bindings when splitting files. Register implementation paths during Phase 1 only.
+Use `<module>/<menu>.feature` for small scopes or files beneath `<module>/<menu>/` for child groups, following test organization. All children share the parent PRD and scenario namespace. Preserve inherited tags, backgrounds, examples, safety notes, flow order and existing bindings when splitting files. Register implementation paths during Phase 1 only.
 
-Follow the conventions' header and tag order. Allocate `TEN_<CODE>_<FLG>_E2E_NNN` across all submodule files and known retired IDs, with a sequence per flow abbreviation; never restart due to a new file. Record a requirement-to-scenario mapping in the review summary, not a separate registry file.
+Follow the conventions' header and tag order. Allocate `TEN_<CODE>_<FLG>_E2E_NNN` across all menu files and known retired IDs, with a sequence per flow abbreviation; never restart due to a new file. Record a requirement-to-scenario mapping in the review summary, not a separate registry file.
 
 ## Step 6 — Output and stop
 

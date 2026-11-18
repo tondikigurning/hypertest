@@ -4,7 +4,7 @@
 # ID prefix: TEN_COM_SAP_E2E_NNN
 #
 # Reference page: /user-management/users
-# Submodule features mirror these scenarios with TEN_* IDs and @ref:TEN_COM_SAP_E2E_*.
+# Menu features mirror these scenarios with TEN_* IDs and @ref:TEN_COM_SAP_E2E_*.
 #
 Feature: Sort Controls — Component
 

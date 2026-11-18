@@ -1,6 +1,6 @@
 # PRD template
 
-The exact structure for `docs/prd/<module>/<submodule>.md`. Copy the skeleton, fill every section, and keep the section order. If a section has nothing to say, keep the heading and write `None.` so the reader knows it was considered, not forgotten.
+The exact structure for `docs/prd/<module>/<menu>.md`. Copy the skeleton, fill every section, and keep the section order. If a section has nothing to say, keep the heading and write `None.` so the reader knows it was considered, not forgotten.
 
 ## Contents
 
@@ -18,7 +18,7 @@ The exact structure for `docs/prd/<module>/<submodule>.md`. Copy the skeleton, f
 ```yaml
 ---
 module: <module as named in the app navigation>
-submodule: <sub-module as named in the app navigation>
+menu: <menu as named in the app navigation>
 code: <SHORT_CODE>            # new allocations: exactly 3 uppercase letters; preserve existing codes/IDs
 status: draft                 # draft | reviewed
 sources:
@@ -38,25 +38,25 @@ review_method:                # empty until accepted; manual | automatic (Q-Rex 
 Rules:
 
 - `code` reuses an established prefix when available. For a new allocation, inspect existing feature/PRD codes and choose an unused three-letter uppercase code compatible with the scenario convention. Preserve legacy codes and IDs instead of renumbering them.
-- `status` stays `draft` until Step 6's gate accepts the proposed version. In Q-Rex the reviewed payload is proposed to the native write approval before saving; include `reviewed_by`, `reviewed_at` and `review_method` for the actual decision mode. Automatic acceptance is not human confirmation. A reviewed PRD may retain `needs-review` items: stated `spec` stays attributed, while conflicts and unvalidated observations/assumptions do not establish intent. Use the [shared review contract](../../ask-qa/references/workflow-contract.md#hosts-and-review-gates).
+- `status` stays `draft` until Step 6's gate accepts the proposed version. In Q-Rex the reviewed payload is proposed to the native write approval before saving; include `reviewed_by`, `reviewed_at` and `review_method` for the actual decision mode. In a terminal host, save and present the draft first, then set review metadata only after explicit acceptance under the [shared review contract](../../ask-qa/references/workflow-contract.md#hosts-and-review-gates). Automatic acceptance is not human confirmation. A reviewed PRD may retain `needs-review` items: stated `spec` stays attributed, while conflicts and unvalidated observations/assumptions do not establish intent.
 - `sources` lists every origin of content: each uploaded file, the interview, and each exploration pass. Never include credentials or URLs that embed tokens.
 - `last_explored` is updated per area, never for the whole PRD at once, unless every area was re-checked.
 
 ## Skeleton
 
 ```markdown
-# <Sub-module> PRD
+# <Menu> PRD
 
 ## 1. Purpose
 
-<One or two sentences: what this sub-module does for the business and who uses it.>
+<One or two sentences: what this menu does for the business and who uses it.>
 Requirement sources: <document path, ticket keys such as ABC-123, or "none stated">.
 
 ## 2. Scope
 
 **In scope**
 
-- <submodule function or child test group and its covered journeys>
+- <menu function or child test group and its covered journeys>
 
 **Out of scope**
 
@@ -103,7 +103,7 @@ Input for the flow-list confirmation in `write-e2e-scenarios`. No flow or scenar
 
 ### 6.8 Cross-menu and platform integrations
 
-- <requirements, participating menus/platforms, prerequisites and observable outcomes owned by this submodule>
+- <requirements, participating menus/platforms, prerequisites and observable outcomes owned by this menu>
 
 ## 7. UI messages
 
@@ -225,7 +225,7 @@ A statement states one behavior. Split compound statements ("shows X and also al
 
 ## Section guidance
 
-**Purpose and scope.** Use the user's words from the context interview. Identify known child test groups and which journeys are covered, excluded or unverified within this one submodule PRD. Out-of-scope items come from the "known issues and scope" answer. A scoped refresh must not imply every child was explored.
+**Purpose and scope.** Use the user's words from the context interview. Identify known child test groups and which journeys are covered, excluded or unverified within this one menu PRD. Out-of-scope items come from the "known issues and scope" answer. A scoped refresh must not imply every child was explored.
 
 **Roles and access.** One row per role the user named or that you observed. A role you could not test is listed with `Can do` and `Must be denied` marked `unverified`, and also appears in section 10.
 
@@ -233,7 +233,7 @@ A statement states one behavior. Split compound statements ("shows X and also al
 
 **Candidate business flows.** Cover at least each supported create, read, update and delete happy path plus other main business functions. Recommend happy paths as smoke candidates. These are candidates only; `write-e2e-scenarios` confirms and numbers them.
 
-**Behavior.** Group by what the user does, not by DOM structure. Use sub-sections 6.4.x for each action (create, edit, delete, export, status change, and so on). Record integration requirements in 6.8. Add or remove sub-sections to fit the sub-module, but keep 6.1 to 6.8 present.
+**Behavior.** Group by what the user does, not by DOM structure. Use sub-sections 6.4.x for each action (create, edit, delete, export, status change, and so on). Record integration requirements in 6.8. Add or remove sub-sections to fit the menu, but keep 6.1 to 6.8 present.
 
 **UI messages.** One row per distinct message. If the same message appears in several places, list the trigger and screen for each.
 
@@ -248,7 +248,7 @@ A statement states one behavior. Split compound statements ("shows X and also al
 ```markdown
 ---
 module: Store Management
-submodule: Store List
+menu: Store List
 code: STL
 status: draft
 sources:

@@ -24,11 +24,11 @@ const defaultFilters: ScenarioFilters = {
 export function scenarioPath(module: string, file: string) {
   const prefix = `${module}/`;
   const relativeFile = file.startsWith(prefix) ? file.slice(prefix.length) : file;
-  const submodule = relativeFile.replace(/\.feature$/i, "");
-  return `/${[module, ...submodule.split("/")].map(encodeURIComponent).join("/")}`;
+  const scope = relativeFile.replace(/\.feature$/i, "");
+  return `/${[module, ...scope.split("/")].map(encodeURIComponent).join("/")}`;
 }
 
-export function scenarioSubmodule(module: string, file: string) {
+export function scenarioMenu(module: string, file: string) {
   const prefix = `${module}/`;
   if (!file.startsWith(prefix)) return undefined;
   return file
@@ -37,9 +37,9 @@ export function scenarioSubmodule(module: string, file: string) {
     .replace(/\.feature$/i, "");
 }
 
-export function isSubmoduleScope(module: string, scope: string) {
-  const submodule = scenarioSubmodule(module, scope);
-  return Boolean(submodule && scope === `${module}/${submodule}`);
+export function isMenuScope(module: string, scope: string) {
+  const menu = scenarioMenu(module, scope);
+  return Boolean(menu && scope === `${module}/${menu}`);
 }
 
 export function scenarioFiltersFromSearchParams(params: URLSearchParams): ScenarioFilters {

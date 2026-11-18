@@ -5,9 +5,9 @@ review, question and browser tools. It does not give the model a shell. The work
 instructions are the repository skills in `.agents/skills`; the runtime adapter is
 `server/modules/agent/agent-skills.mjs`.
 
-The explorer follows module → submodule → optional test groups/files. Read [test organization](test-organization.md)
-when adding integration journeys or splitting a large submodule. Each real submodule has one PRD covering its child
-groups/files; manage it from the submodule view. Children share the parent PRD and scenario ID namespace; flow
+The explorer follows module → menu → optional test groups/files. Read [test organization](test-organization.md)
+when adding integration journeys or splitting a large menu. Each real menu has one PRD covering its child
+groups/files; manage it from the menu view. Children share the parent PRD and scenario ID namespace; flow
 confirmation and scenario review identify the exact files and scenario IDs in the batch.
 
 ## Start and prerequisites
@@ -52,11 +52,14 @@ The default workflow uses the review gates below. When an approval is pending, *
    explicitly. A missing skill in the draft is an error, not a successful handoff.
    Follow-up attachments from the explorer are validated against the immutable draft base before
    resolving their current draft source. Missing or ambiguous identities are rejected.
-2. `write-prd` imports or explores one sub-module and records requirement provenance. Writing
+2. `write-prd` imports or explores one menu and records requirement provenance. Writing
    `status: reviewed` or new validated content presents the complete proposed document for explicit
    PRD approval. PRDs and their versions are stored in PostgreSQL; their `docs/prd/...` paths are
    virtual identifiers for the agent tools, not Git changes. Existing checkout PRDs remain separate
    baseline files. After approval Q-Rex reports and stops; scenario discovery resumes on another turn.
+   Terminal agents follow the same skill and criteria using the repository file path: save a `draft`
+   for inspection, wait for explicit review, then record only accepted validations and reviewed metadata.
+   Their PRD is a local Git change; do not treat a create request as review approval.
 3. `write-e2e-scenarios` reads the matching reviewed PRD and explores the tenant. `confirm_flows`
    presents the described flow list for confirmation before scenario-intent changes. Confirmation
    is tied to the current PRD and feature contents and does not approve the scenarios.

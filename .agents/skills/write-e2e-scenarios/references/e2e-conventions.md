@@ -4,8 +4,8 @@
 
 ```
 e2e/tests/bdd/
-  features/<module>/<submodule>.feature # small submodules; _components/ holds reusable master contracts
-  features/<module>/<submodule>/**/*.feature # child groups/files for larger or integration scopes
+  features/<module>/<menu>.feature # small menus; _components/ holds reusable master contracts
+  features/<module>/<menu>/**/*.feature # child groups/files for larger or integration scopes
   steps/<module>/<feature>.steps.ts     # _shared/ holds cross-module steps
   pages/<module>/<PageName>.ts          # one POM per page, grouped by module
   components/<ComponentName>.ts         # flat: COMs are UI-component scoped
@@ -17,20 +17,20 @@ Naming rule: folder names inside `features/`, `steps/` and `pages/` must match t
 
 For feature ownership, splitting, integration journeys, child groups and PRD mapping, follow
 [test organization](../../../../docs/automation/test-organization.md). Read all files belonging to the target
-submodule, including its flat file and nested folder when both exist, before discovering coverage or assigning IDs.
-Child names describe test scope; only module and submodule names mirror the product menu/route.
+menu, including its flat file and nested folder when both exist, before discovering coverage or assigning IDs.
+Child names describe test scope; only module and menu names mirror the product menu/route.
 
 ## Scenario IDs
 
-- Sub-module and module scenarios: `TEN_<CODE>_<FLG>_E2E_<NNN>`
-  - New `<CODE>` allocations are exactly 3 uppercase letters: the submodule code when the module has submodules, otherwise the module code. Reuse the established PRD/feature code and preserve legacy IDs.
+- Menu and module scenarios: `TEN_<CODE>_<FLG>_E2E_<NNN>`
+  - New `<CODE>` allocations are exactly 3 uppercase letters: the menu code when the module has menus, otherwise the module code. Reuse the established PRD/feature code and preserve legacy IDs.
   - `<FLG>` is exactly 3 characters: the abbreviated flow section.
   - `<NNN>` restarts at `001` for each `<FLG>` section.
 - Component masters: `TEN_COM_<CMP>_E2E_<NNN>` (no `<FLG>`; one file per component).
 
 Examples: `TEN_USR_LST_E2E_003` (flow `TEN_USR_LIST_FLOW`), `TEN_AUT_LOG_E2E_001` (flow `TEN_LOGIN_FLOW`), `TEN_COM_FSR_E2E_001`.
 
-IDs are permanent. Retire, never renumber. To pick the next number, find the highest `NNN` for the same `<CODE>_<FLG>` across every file in the owning submodule and known retired IDs, and add 1. Moving or splitting files does not reset the sequence.
+IDs are permanent. Retire, never renumber. To pick the next number, find the highest `NNN` for the same `<CODE>_<FLG>` across every file in the owning menu and known retired IDs, and add 1. Moving or splitting files does not reset the sequence.
 
 ## Test data values
 
@@ -47,34 +47,34 @@ Inspect its implementation; minute precision is formatting, not guaranteed uniqu
 
 When a workflow touches a step or POM file, align the data values in that file to these rules in the same pass.
 
-### Module and sub-module codes
+### Module and menu codes
 
 | Level      | Code  | Maps to                                        |
 | ---------- | ----- | ---------------------------------------------- |
 | module     | `HOM` | `_protected+` shell (home landing + launcher)  |
-| sub-module | `USR` | `user-management` / `users`                    |
-| sub-module | `UGP` | `user-management` / `user-groups`              |
+| menu | `USR` | `user-management` / `users`                    |
+| menu | `UGP` | `user-management` / `user-groups`              |
 | module     | `AUT` | `auth` (login / logout)                        |
 | module     | `IAM` | `iam`                                          |
-| sub-module | `ACR` | `iam` / `access-roles`                         |
-| sub-module | `PMS` | `iam` / `permission-sets`                      |
-| module     | `CAS` | `case-management` (and its `cases` sub-module) |
-| sub-module | `CDB` | `case-management` / `dashboard`                |
+| menu | `ACR` | `iam` / `access-roles`                         |
+| menu | `PMS` | `iam` / `permission-sets`                      |
+| module     | `CAS` | `case-management` (and its `cases` menu) |
+| menu | `CDB` | `case-management` / `dashboard`                |
 | module     | `ORG` | `organization-management`                      |
 | module     | `WFM` | `workforce-management`                         |
-| sub-module | `WKO` | `workforce-management` / `work-orders`         |
-| sub-module | `WDB` | `workforce-management` / `dashboard`           |
+| menu | `WKO` | `workforce-management` / `work-orders`         |
+| menu | `WDB` | `workforce-management` / `dashboard`           |
 | module     | `AUD` | `audit-center`                                 |
 | module     | `SYS` | `system-settings`                              |
 | module     | `DSH` | `dashboard`                                    |
 
-Outage management is a sub-module of `case-management` (route `case-management+/outage-management+/`). If it has no code in the table yet, propose one that does not collide with `CAS` or `CDB`, and confirm it with the user before adding it here.
+Outage management is a menu of `case-management` (route `case-management+/outage-management+/`). If it has no code in the table yet, propose one that does not collide with `CAS` or `CDB`, and confirm it with the user before adding it here.
 
 ### Flow tags and flow sections
 
 Use flow tags for meaningful business journeys, not every UI control or endpoint. The catalog groups scenarios by these tags and shows each group as a collapsible category. An existing tag or passing scenario shows coverage of the scenario, not necessarily all branches of the journey. Report PRD-only candidates and unresolved discovery gaps in the review summary; the generated flow-coverage metric counts only categories represented by feature scenarios. See [flow-discovery.md](flow-discovery.md).
 
-Flow tag convention: `@flow:TEN_<CODE>_<ACTION>_FLOW` (sub-module and module scenarios). Use full readable action names (`LIST`, `CREATE`, `LOGIN`, `FILTER_SEARCH`). The `<FLG>` in the ID is the 3-character abbreviation of the same section.
+Flow tag convention: `@flow:TEN_<CODE>_<ACTION>_FLOW` (menu and module scenarios). Use full readable action names (`LIST`, `CREATE`, `LOGIN`, `FILTER_SEARCH`). The `<FLG>` in the ID is the 3-character abbreviation of the same section.
 
 Flow IDs are stable forever. Never rename or reuse one.
 
@@ -140,7 +140,7 @@ Tag order: ID → cross-cutting (`@smoke`/`@regression`) → `@mock` → `@quara
 
 ## Tag policy
 
-- `@smoke`: business-critical, release-gating success journeys. For sub-module E2E, the baseline includes at least the happy path of each supported, in-scope create, read, update and delete operation, unless the user explicitly excludes one. CRUD is a minimum: identify and recommend happy paths for other main business functions as smoke too, using requirements, discovery and user context. Do not invent unsupported operations or classify all error and validation variants as smoke. Document blocked or unavailable operations, and preserve the no-`@mock` and data-safety rules.
+- `@smoke`: business-critical, release-gating success journeys. For menu E2E, the baseline includes at least the happy path of each supported, in-scope create, read, update and delete operation, unless the user explicitly excludes one. CRUD is a minimum: identify and recommend happy paths for other main business functions as smoke too, using requirements, discovery and user context. Do not invent unsupported operations or classify all error and validation variants as smoke. Document blocked or unavailable operations, and preserve the no-`@mock` and data-safety rules.
 - `@regression`: non-smoke scenarios selected for E2E, including consequential negative paths or bug guards. The tag does not by itself justify adding isolated component checks to E2E.
 - `@mock`: see the rule in `write-e2e-code/references/msw-mocking.md`.
 - `@fixme`: real application defect, paired with `@ref:<JIRA-ID>`. Playwright marks it skipped, so a normal run cannot demonstrate recovery. To verify a fix, temporarily run the specific scenario without the skip in a controlled local selection, restore the tag if it still fails, and clear it only after an observed pass; preserve review requirements for any scenario-intent change.

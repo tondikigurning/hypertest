@@ -9,7 +9,7 @@ Implement one approved Gherkin batch as reusable steps, page/component objects, 
 
 For new/changed intent, verify approval of the **current** feature snapshot and exact scenario IDs before implementation. In Q-Rex, chat approval is insufficient: use the actual Changes-panel decision or configured automatic mode. Existing implemented scenarios can receive intent-preserving technical repairs/refactors without a new scenario-design gate; preserve their contract and IDs and inspect data safety.
 
-Preserve the requested module/submodule. Resolve feature candidates by contents and product evidence, not sibling proximity. If no matching approved scenario exists, apply [write-e2e-scenarios](../write-e2e-scenarios/SKILL.md) yourself for that target, including its PRD/discovery/review prerequisites. Reuse context; ask only when target or approval remains materially ambiguous. Do not ask the user to pick an unrelated feature or invoke the handoff again.
+Preserve the requested module/menu. Resolve feature candidates by contents and product evidence, not sibling proximity. If no matching approved scenario exists, apply [write-e2e-scenarios](../write-e2e-scenarios/SKILL.md) yourself for that target, including its PRD/discovery/review prerequisites. Reuse context; ask only when target or approval remains materially ambiguous. Do not ask the user to pick an unrelated feature or invoke the handoff again.
 
 ## Step 0 — Resolve approved scope
 
@@ -17,7 +17,7 @@ Identify the exact batch files, scenario/source identities, flow categories and 
 
 ## Step 1 — Read before writing
 
-1. Read every approved feature and the owning submodule's flat/nested features. Follow [test organization](../../../docs/automation/test-organization.md): children share one parent PRD and ID namespace. Preserve IDs, `@flow:`, `@ref:`, assertions and intent; splits retain inherited tags, backgrounds/examples, safety notes and flow order. Missing requirements belong in a refresh/review of that parent through `write-prd`.
+1. Read every approved feature and the owning menu's flat/nested features. Follow [test organization](../../../docs/automation/test-organization.md): children share one parent PRD and ID namespace. Preserve IDs, `@flow:`, `@ref:`, assertions and intent; splits retain inherited tags, backgrounds/examples, safety notes and flow order. Missing requirements belong in a refresh/review of that parent through `write-prd`.
 2. Read relevant shared fixtures/utilities, `steps/_shared/`, components and the existing module's steps/POMs and callers. Reuse their style and bindings. Read each linked `@ref:TEN_COM_*` master: its step text is the contract.
 3. Inspect actual mock contracts before applying [MSW guidance](references/msw-mocking.md). Consult [troubleshooting](references/troubleshooting.md) only for a matching symptom; do not copy known weak assertions merely because they exist.
 

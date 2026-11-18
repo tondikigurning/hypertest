@@ -10,9 +10,9 @@ Paths are relative to the repository root. Follow callers and imports when the r
 | Shared scope, host capabilities, approvals and batch completion | `.agents/skills/ask-qa/references/workflow-contract.md` |
 | Contributor rules | `AGENTS.md`, `CLAUDE.md` |
 | E2E business-flow discovery and review gates | `.agents/skills/write-e2e-scenarios/SKILL.md`, its `references/flow-discovery.md`, matching reviewed `docs/prd/` PRD and scoped `.feature` files |
-| Sub-module PRD authoring and product context | `.agents/skills/write-prd/SKILL.md`, `docs/prd/` |
+| Menu PRD authoring and product context | `.agents/skills/write-prd/SKILL.md`, `docs/prd/` |
 | Scenario IDs, tags, data safety and reusable contracts | `.agents/skills/write-e2e-scenarios/references/e2e-conventions.md`, `.agents/skills/write-e2e-scenarios/references/data-safety.md`, `e2e/tests/bdd/features/_components/` |
-| Submodule ownership, child feature groups, integration journeys and file splits | `docs/automation/test-organization.md` |
+| Menu ownership, child feature groups, integration journeys and file splits | `docs/automation/test-organization.md` |
 | Reviewed step definitions, page objects, fixtures and mocks | `.agents/skills/write-e2e-code/SKILL.md` and its relevant references |
 | Browser inspection and authenticated sessions | `.agents/skills/playwright-cli/SKILL.md` and its relevant references |
 

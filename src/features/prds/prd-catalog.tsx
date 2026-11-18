@@ -96,7 +96,7 @@ function EditorActions({ busy, label, onCancel }: { busy: boolean; label: string
 
 export function PrdCatalog({
   module,
-  submodule,
+  menu,
   checkout,
   draftPrds,
   draft,
@@ -106,7 +106,7 @@ export function PrdCatalog({
   returnFocus,
 }: {
   module: string;
-  submodule: string;
+  menu: string;
   checkout: PrdResult;
   draftPrds: PrdResult;
   draft: string;
@@ -115,7 +115,7 @@ export function PrdCatalog({
   onClose: () => void;
   returnFocus: RefObject<HTMLButtonElement | null>;
 }) {
-  const versions = usePrdVersions(module, submodule, draft);
+  const versions = usePrdVersions(module, menu, draft);
   const [selectedId, setSelectedId] = useState("");
   const [editingName, setEditingName] = useState(false);
   const [editingContent, setEditingContent] = useState(false);
@@ -127,8 +127,8 @@ export function PrdCatalog({
   const [confirmation, setConfirmation] = useState<
     { kind: "discard"; proceed: () => void } | { kind: "delete"; id: string; name: string } | null
   >(null);
-  const checkoutItem = checkout.items.find((entry) => entry.module === module && entry.submodule === submodule);
-  const draftItem = draftPrds.items.find((entry) => entry.module === module && entry.submodule === submodule);
+  const checkoutItem = checkout.items.find((entry) => entry.module === module && entry.menu === menu);
+  const draftItem = draftPrds.items.find((entry) => entry.module === module && entry.menu === menu);
   const selectedVersion =
     selectedId === "__checkout__"
       ? undefined
@@ -254,7 +254,7 @@ export function PrdCatalog({
           </span>
           <div>
             <SectionEyebrow className="prd-kicker">PRODUCT REQUIREMENTS</SectionEyebrow>
-            <h2 id="prd-dialog-title">{label(submodule)}</h2>
+            <h2 id="prd-dialog-title">{label(menu)}</h2>
             <p>
               {label(module)} <span aria-hidden="true">/</span> {draft ? "Draft workspace" : "Checkout baseline"}
             </p>
@@ -349,7 +349,7 @@ export function PrdCatalog({
               <div className="prd-reader-heading">
                 <div>
                   <div className="prd-version-title">
-                    <h3>{selectedVersion?.name ?? label(submodule)}</h3>
+                    <h3>{selectedVersion?.name ?? label(menu)}</h3>
                   </div>
                 </div>
                 <div className="prd-reader-controls">

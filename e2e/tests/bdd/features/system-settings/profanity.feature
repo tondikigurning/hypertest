@@ -9,7 +9,7 @@
 #
 # ID prefix: TEN_PRF_<FLG>_E2E_NNN
 #   <FLG> is exactly 3 characters; NNN resets at 001 for each flow section.
-#   Sub-module code PRF (system-settings / profanity) is proposed for the
+#   Menu code PRF (system-settings / profanity) is proposed for the
 #   conventions table and takes effect once approved with this file.
 #
 # Flow tag convention:

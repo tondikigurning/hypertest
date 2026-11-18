@@ -17,7 +17,7 @@ Exploration finds possible journeys. It does not prove the PRD is complete. Ever
 
 ## Before you start
 
-- [ ] Scope is settled: module, sub-module, environment (Step 0).
+- [ ] Scope is settled: module, menu, environment (Step 0).
 - [ ] Available context for roles, accounts, data, mutation permission and known issues has been gathered; gaps are recorded (Step 0b).
 - [ ] Credentials come from the environment's configured variables. Never print or echo them.
 - [ ] You know whether E2E-owned records may be created or deleted here. If unknown, stay read-only.
@@ -38,11 +38,11 @@ Exploration finds possible journeys. It does not prove the PRD is complete. Ever
 
 ## Checklist by area
 
-Work through each area that exists for this sub-module. If an area does not exist, record "not present" with how you checked. If it exists but you cannot reach it, record it as unverified (see below).
+Work through each area that exists for this menu. If an area does not exist, record "not present" with how you checked. If it exists but you cannot reach it, record it as unverified (see below).
 
 ### 1. Entry and navigation
 
-- [ ] Path through the app's navigation to the sub-module (menu labels as shown).
+- [ ] Path through the app's navigation to the menu (menu labels as shown).
 - [ ] Page title, breadcrumbs, tabs and sub-navigation.
 - [ ] Default landing state: selected tab, default filters, default sort.
 - [ ] What happens on refresh and on browser back from a detail or dialog.
@@ -70,7 +70,7 @@ Work through each area that exists for this sub-module. If an area does not exis
 
 ### 4. Actions (create, edit, delete and others)
 
-For each action the sub-module supports (create, edit, delete, activate/deactivate, approve/reject, import, export, duplicate, assign, and so on):
+For each action the menu supports (create, edit, delete, activate/deactivate, approve/reject, import, export, duplicate, assign, and so on):
 
 - [ ] Entry point (button, menu item, row action) and its exact label.
 - [ ] Form or dialog: title, fields, labels, required markers, defaults, placeholders, field types, option lists.
@@ -123,8 +123,8 @@ Only check validation that can be triggered without submitting data you must not
 
 ### 10. Cross-menu and platform journeys
 
-- [ ] Identify journeys owned by this submodule that hand off to or receive results from another menu, module or platform, using the PRD sources, existing scenarios and reachable UI.
-- [ ] Record the participating areas, entry point, prerequisites, observable outcome, dependencies and relevant supporting PRDs in the owning submodule's PRD. Follow accessible read-only steps within the established scope and data-safety rules.
+- [ ] Identify journeys owned by this menu that hand off to or receive results from another menu, module or platform, using the PRD sources, existing scenarios and reachable UI.
+- [ ] Record the participating areas, entry point, prerequisites, observable outcome, dependencies and relevant supporting PRDs in the owning menu's PRD. Follow accessible read-only steps within the established scope and data-safety rules.
 - [ ] Mark any inaccessible or unverified handoff, upstream behavior or external outcome with its reason and what is needed to verify it. A mocked response does not verify the real integration.
 
 ## How to record an observation
@@ -174,7 +174,7 @@ Pause the affected interaction and ask the user when:
 - The UI shows real customer data and you are unsure how to handle it.
 - Live behavior contradicts the spec in a way that may be a real defect and you need a ticket ID. Never invent one.
 - You hit a login wall, MFA or a protected environment you were not cleared to use.
-- The product submodule that owns the requested journey remains ambiguous after checking the request, navigation, PRDs and feature sources. A journey crossing another submodule or platform is not by itself a change of ownership or a reason to stop documenting it in the owner's PRD.
+- The product menu that owns the requested journey remains ambiguous after checking the request, navigation, PRDs and feature sources. A journey crossing another menu or platform is not by itself a change of ownership or a reason to stop documenting it in the owner's PRD.
 
 ## Coverage statement
 

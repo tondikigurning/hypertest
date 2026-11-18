@@ -368,7 +368,7 @@ test("flow confirmation is rejected if the PRD changes while the user reviews it
   );
 });
 
-test("flow confirmation uses the owning submodule PRD for flat and nested features", async (t) => {
+test("flow confirmation uses the owning menu PRD for flat and nested features", async (t) => {
   const workspace = await mkdtemp(join(tmpdir(), "automation-agent-flow-owner-"));
   t.after(() => rm(workspace, { recursive: true, force: true }));
   const reviewed = "---\nstatus: reviewed\n---\n";
@@ -401,7 +401,7 @@ test("flow confirmation uses the owning submodule PRD for flat and nested featur
     "docs/prd/case-management/cases/integration.md",
     "docs/prd/workforce-management/cases.md",
   ])
-    await assert.rejects(confirm(feature, wrongPrd), /owning submodule PRD/);
+    await assert.rejects(confirm(feature, wrongPrd), /owning menu PRD/);
   assert.equal(approvals, 4, "mismatches must be rejected before requesting approval");
 
   const confirmations = {

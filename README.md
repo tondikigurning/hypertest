@@ -41,7 +41,7 @@ See the [Q-Rex workflow guide](docs/automation/README.md) for skill handoffs, re
 
 BDD feature files under `e2e/tests/bdd/features` are the authored scenario source. The Automation API creates or replaces the PostgreSQL scenario catalog at startup. Run `pnpm db:sync-catalog` to refresh it without restarting the API. BDD reporters write run results only; scenario catalog files are not generated in Markdown.
 
-The sidebar follows module → submodule → optional child test groups/files. Large submodules and integration journeys stay inside their owning submodule; see [test organization](docs/automation/test-organization.md) for paths, PRD ownership, IDs and migration rules. Selecting a parent shows and can run all its descendant scenarios.
+The sidebar follows module → menu → optional child test groups/files. Large menus and integration journeys stay inside their owning menu; see [test organization](docs/automation/test-organization.md) for paths, PRD ownership, IDs and migration rules. Selecting a parent shows and can run all its descendant scenarios.
 
 Scenario execution can change live data. Before running a feature, review its setup, steps, tags, and the E2E data-safety guidance in `.agents/skills/write-e2e-scenarios/references/data-safety.md`. Repository checks do not run BDD scenarios or upload external evidence.
 
@@ -55,4 +55,4 @@ pnpm typecheck
 pnpm build
 ```
 
-Select a submodule to use **View PRD**. Its one document covers the submodule and all child test groups/files; child views do not have separate PRDs. Q-Rex stores PRDs and their versions in PostgreSQL for the local preview identity; `docs/prd/<module>/<submodule>.md` is their virtual identifier in agent tools, not a repository file. Existing checkout documents remain visible as a separate local baseline and are not automatically imported or deleted. Manage versions in the PRD view; use **Edit with Q-Rex** for reviewed or validated requirements. Attach a PDF, DOCX, Markdown, or text file in chat when importing. The agent explores the selected environment and requests review before marking observations validated. PRD edits do not become Git changes.
+Select a menu to use **View PRD**. Its one document covers the menu and all child test groups/files; child views do not have separate PRDs. Q-Rex stores PRDs and their versions in PostgreSQL for the local preview identity; `docs/prd/<module>/<menu>.md` is their virtual identifier in agent tools, not a repository file. Existing checkout documents remain visible as a separate local baseline and are not automatically imported or deleted. Manage versions in the PRD view; use **Edit with Q-Rex** for reviewed or validated requirements. Attach a PDF, DOCX, Markdown, or text file in chat when importing. The agent explores the selected environment and requests review before marking observations validated. PRD edits do not become Git changes.

@@ -8,12 +8,12 @@ The acceptance baseline is the current README, contributor instructions, workflo
 
 ## Project and skill model
 
-The local Automation app composes a feature-sourced scenario explorer, a checkout runner, evidence viewing and a QA drafting agent. The explorer checkout and the agent's committed-base worktree are separate. Running the explorer cannot verify unmerged agent changes. Q-Rex PRDs are database documents addressed through virtual `docs/prd/<module>/<submodule>.md` identifiers; they are separate from checkout Markdown files.
+The local Automation app composes a feature-sourced scenario explorer, a checkout runner, evidence viewing and a QA drafting agent. The explorer checkout and the agent's committed-base worktree are separate. Running the explorer cannot verify unmerged agent changes. Q-Rex PRDs are database documents addressed through virtual `docs/prd/<module>/<menu>.md` identifiers; they are separate from checkout Markdown files.
 
 | Skill | Responsibility | Successful boundary |
 | --- | --- | --- |
 | `ask-qa` | Explain testing and own requested testing/app work; apply specialists as needed | Answer with evidence, or complete feasible authorized work and identify remaining gates |
-| `write-prd` | Create/import/refresh one parent submodule PRD | Preserve requirement provenance and IDs, explore the requested area, obtain PRD review and stop |
+| `write-prd` | Create/import/refresh one parent menu PRD | Preserve requirement provenance and IDs, explore the requested area, obtain PRD review and stop |
 | `write-e2e-scenarios` | Discover business journeys and author reviewed Gherkin | Read reviewed parent context, explore, confirm flows, write one reviewable batch and stop |
 | `write-e2e-code` | Implement approved scenarios or repair existing implementations without changing intent | Preserve identity and contract; distinguish code written, static validation and actual execution |
 | `playwright-cli` | Support browser inspection and interactions | Use current evidence, an owned session and applicable data-safety rules |
@@ -70,7 +70,7 @@ The [PRD template](../../.agents/skills/write-prd/references/prd-template.md), l
 
 Recommended repair: align newly allocated codes with the existing three-character scenario convention, check existing allocations before choosing, and preserve established IDs. A separate requirement-code namespace would be a deliberate policy change, not an implied repair.
 
-Acceptance: a new submodule with no artifacts receives a compatible code that survives PRD-to-scenario handoff without renumbering.
+Acceptance: a new menu with no artifacts receives a compatible code that survives PRD-to-scenario handoff without renumbering.
 
 ### A06 — P2: turn and session boundaries are ambiguous
 
@@ -124,7 +124,7 @@ Acceptance: the cases below have recorded model outputs and explicit pass/fail j
 | E11 | Approved Q-Rex implementation, no execution/typecheck tools | Produce a concrete draft and exact external-check handoff; do not claim `implemented`/`verified` prematurely |
 | E12 | Allow-all enabled, then disabled or API restarted | Describe automatic decisions truthfully and respect the host's current approval mode |
 | E13 | Missing/duplicate scenario IDs or moved sources | Keep source identity and surface ambiguity; do not silently substitute another row/feature |
-| E14 | Fresh submodule plus two creates in the same minute | Allocate compatible stable IDs and distinct valid test data under the agreed naming policy |
+| E14 | Fresh menu plus two creates in the same minute | Allocate compatible stable IDs and distinct valid test data under the agreed naming policy |
 | E15 | Safe next-batch request on a later turn in the same draft | Resume only after the existing review and verification prerequisites are satisfied; retain scope and IDs |
 
 ## Verification performed

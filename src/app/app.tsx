@@ -17,11 +17,11 @@ import { ScenarioMetadata } from "../features/scenarios/components/scenario-meta
 import { ScenarioNavigation } from "../features/scenarios/components/scenario-navigation";
 import {
   clearScenarioFilterParams,
-  isSubmoduleScope,
+  isMenuScope,
   type ScenarioFilterKey,
   scenarioFiltersFromSearchParams,
+  scenarioMenu,
   scenarioPath,
-  scenarioSubmodule,
   updateScenarioFilterParams,
 } from "../features/scenarios/navigation";
 import { category, featureTitle, label, type Scenario } from "../features/scenarios/scenario";
@@ -40,17 +40,17 @@ export function App() {
   const route = matches.at(-1);
   const routeModule = route?.params.module;
   const routeScope =
-    routeModule && route?.params.submodule
-      ? `${routeModule}/${route.params.submodule}${route.params["*"] ? `/${route.params["*"]}` : ""}`
+    routeModule && route?.params.menu
+      ? `${routeModule}/${route.params.menu}${route.params["*"] ? `/${route.params["*"]}` : ""}`
       : undefined;
-  const routeSubmodule = routeModule && routeScope ? scenarioSubmodule(routeModule, routeScope) : undefined;
+  const routeMenu = routeModule && routeScope ? scenarioMenu(routeModule, routeScope) : undefined;
   const isHome = route?.id === "home";
-  const isSubmodule = Boolean(
+  const isMenu = Boolean(
     route?.id === "scenario" &&
       routeModule &&
       routeModule !== "_components" &&
       routeScope &&
-      isSubmoduleScope(routeModule, routeScope),
+      isMenuScope(routeModule, routeScope),
   );
   const location = useLocation();
   const navigate = useNavigate();
@@ -58,16 +58,9 @@ export function App() {
   const [searchParams, setSearchParams] = useSearchParams();
   const filters = scenarioFiltersFromSearchParams(searchParams);
   const { search, status, priority, type } = filters;
-  const isPrdView = isSubmodule && searchParams.get("view") === "prd";
+  const isPrdView = isMenu && searchParams.get("view") === "prd";
   useEffect(() => {
-    if (
-      route?.id !== "scenario" ||
-      isSubmodule ||
-      searchParams.get("view") !== "prd" ||
-      !routeModule ||
-      !routeSubmodule
-    )
-      return;
+    if (route?.id !== "scenario" || isMenu || searchParams.get("view") !== "prd" || !routeModule || !routeMenu) return;
     if (routeModule === "_components") {
       const next = new URLSearchParams(searchParams);
       next.delete("view");
@@ -75,10 +68,10 @@ export function App() {
       return;
     }
     navigate(
-      { pathname: scenarioPath(routeModule, `${routeModule}/${routeSubmodule}`), search: location.search },
+      { pathname: scenarioPath(routeModule, `${routeModule}/${routeMenu}`), search: location.search },
       { replace: true },
     );
-  }, [isSubmodule, location.pathname, location.search, navigate, route?.id, routeModule, routeSubmodule, searchParams]);
+  }, [isMenu, location.pathname, location.search, navigate, route?.id, routeModule, routeMenu, searchParams]);
   const prds = usePrds();
   const prdButton = useRef<HTMLButtonElement>(null);
   const activeRun = useActiveRun(true);
@@ -149,7 +142,7 @@ export function App() {
     (module: string, file: string, params = searchParams, replace = false) => {
       const next = new URLSearchParams(params);
       next.delete("module");
-      next.delete("submodule");
+      next.delete("menu");
       const query = next.toString();
       navigate({ pathname: scenarioPath(module, file), search: query ? `?${query}` : "" }, { replace });
     },
@@ -212,7 +205,7 @@ export function App() {
   const goHome = () => {
     const params = clearScenarioFilterParams(searchParams);
     params.delete("module");
-    params.delete("submodule");
+    params.delete("menu");
     params.delete("view");
     const query = params.toString();
     navigate({ pathname: "/", search: query ? `?${query}` : "" });
@@ -302,8 +295,8 @@ export function App() {
                         ? "Search results"
                         : selectedGroup
                           ? scopeTitle
-                          : routeSubmodule
-                            ? label(routeSubmodule)
+                          : routeMenu
+                            ? label(routeMenu)
                             : "Feature not found"}
                     </h2>
                     <p aria-live="polite">
@@ -311,18 +304,18 @@ export function App() {
                         ? `${filtered.length} ${filtered.length === 1 ? "scenario" : "scenarios"} found across all features`
                         : selectedGroup
                           ? `${filtered.length} of ${featureCount} ${featureCount === 1 ? "scenario" : "scenarios"} shown`
-                          : routeModule && routeSubmodule
+                          : routeModule && routeMenu
                             ? "This test group is not in the current catalog."
-                            : "Choose a submodule from the sidebar to continue."}
+                            : "Choose a menu from the sidebar to continue."}
                     </p>
                   </div>
                   <div className="list-heading-actions">
-                    {isSubmodule && routeModule && routeSubmodule && (
+                    {isMenu && routeModule && routeMenu && (
                       <button
                         ref={prdButton}
                         type="button"
                         className="open-prd-button"
-                        title={`View PRD for ${label(routeModule)} / ${label(routeSubmodule)}`}
+                        title={`View PRD for ${label(routeModule)} / ${label(routeMenu)}`}
                         onClick={() => {
                           const next = new URLSearchParams(searchParams);
                           next.set("view", "prd");
@@ -500,11 +493,11 @@ export function App() {
               onOpenReference={openReference}
             />
           </div>
-          {isPrdView && routeModule && routeSubmodule && (
+          {isPrdView && routeModule && routeMenu && (
             <PrdCatalog
-              key={`${routeModule}/${routeSubmodule}`}
+              key={`${routeModule}/${routeMenu}`}
               module={routeModule}
-              submodule={routeSubmodule}
+              menu={routeMenu}
               checkout={prds.checkout}
               draftPrds={prds.draftPrds}
               draft={prds.draft}
@@ -517,22 +510,22 @@ export function App() {
               onCreate={() => {
                 sessionStorage.setItem(
                   "automation-prd-context",
-                  JSON.stringify({ module: routeModule, submodule: routeSubmodule }),
+                  JSON.stringify({ module: routeModule, menu: routeMenu }),
                 );
                 sessionStorage.setItem(
                   "automation-prd-start",
-                  `Help me create or import the submodule PRD for ${routeModule} / ${routeSubmodule}, covering its child test groups and files.`,
+                  `Help me create or import the menu PRD for ${routeModule} / ${routeMenu}, covering its child test groups and files.`,
                 );
                 goHome();
               }}
               onEdit={() => {
                 sessionStorage.setItem(
                   "automation-prd-context",
-                  JSON.stringify({ module: routeModule, submodule: routeSubmodule }),
+                  JSON.stringify({ module: routeModule, menu: routeMenu }),
                 );
                 sessionStorage.setItem(
                   "automation-prd-start",
-                  `Help me edit or refresh the submodule PRD for ${routeModule} / ${routeSubmodule}, covering its child test groups and files.`,
+                  `Help me edit or refresh the menu PRD for ${routeModule} / ${routeMenu}, covering its child test groups and files.`,
                 );
                 goHome();
               }}

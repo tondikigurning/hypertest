@@ -110,9 +110,9 @@ export const agentPrds = pgTable(
   {
     userId: text("user_id").notNull(),
     module: text("module").notNull(),
-    submodule: text("submodule").notNull(),
+    menu: text("menu").notNull(),
     state: jsonb("state").notNull(),
     revision: integer("revision").notNull().default(1),
   },
-  (table) => [primaryKey({ columns: [table.userId, table.module, table.submodule] })],
+  (table) => [primaryKey({ columns: [table.userId, table.module, table.menu] })],
 );

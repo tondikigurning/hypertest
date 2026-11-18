@@ -9,9 +9,8 @@ export { prdIdentity } from "./prd-identity.mjs";
 const identity = /^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/;
 const empty = () => ({ activeVersionId: undefined, versions: [] });
 
-function validate(module, submodule) {
-  if (!identity.test(module || "") || !identity.test(submodule || ""))
-    throw new Error("Choose a valid module and submodule.");
+function validate(module, menu) {
+  if (!identity.test(module || "") || !identity.test(menu || "")) throw new Error("Choose a valid module and menu.");
 }
 
 function status(content) {
@@ -21,10 +20,10 @@ function status(content) {
   );
 }
 
-function serialize(state, module, submodule) {
+function serialize(state, module, menu) {
   return {
     module,
-    submodule,
+    menu,
     activeVersionId: state.activeVersionId,
     items: state.versions.map((version) => ({
       ...version,
@@ -35,18 +34,18 @@ function serialize(state, module, submodule) {
 }
 
 export function createPrdDatabase(userId) {
-  const where = (module, submodule) =>
-    and(eq(agentPrds.userId, userId), eq(agentPrds.module, module), eq(agentPrds.submodule, submodule));
-  async function load(module, submodule) {
-    validate(module, submodule);
-    const [row] = await database().select().from(agentPrds).where(where(module, submodule));
+  const where = (module, menu) =>
+    and(eq(agentPrds.userId, userId), eq(agentPrds.module, module), eq(agentPrds.menu, menu));
+  async function load(module, menu) {
+    validate(module, menu);
+    const [row] = await database().select().from(agentPrds).where(where(module, menu));
     return { state: row?.state || empty(), revision: row?.revision || 0 };
   }
-  async function save(module, submodule, state, revision) {
+  async function save(module, menu, state, revision) {
     if (!revision) {
       const rows = await database()
         .insert(agentPrds)
-        .values({ userId, module, submodule, state })
+        .values({ userId, module, menu, state })
         .onConflictDoNothing()
         .returning();
       if (!rows.length) throw new Error("The PRD changed concurrently. Reload and try again.");
@@ -54,7 +53,7 @@ export function createPrdDatabase(userId) {
       const rows = await database()
         .update(agentPrds)
         .set({ state, revision: revision + 1 })
-        .where(and(where(module, submodule), eq(agentPrds.revision, revision)))
+        .where(and(where(module, menu), eq(agentPrds.revision, revision)))
         .returning();
       if (!rows.length) throw new Error("The PRD changed concurrently. Reload and try again.");
     }
@@ -84,21 +83,21 @@ export function createPrdDatabase(userId) {
   return {
     async list() {
       const rows = await database().select().from(agentPrds).where(eq(agentPrds.userId, userId));
-      return rows.flatMap(({ module, submodule, state }) => {
+      return rows.flatMap(({ module, menu, state }) => {
         const active = state.versions.find((item) => item.id === state.activeVersionId);
-        return active ? [{ module, submodule, content: active.content, status: status(active.content) }] : [];
+        return active ? [{ module, menu, content: active.content, status: status(active.content) }] : [];
       });
     },
-    async versions(module, submodule) {
-      const { state } = await load(module, submodule);
-      return serialize(state, module, submodule);
+    async versions(module, menu) {
+      const { state } = await load(module, menu);
+      return serialize(state, module, menu);
     },
     async mutate(action, input, approval) {
-      const { module, submodule, versionId } = input;
-      const { state, revision } = await load(module, submodule);
+      const { module, menu, versionId } = input;
+      const { state, revision } = await load(module, menu);
       const active = state.versions.find((item) => item.id === state.activeVersionId);
       const selected = state.versions.find((item) => item.id === versionId);
-      const path = `docs/prd/${module}/${submodule}.md`;
+      const path = `docs/prd/${module}/${menu}.md`;
       const now = new Date().toISOString();
       if (action === "create") {
         if (state.versions.length >= 100) throw new Error("A PRD can have up to 100 versions.");
@@ -169,20 +168,20 @@ export function createPrdDatabase(userId) {
           throw new Error("Version names must be unique and at most 80 characters on one line.");
         names.add(version.name.toLocaleLowerCase());
       }
-      await save(module, submodule, state, revision);
-      return serialize(state, module, submodule);
+      await save(module, menu, state, revision);
+      return serialize(state, module, menu);
     },
     async read(path) {
       const id = prdIdentity(path);
       if (!id) throw new Error("Choose a valid PRD identifier.");
-      const { state } = await load(id.module, id.submodule);
+      const { state } = await load(id.module, id.menu);
       return state.versions.find((item) => item.id === state.activeVersionId)?.content;
     },
     async write(path, content, { requestApproval, signal, redact, expected }) {
       const id = prdIdentity(path);
       if (!id) throw new Error("Choose a valid PRD identifier.");
       if (Buffer.byteLength(content) > 262144) throw new Error("PRD versions are limited to 256 KB.");
-      const { state, revision } = await load(id.module, id.submodule);
+      const { state, revision } = await load(id.module, id.menu);
       let active = state.versions.find((item) => item.id === state.activeVersionId);
       if (expected !== undefined && active?.content !== expected)
         throw new Error("The PRD changed. Read it again before editing.");
@@ -196,7 +195,7 @@ export function createPrdDatabase(userId) {
       }
       active.content = content;
       active.updatedAt = now;
-      await save(id.module, id.submodule, state, revision);
+      await save(id.module, id.menu, state, revision);
       return reviewed;
     },
   };

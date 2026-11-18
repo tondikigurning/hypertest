@@ -24,8 +24,10 @@ describes a draft hosted product; use the README and implementation to understan
 ## Data and execution invariants
 
 - When adding, splitting or moving BDD features, follow [test organization](docs/automation/test-organization.md).
-  Keep real submodules at the sidebar's submodule level and put coverage groups and related files beneath their owner.
-- Maintain one PRD per real submodule, covering its child test groups and files; manage it at the submodule level.
+  Keep real menus at the sidebar's menu level and put coverage groups and related files beneath their owner.
+- Maintain one PRD per real menu, covering its child test groups and files; manage it at the menu level. Follow
+  `.agents/skills/write-prd/SKILL.md` and its shared review contract. Terminal agents keep the proposed file in `draft`
+  until the user explicitly reviews it, then mark only accepted requirements `validated` and the document `reviewed`.
 - Preserve scenario identity and source information. IDs can be missing or duplicated; do not assume an ID uniquely
   identifies a row, silently choose an ambiguous match, or represent unknown execution availability as runnable.
 - Catalogs are generated data. Change their producers or inputs and regenerate through the documented workflow; do

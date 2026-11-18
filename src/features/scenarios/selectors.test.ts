@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { enrichScenario, parseFeature } from "../../../server/modules/catalog/scenario-catalog.mjs";
-import { isSubmoduleScope, scenarioPath, scenarioSubmodule } from "./navigation";
+import { isMenuScope, scenarioPath, scenarioMenu } from "./navigation";
 import { filterScenarios, findScenarioGroup, groupFlows, groupModules } from "./selectors";
 
 function scenario(file: string, id: string) {
@@ -17,13 +17,13 @@ test("keeps product menus at one level and merges PRD-only menus without duplica
     scenario("case-management/survey-template-manager.feature", "TEN_STM_LST_E2E_001"),
   ];
   const prds = [
-    { module: "case-management", submodule: "cases" },
-    { module: "case-management", submodule: "cases" },
-    { module: "case-management", submodule: "outage-management" },
-    { module: "knowledge-management", submodule: "article-management" },
+    { module: "case-management", menu: "cases" },
+    { module: "case-management", menu: "cases" },
+    { module: "case-management", menu: "outage-management" },
+    { module: "knowledge-management", menu: "article-management" },
   ];
   const modules = groupModules(scenarios, prds);
-  assert.deepEqual(modules[0].submodules.map((group) => [group.title, group.count]), [
+  assert.deepEqual(modules[0].menus.map((group) => [group.title, group.count]), [
     ["Cases", 3], ["Outage Management", 0], ["Survey Template Manager", 1],
   ]);
   assert.equal(findScenarioGroup(modules, "case-management/cases/integration")?.count, 2);
@@ -40,10 +40,10 @@ test("counts source rows with missing or duplicate IDs and tolerates flat/nested
     scenario("case-management/cases/integration.feature", "no-stable-id"),
   ];
   const groups = groupModules(scenarios);
-  assert.equal(groups[0].submodules.length, 1);
-  assert.equal(groups[0].submodules[0].count, 3);
-  assert.equal(groups[0].submodules[0].file, "case-management/cases.feature");
-  assert.equal(groups[0].submodules[0].children[0].count, 2);
+  assert.equal(groups[0].menus.length, 1);
+  assert.equal(groups[0].menus[0].count, 3);
+  assert.equal(groups[0].menus[0].file, "case-management/cases.feature");
+  assert.equal(groups[0].menus[0].children[0].count, 2);
 });
 
 test("parent filtering includes descendants, child filtering excludes siblings, search includes group paths", () => {
@@ -62,16 +62,16 @@ test("parent filtering includes descendants, child filtering excludes siblings, 
   assert.equal(groupFlows(scenarios).length, 4, "same category names retain separate file identities");
 });
 
-test("nested routes and PRDs retain their parent submodule identity", () => {
+test("nested routes and PRDs retain their parent menu identity", () => {
   assert.equal(scenarioPath("case-management", "case-management/cases/integration/work-orders.feature"),
     "/case-management/cases/integration/work-orders");
   assert.equal(scenarioPath("case-management", "case-management/cases"), "/case-management/cases");
-  assert.equal(scenarioSubmodule("case-management", "case-management/cases/integration/work-orders.feature"), "cases");
-  assert.equal(scenarioSubmodule("case-management", "case-management/cases.feature"), "cases");
-  assert.equal(scenarioSubmodule("knowledge-management", "case-management/cases.feature"), undefined);
-  assert.equal(isSubmoduleScope("case-management", "case-management/cases"), true);
-  assert.equal(isSubmoduleScope("case-management", "case-management/cases/integration"), false);
-  assert.equal(isSubmoduleScope("case-management", "case-management/cases/integration/work-orders"), false);
-  assert.equal(isSubmoduleScope("knowledge-management", "case-management/cases"), false);
+  assert.equal(scenarioMenu("case-management", "case-management/cases/integration/work-orders.feature"), "cases");
+  assert.equal(scenarioMenu("case-management", "case-management/cases.feature"), "cases");
+  assert.equal(scenarioMenu("knowledge-management", "case-management/cases.feature"), undefined);
+  assert.equal(isMenuScope("case-management", "case-management/cases"), true);
+  assert.equal(isMenuScope("case-management", "case-management/cases/integration"), false);
+  assert.equal(isMenuScope("case-management", "case-management/cases/integration/work-orders"), false);
+  assert.equal(isMenuScope("knowledge-management", "case-management/cases"), false);
   assert.equal(scenarioPath("a module", "a module/a menu/child group.feature"), "/a%20module/a%20menu/child%20group");
 });

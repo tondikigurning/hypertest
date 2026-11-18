@@ -1,6 +1,6 @@
 /** COM — DetailPanel dock layout (TableRenderer + DetailPanelContainer).
  *
- * Shared across submodules (Users, User Groups, Work Orders, …). Locators target
+ * Shared across menus (Users, User Groups, Work Orders, …). Locators target
  * the dock shell + Tabs primitives only — not module-specific header/actions.
  */
 import type { Locator, Page } from "@playwright/test";
@@ -31,7 +31,7 @@ export class DetailPanelComponent {
     }
 
     /**
-     * Header title variants used across submodules:
+     * Header title variants used across menus:
      * - `h3` DetailPanel.Title (e.g. User Groups)
      * - `h2` custom title (e.g. Work Orders)
      * - avatar + `p` (e.g. Users)

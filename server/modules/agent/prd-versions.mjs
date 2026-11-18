@@ -6,19 +6,19 @@ const maxContentBytes = 262144;
 const modulePattern = /^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/;
 const versionPattern = /^v[1-9][0-9]{0,5}$/;
 
-function identityPath(module, submodule) {
+function identityPath(module, menu) {
   if (
     typeof module !== "string" ||
-    typeof submodule !== "string" ||
+    typeof menu !== "string" ||
     !modulePattern.test(module) ||
-    !modulePattern.test(submodule)
+    !modulePattern.test(menu)
   ) {
-    throw new Error("Choose a valid module and submodule.");
+    throw new Error("Choose a valid module and menu.");
   }
   return {
-    document: `docs/prd/${module}/${submodule}.md`,
-    directory: `docs/prd/.versions/${module}/${submodule}`,
-    index: `docs/prd/.versions/${module}/${submodule}/index.json`,
+    document: `docs/prd/${module}/${menu}.md`,
+    directory: `docs/prd/.versions/${module}/${menu}`,
+    index: `docs/prd/.versions/${module}/${menu}/index.json`,
   };
 }
 
@@ -120,8 +120,8 @@ function validateManifest(value) {
   return value;
 }
 
-async function readState(workspace, safePath, module, submodule) {
-  const paths = identityPath(module, submodule);
+async function readState(workspace, safePath, module, menu) {
+  const paths = identityPath(module, menu);
   const [manifestFile, canonical] = await Promise.all([
     readOptional(workspace, safePath, paths.index),
     readOptional(workspace, safePath, paths.document),
@@ -190,10 +190,10 @@ async function persist(workspace, safePath, state) {
   );
 }
 
-function serialize(state, module, submodule) {
+function serialize(state, module, menu) {
   return {
     module,
-    submodule,
+    menu,
     activeVersionId: state.activeVersionId,
     items: state.versions
       .map((version) => ({
@@ -224,20 +224,12 @@ function assertUniqueName(versions, name, versionId) {
     throw new Error("A version with that name already exists.");
 }
 
-export async function listPrdVersions({ workspace, safePath, module, submodule }) {
-  return serialize(await readState(workspace, safePath, module, submodule), module, submodule);
+export async function listPrdVersions({ workspace, safePath, module, menu }) {
+  return serialize(await readState(workspace, safePath, module, menu), module, menu);
 }
 
-export async function createPrdVersion({
-  workspace,
-  safePath,
-  module,
-  submodule,
-  name,
-  initialContent,
-  authorizeWrite,
-}) {
-  const state = await readState(workspace, safePath, module, submodule);
+export async function createPrdVersion({ workspace, safePath, module, menu, name, initialContent, authorizeWrite }) {
+  const state = await readState(workspace, safePath, module, menu);
   if (state.versions.length >= 100) throw new Error("A PRD can have up to 100 versions.");
   const id = nextVersionId(state.versions);
   const active = state.versions.find((version) => version.id === state.activeVersionId);
@@ -251,20 +243,20 @@ export async function createPrdVersion({
   state.versions.push({ id, name: versionName, createdAt: now, updatedAt: now, content });
   state.activeVersionId = id;
   await persist(workspace, safePath, state);
-  return serialize(state, module, submodule);
+  return serialize(state, module, menu);
 }
 
 export async function updatePrdVersion({
   workspace,
   safePath,
   module,
-  submodule,
+  menu,
   versionId,
   name,
   content,
   authorizeWrite,
 }) {
-  const state = await readState(workspace, safePath, module, submodule);
+  const state = await readState(workspace, safePath, module, menu);
   const version = state.versions.find((item) => item.id === versionId);
   if (!version) throw new Error("Choose a version that exists.");
   version.name = validateName(name, version.name);
@@ -284,23 +276,23 @@ export async function updatePrdVersion({
   }
   version.updatedAt = new Date().toISOString();
   await persist(workspace, safePath, state);
-  return serialize(state, module, submodule);
+  return serialize(state, module, menu);
 }
 
-export async function activatePrdVersion({ workspace, safePath, module, submodule, versionId, authorizeWrite }) {
-  const state = await readState(workspace, safePath, module, submodule);
+export async function activatePrdVersion({ workspace, safePath, module, menu, versionId, authorizeWrite }) {
+  const state = await readState(workspace, safePath, module, menu);
   const version = state.versions.find((item) => item.id === versionId);
   if (!version) throw new Error("Choose a version that exists.");
-  if (versionId === state.activeVersionId) return serialize(state, module, submodule);
+  if (versionId === state.activeVersionId) return serialize(state, module, menu);
   await authorizeWrite?.(state.paths.document, version.content);
   state.activeVersionId = versionId;
   version.updatedAt = new Date().toISOString();
   await persist(workspace, safePath, state);
-  return serialize(state, module, submodule);
+  return serialize(state, module, menu);
 }
 
-export async function deletePrdVersion({ workspace, safePath, module, submodule, versionId }) {
-  const state = await readState(workspace, safePath, module, submodule);
+export async function deletePrdVersion({ workspace, safePath, module, menu, versionId }) {
+  const state = await readState(workspace, safePath, module, menu);
   if (!state.versions.some((version) => version.id === versionId)) throw new Error("Choose a version that exists.");
   if (versionId === state.activeVersionId && state.versions.length > 1)
     throw new Error("Set another version active before deleting this one.");
@@ -308,10 +300,10 @@ export async function deletePrdVersion({ workspace, safePath, module, submodule,
     await removeFile(workspace, safePath, versionPath(state.paths.directory, versionId));
     await removeFile(workspace, safePath, state.paths.document);
     await removeFile(workspace, safePath, state.paths.index);
-    return serialize({ paths: state.paths, activeVersionId: undefined, versions: [] }, module, submodule);
+    return serialize({ paths: state.paths, activeVersionId: undefined, versions: [] }, module, menu);
   }
   await removeFile(workspace, safePath, versionPath(state.paths.directory, versionId));
   state.versions = state.versions.filter((version) => version.id !== versionId);
   await persist(workspace, safePath, state);
-  return serialize(state, module, submodule);
+  return serialize(state, module, menu);
 }

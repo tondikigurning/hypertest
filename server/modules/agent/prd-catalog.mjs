@@ -31,8 +31,8 @@ export async function listPrds(workspace) {
       const content = await readFile(path, "utf8");
       const frontMatter = content.match(/^---\s*\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/)?.[1] || "";
       const status = frontMatter.match(/^status\s*:\s*["']?([^\s"'#]+)["']?/im)?.[1] || "unknown";
-      result.push({ module: module.name, submodule: file.name.slice(0, -3), status, content });
+      result.push({ module: module.name, menu: file.name.slice(0, -3), status, content });
     }
   }
-  return result.sort((a, b) => a.module.localeCompare(b.module) || a.submodule.localeCompare(b.submodule));
+  return result.sort((a, b) => a.module.localeCompare(b.module) || a.menu.localeCompare(b.menu));
 }

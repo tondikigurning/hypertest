@@ -147,7 +147,7 @@ export function ScenarioNavigation({
             </button>
             <CollapsibleRegion expanded={openModules.has(group.name)}>
               <div className="feature-nav">
-                {group.submodules.map((item) => (
+                {group.menus.map((item) => (
                   <NavigationGroup
                     key={item.path}
                     group={item}

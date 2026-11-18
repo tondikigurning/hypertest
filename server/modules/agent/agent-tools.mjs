@@ -142,7 +142,7 @@ export function createAgentTools({
             ...new Set([
               ...files.filter((path) => !/^docs\/prd\/[^/]+\/[^/]+\.md$/i.test(path)),
               ...prds
-                .map(({ module, submodule }) => `docs/prd/${module}/${submodule}.md`)
+                .map(({ module, menu }) => `docs/prd/${module}/${menu}.md`)
                 .filter((path) => !directory || path.startsWith(`${directory}/`)),
             ]),
           ].slice(0, 400);
@@ -205,7 +205,7 @@ export function createAgentTools({
           return { path, bytesWritten: Buffer.byteLength(content), storage: "database" };
         }
         if (prdStore && /^docs\/prd\//i.test(path.replaceAll("\\", "/")))
-          throw new Error("Use a valid module and submodule PRD identifier.");
+          throw new Error("Use a valid module and menu PRD identifier.");
         const absolute = await safeWorkspacePath(workspace, path);
         const before = await readExistingForWrite(absolute);
         await authorizeFileWrite?.(path, content);
@@ -241,7 +241,7 @@ export function createAgentTools({
           return { path, updated: true, storage: "database" };
         }
         if (prdStore && /^docs\/prd\//i.test(path.replaceAll("\\", "/")))
-          throw new Error("Use a valid module and submodule PRD identifier.");
+          throw new Error("Use a valid module and menu PRD identifier.");
         const absolute = await safeWorkspacePath(workspace, path);
         const info = await lstat(absolute);
         if (!info.isFile() || info.nlink > 1 || info.size > 262144)
@@ -306,7 +306,7 @@ export function createAgentTools({
       ? {
           confirm_flows: tool({
             description:
-              "Present discovered business flows for explicit confirmation before writing scenarios. Supply the target feature path, its owning submodule's reviewed PRD at docs/prd/<module>/<submodule>.md, and flow IDs without the @flow: prefix with descriptions. Child files use the same submodule PRD. Shared component masters use the reviewed PRD for the consuming submodule. For an existing scenario without a flow tag, use '(no flow tag)'. This does not approve scenarios or live-data actions.",
+              "Present discovered business flows for explicit confirmation before writing scenarios. Supply the target feature path, its owning menu's reviewed PRD at docs/prd/<module>/<menu>.md, and flow IDs without the @flow: prefix with descriptions. Child files use the same menu PRD. Shared component masters use the reviewed PRD for the consuming menu. For an existing scenario without a flow tag, use '(no flow tag)'. This does not approve scenarios or live-data actions.",
             inputSchema: z.object({
               featurePath: z.string().min(1).max(512),
               prdPath: z.string().min(1).max(512),

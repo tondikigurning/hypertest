@@ -247,8 +247,8 @@ export function createAgentRouter({ resolveSession = sessionFor, resolveIdentity
   router.get("/prd-versions", async (req, res) => {
     try {
       const module = new URL(req.url, "http://localhost").searchParams.get("module") || "";
-      const submodule = new URL(req.url, "http://localhost").searchParams.get("submodule") || "";
-      res.json(await req.agentSession.prdVersions(module, submodule));
+      const menu = new URL(req.url, "http://localhost").searchParams.get("menu") || "";
+      res.json(await req.agentSession.prdVersions(module, menu));
     } catch (error) {
       res.status(400).json({ error: error.message || "Could not read PRD versions." });
     }
@@ -265,7 +265,7 @@ export function createAgentRouter({ resolveSession = sessionFor, resolveIdentity
       res.json(
         await req.agentSession.updatePrdVersion({
           module: req.body?.module,
-          submodule: req.body?.submodule,
+          menu: req.body?.menu,
           versionId: req.params.versionId,
           name: req.body?.name,
           content: req.body?.content,
@@ -280,7 +280,7 @@ export function createAgentRouter({ resolveSession = sessionFor, resolveIdentity
       res.json(
         await req.agentSession.activatePrdVersion({
           module: req.body?.module,
-          submodule: req.body?.submodule,
+          menu: req.body?.menu,
           versionId: req.params.versionId,
         }),
       );
@@ -291,11 +291,11 @@ export function createAgentRouter({ resolveSession = sessionFor, resolveIdentity
   router.delete("/prd-versions/:versionId", async (req, res) => {
     try {
       const module = new URL(req.url, "http://localhost").searchParams.get("module") || "";
-      const submodule = new URL(req.url, "http://localhost").searchParams.get("submodule") || "";
+      const menu = new URL(req.url, "http://localhost").searchParams.get("menu") || "";
       res.json(
         await req.agentSession.deletePrdVersion({
           module,
-          submodule,
+          menu,
           versionId: req.params.versionId,
         }),
       );

@@ -43,7 +43,7 @@ test("PRDs and versions persist in the database without writing a repository fil
   assert.deepEqual(await tools.list_files.execute({ directory: "docs/prd" }), [path]);
   await assert.rejects(readFile(join(workspace, path)), { code: "ENOENT" });
   assert.equal((await createPrdDatabase(userId).versions("knowledge", "articles")).items.length, 1);
-  await store.mutate("create", { module: "knowledge", submodule: "articles", name: "Second" }, approval);
+  await store.mutate("create", { module: "knowledge", menu: "articles", name: "Second" }, approval);
   assert.equal((await store.versions("knowledge", "articles")).items.length, 2);
   await store.write(path, "---\nstatus: reviewed\n---\n[validated] Read articles\n", approval);
   assert.equal(approvals, 1);
