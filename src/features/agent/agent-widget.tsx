@@ -1,7 +1,7 @@
 ﻿import { Icon } from "@hyperscal/icons";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router";
-import { Modal, SelectInput, TextAreaInput, TextInput } from "../../components";
+import { Modal, TextAreaInput, TextInput } from "../../components";
 import { readVariables } from "../runs/run-variables";
 import { useActiveRun } from "../runs/use-active-run";
 import { useDraftRuns } from "../runs/use-draft-runs";
@@ -17,6 +17,7 @@ import {
   AgentContextResults,
   AgentContextSearch,
 } from "./components/agent-context-controls";
+import { AgentEffortSelect } from "./components/agent-effort-select";
 import { AgentModelSelect } from "./components/agent-model-select";
 import {
   AgentAlert,
@@ -29,6 +30,7 @@ import {
 import { AgentStarterButton } from "./components/agent-starter-button";
 import { AgentWorkspaceTab } from "./components/agent-workspace-tab";
 import { QRex, type QRexMood } from "./q-rex";
+import { useAgentEffort } from "./use-agent-effort";
 import { useWidgetDrag } from "./use-widget-drag";
 import "./agent.css";
 
@@ -74,6 +76,7 @@ interface Session {
   mode: string;
   provider?: string;
   model?: string;
+
   baseCommit?: string;
   branch?: string;
   baseBranch?: string;
@@ -121,23 +124,6 @@ interface DraftFeature {
   scenarios: Array<{ id: string; title: string; line: number; steps: Array<string> }>;
 }
 const endpoint = "/api/agent";
-
-function effortOptions(levels: Array<string>) {
-  const labels: Record<string, string> = {
-    none: "No reasoning",
-    default: "Default effort",
-    low: "Low effort",
-    medium: "Medium effort",
-    high: "High effort",
-    max: "Max effort",
-    minimal: "Minimal effort",
-    xhigh: "Extra high effort",
-  };
-  return [
-    { value: "provider-default", label: "Provider default" },
-    ...levels.map((value) => ({ value, label: labels[value] || value })),
-  ];
-}
 
 function formatHistoryDate(value: string | undefined) {
   if (!value) return undefined;
@@ -282,7 +268,6 @@ export function AgentWidget({
   const widgetDrag = useWidgetDrag(!home);
   const [view, setView] = useState<"chat" | "changes" | "history" | "settings">("chat");
   const [message, setMessage] = useState("");
-  const [effortSelection, setEffortSelection] = useState({ provider: "", model: "", value: "" });
   const [waves, setWaves] = useState(0);
   const [selectedSkill, setSelectedSkill] = useState<string>();
   const [contexts, setContexts] = useState<Array<ContextAttachment>>(() => initialContexts(scenario, feature, group));
@@ -415,41 +400,8 @@ export function AgentWidget({
   }, [open, home]);
   const [session, setSession] = useState<Session>();
   const [activeDraftId, setDraftIdState] = useState(() => getActiveDraftId());
-  const [effortProfile, setEffortProfile] = useState<{
-    draftId: string;
-    provider?: string;
-    model?: string;
-    levels: Array<string> | null;
-  }>();
-  useEffect(() => {
-    if (!session?.provider || !session.model) return;
-    const controller = new AbortController();
-    setEffortProfile(undefined);
-    void agentFetch(`${endpoint}/effort-levels`, { signal: controller.signal, cache: "no-store" })
-      .then(async (response) => {
-        if (!response.ok) throw new Error("Could not load reasoning effort options.");
-        return (await response.json()) as { provider?: string; model?: string; levels: Array<string> | null };
-      })
-      .then((profile) => {
-        if (!controller.signal.aborted) setEffortProfile({ ...profile, draftId: activeDraftId });
-      })
-      .catch(() => {
-        if (!controller.signal.aborted) setEffortProfile(undefined);
-      });
-    return () => controller.abort();
-  }, [session?.provider, session?.model, activeDraftId]);
-  const effortLevels =
-    effortProfile?.draftId === activeDraftId &&
-    effortProfile?.provider === session?.provider &&
-    effortProfile?.model === session?.model
-      ? effortProfile?.levels
-      : undefined;
-  const effort =
-    effortSelection.provider === session?.provider &&
-    effortSelection.model === session?.model &&
-    effortLevels?.includes(effortSelection.value)
-      ? effortSelection.value
-      : "";
+  const effortControl = useAgentEffort(session?.provider, session?.model);
+  const effort = effortControl.effort;
   const [drafts, setDrafts] = useState<Array<LocalDraft>>([]);
   const [draftsLoading, setDraftsLoading] = useState(false);
   const [draftError, setDraftError] = useState("");
@@ -876,8 +828,8 @@ export function AgentWidget({
           contexts,
           environment,
           variables: readVariables(),
-          effort: effort || undefined,
-          effortTarget: effort ? { provider: session.provider, model: session.model } : undefined,
+          effort,
+          effortTarget: { provider: session.provider, model: session.model },
         }),
       });
       const result = (await response.json()) as Session & { error: string };
@@ -1302,7 +1254,7 @@ export function AgentWidget({
             <div className="agent-model-controls">
               {session?.provider && session.model && activeDraftId ? (
                 <AgentModelSelect
-                  key={`${activeDraftId}:${session.provider}`}
+                  key={activeDraftId}
                   draftId={activeDraftId}
                   provider={session.provider}
                   model={session.model}
@@ -1313,30 +1265,19 @@ export function AgentWidget({
                     Boolean(session.busy || sending || reviewing || draftRunStarting || draftRun)
                   }
                   onSelecting={setSelectingModel}
-                  onSelected={(model) => {
+                  onSelected={(selection) => {
                     latestResponse.current = ++requestNumber.current;
-                    setSession((current) => current && { ...current, model });
+                    setSession((current) => current && { ...current, ...selection });
                   }}
                 />
               ) : (
                 <AgentModelButton onClick={() => setView("settings")}>Configure AI provider</AgentModelButton>
               )}
-              {!!effortLevels?.length && (
-                <div className="agent-effort" title="Effort levels reported by this provider for the selected model.">
-                  <SelectInput
-                    label="Reasoning effort"
-                    value={effort || "provider-default"}
-                    disabled={!effortLevels?.length}
-                    onChange={(value) =>
-                      setEffortSelection({
-                        provider: session?.provider || "",
-                        model: session?.model || "",
-                        value: value === "provider-default" ? "" : value,
-                      })
-                    }
-                    options={effortOptions(effortLevels || [])}
-                  />
-                </div>
+              {session?.provider && session.model && (
+                <AgentEffortSelect
+                  control={effortControl}
+                  disabled={Boolean(selectingModel || sending || session.busy)}
+                />
               )}
             </div>
             <div className="agent-header-actions">

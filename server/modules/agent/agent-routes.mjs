@@ -8,7 +8,6 @@ import { resolveLocalPreviewIdentity } from "./agent-identity.mjs";
 import {
   agentProviders,
   createAgentLanguageModel,
-  discoverAgentEffortProfile,
   discoverAgentModels,
   modelIsListed,
   verifyToolCalling,
@@ -308,19 +307,6 @@ export function createAgentRouter({ resolveSession = sessionFor, resolveIdentity
   router.get("/model", async (req, res) => {
     const snapshot = req.agentSession.snapshot();
     res.json({ provider: snapshot.provider, model: snapshot.model });
-  });
-  router.get("/effort-levels", async (req, res) => {
-    const { provider, model } = req.agentSession.snapshot();
-    res.set("Cache-Control", "no-store");
-    try {
-      if (!provider || !model) return res.json({ provider, model, levels: null });
-      const credential = await getProviderCredential(req.agentIdentity.userId, provider);
-      if (!credential) return res.json({ provider, model, levels: null });
-      const { levels } = await discoverAgentEffortProfile({ provider, modelId: model, ...credential });
-      return res.json({ provider, model, levels });
-    } catch {
-      return res.status(503).json({ error: "Could not load effort options from the provider." });
-    }
   });
   router.get("/models", async (req, res) => {
     try {

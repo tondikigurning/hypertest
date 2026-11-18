@@ -7,7 +7,6 @@ import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { generateText, stepCountIs, tool } from "ai";
 import { Agent } from "undici";
 import { z } from "zod";
-import { agentEffortProfile } from "./agent-effort.mjs";
 
 export const agentProviders = [
   {
@@ -77,6 +76,7 @@ export const agentProviders = [
 const providerIds = new Set(agentProviders.map((provider) => provider.id));
 const modelIdPattern = /^[A-Za-z0-9@_][A-Za-z0-9._:/@+-]{0,191}$/;
 const customModelAgents = new WeakMap();
+const compatibleProviderName = "automationOpenAICompatible";
 
 export function isLocalProviderEndpoint(url) {
   return ["localhost", "127.0.0.1", "::1"].includes(url.hostname.toLowerCase().replace(/^\[|\]$/g, ""));
@@ -162,26 +162,28 @@ export function isCompatibleAgentProvider(value) {
   return agentProviders.some((provider) => provider.id === value && provider.compatibleEndpoint === true);
 }
 
-export function agentReasoningSettings(provider, effort, model, profile) {
-  if (effort === undefined) return {};
-  if (profile?.provider !== provider || profile.model !== model || !profile.levels?.includes(effort))
-    throw new Error("This reasoning effort is not available for the selected provider and model.");
+export function agentReasoningSettings(provider, effort) {
+  if (!isAgentProvider(provider)) throw new Error("Choose a supported provider.");
+  if (!["low", "medium", "high", "xhigh"].includes(effort))
+    throw new Error("Choose low, medium, high, or xhigh reasoning effort.");
   if (provider === "openai") return { providerOptions: { openai: { reasoningEffort: effort } } };
-  if (provider === "anthropic")
+  if (provider === "anthropic") return { providerOptions: { anthropic: { effort } } };
+  if (provider === "google") {
+    if (effort === "xhigh")
+      throw new Error("The Google adapter does not support xhigh effort. Choose low, medium, or high.");
+    return { providerOptions: { google: { thinkingConfig: { thinkingLevel: effort } } } };
+  }
+  if (provider === "openrouter") return { providerOptions: { [compatibleProviderName]: { reasoning: { effort } } } };
+  if (provider === "deepseek")
     return {
-      providerOptions: {
-        anthropic: { effort, ...(profile.adaptiveThinking ? { thinking: { type: "adaptive" } } : {}) },
-      },
+      providerOptions: { [compatibleProviderName]: { thinking: { type: "enabled" }, reasoningEffort: effort } },
     };
-  if (provider === "deepseek" && effort === "none")
-    return { providerOptions: { openaiCompatible: { thinking: { type: "disabled" } } } };
-  if (isCompatibleAgentProvider(provider))
-    return { providerOptions: { openaiCompatible: { reasoningEffort: effort } } };
-  throw new Error("Choose a supported provider.");
+  return { providerOptions: { openaiCompatible: { reasoningEffort: effort } } };
 }
 
 export function modelIsListed(provider, modelId) {
-  if (!modelIdPattern.test(modelId || "")) return false;
+  if (typeof modelId !== "string" || modelId.length > 192 || !modelIdPattern.test(modelId.replace(/\[1m\]$/, "")))
+    return false;
   return isAgentProvider(provider);
 }
 
@@ -245,7 +247,7 @@ export function createAgentLanguageModel({ provider, modelId, apiKey, baseUrl })
   if (provider === "google") return createGoogleGenerativeAI({ apiKey })(modelId);
   const { agent, safeFetch } = compatibleConnection({ apiKey, baseUrl });
   const model = createOpenAICompatible({
-    name: "automationOpenAICompatible",
+    name: compatibleProviderName,
     apiKey,
     baseURL: baseUrl,
     includeUsage: true,
@@ -259,9 +261,8 @@ async function readCompatibleModels({ provider, apiKey, baseUrl }) {
   if (!isCompatibleAgentProvider(provider)) throw new Error("Model discovery is not available for this provider.");
   const { agent, safeFetch } = compatibleConnection({ apiKey, baseUrl });
   try {
-    const headers = apiKey ? { authorization: `Bearer ${apiKey}` } : {};
     const response = await safeFetch(`${baseUrl.replace(/\/$/, "")}/models`, {
-      headers,
+      headers: apiKey ? { authorization: `Bearer ${apiKey}` } : {},
       signal: AbortSignal.timeout(15000),
     });
     if (!response.ok || !response.body) {
@@ -296,29 +297,6 @@ export async function discoverCompatibleModels(connection) {
       models.map((item) => item?.id).filter((id) => typeof id === "string" && modelIsListed(connection.provider, id)),
     ),
   ].slice(0, 1000);
-}
-
-export async function discoverAgentEffortProfile({ provider, modelId, apiKey, baseUrl }) {
-  if (!modelIsListed(provider, modelId)) throw new Error("Choose a supported provider and model.");
-  let metadata;
-  if (isCompatibleAgentProvider(provider)) {
-    const matches = (await readCompatibleModels({ provider, apiKey, baseUrl })).filter((item) => item?.id === modelId);
-    if (matches.length === 1) metadata = matches[0];
-  } else if (provider === "anthropic") {
-    metadata = await readProviderModels(`https://api.anthropic.com/v1/models/${encodeURIComponent(modelId)}`, {
-      "anthropic-version": "2026-10-21",
-      "x-api-key": apiKey,
-    });
-    if (metadata?.id !== modelId) metadata = undefined;
-  } else if (provider === "openai") {
-    metadata = await readProviderModels(`https://api.openai.com/v1/models/${encodeURIComponent(modelId)}`, {
-      authorization: `Bearer ${apiKey}`,
-    });
-    if (metadata?.id !== modelId) metadata = undefined;
-  }
-  // OpenAI and Google model APIs do not currently advertise effort enums.
-  // Do not infer them from model names, documentation tables, or SDK defaults.
-  return agentEffortProfile(provider, modelId, metadata);
 }
 
 async function readProviderModels(url, headers) {

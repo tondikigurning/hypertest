@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 interface SelectOption {
   value: string;
   label: ReactNode;
+  disabled?: boolean;
 }
 
 interface SelectInputBaseProps {
@@ -18,10 +19,11 @@ interface SelectInputProps extends SelectInputBaseProps {
   id?: string;
   placeholder?: ReactNode;
   options?: Array<SelectOption>;
+  portalContainer?: HTMLElement | null;
 }
 
 export function SelectInput(props: SelectInputProps) {
-  const { id, label, value, placeholder, options = [], onChange, disabled = false } = props;
+  const { id, label, value, placeholder, options = [], onChange, disabled = false, portalContainer } = props;
   return (
     <Select.Root value={value} onValueChange={onChange} disabled={disabled}>
       <Select.Trigger id={id} aria-label={label} className="filter-select">
@@ -30,11 +32,16 @@ export function SelectInput(props: SelectInputProps) {
           <Icon name="chevron-down" className="filter-select-chevron" />
         </Select.Icon>
       </Select.Trigger>
-      <Select.Portal>
+      <Select.Portal container={portalContainer}>
         <Select.Content className="filter-select-content" position="popper" sideOffset={4}>
           <Select.Viewport>
             {options.map((option) => (
-              <Select.Item key={option.value} value={option.value} className="filter-select-option">
+              <Select.Item
+                key={option.value}
+                value={option.value}
+                disabled={option.disabled}
+                className="filter-select-option"
+              >
                 <Select.ItemText>{option.label}</Select.ItemText>
                 <Select.ItemIndicator className="filter-select-check" aria-hidden="true">
                   <Icon name="check" className="filter-select-check-icon" />

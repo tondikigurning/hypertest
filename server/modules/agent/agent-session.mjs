@@ -10,12 +10,7 @@ import { automationCatalog, parseFeature } from "../catalog/scenario-catalog.mjs
 import { getCurrentRunSnapshot } from "../runs/run-controller.mjs";
 import { resolveSelection } from "../runs/run-selection.mjs";
 import { readUploadedAttachment, uploadedAttachmentSize } from "./agent-attachments.mjs";
-import {
-  agentReasoningSettings,
-  closeAgentLanguageModel,
-  createAgentLanguageModel,
-  discoverAgentEffortProfile,
-} from "./agent-provider.mjs";
+import { agentReasoningSettings, closeAgentLanguageModel, createAgentLanguageModel } from "./agent-provider.mjs";
 import { startIsolatedDraftRun as createDraftRun } from "./agent-sandbox.mjs";
 import { agentSkillNames, agentWorkflowInstructions } from "./agent-skills.mjs";
 import { getProviderCredential, isModelVerified, recordAgentUsage } from "./agent-store.mjs";
@@ -73,6 +68,20 @@ function redactAgentText(value, secrets = []) {
       "[redacted credential]",
     )
     .replace(/((?:password|passwd|token|secret|api[_-]?key)\s*[:=]\s*)[^\s,;"']+/gi, "$1[redacted]");
+}
+
+function providerTurnError(cause, effort) {
+  let current = cause;
+  for (let i = 0; current && i < 3; i++, current = current.cause) {
+    const detail = [current.message, current.responseBody].filter((value) => typeof value === "string").join(" ");
+    if (
+      current.statusCode === 400 &&
+      /reasoning|effort|thinking/i.test(detail) &&
+      /unsupported|not supported|invalid|unknown|unrecognized|not allowed|not permitted/i.test(detail)
+    )
+      return `The provider rejected the selected ${effort} reasoning effort. Choose another effort or model.`;
+  }
+  return "The provider could not complete this turn. Check the key, model access, and provider status.";
 }
 
 function sanitizeModelMessage(value, secrets) {
@@ -1371,15 +1380,8 @@ export function createSession({
     if (!credential) throw new Error("The selected provider key was removed. Configure it again in Provider settings.");
     if (!(await modelVerified(userId, provider, model)))
       throw new Error("Test this model's tool-calling support again before continuing.");
-    const effortProfile =
-      effort === undefined
-        ? undefined
-        : await (runtime.discoverAgentEffortProfile || discoverAgentEffortProfile)({
-            provider: turnProvider,
-            modelId: turnModel,
-            ...credential,
-          });
-    const reasoningSettings = agentReasoningSettings(turnProvider, effort, turnModel, effortProfile);
+    const selectedEffort = effort ?? "medium";
+    const reasoningSettings = agentReasoningSettings(turnProvider, selectedEffort);
     if (
       resetVersion !== turnVersion ||
       provider !== turnProvider ||
@@ -1692,6 +1694,8 @@ export function createSession({
         stopWhen: stepCountIs(80),
         toolCallConcurrency: 1,
         maxRetries: 0,
+        // Errors are reported safely through fullStream, not the SDK's raw console logger.
+        onError: () => {},
         timeout: {
           totalMs: 30 * 60 * 1000,
           stepMs: 20 * 60 * 1000,
@@ -1731,7 +1735,7 @@ export function createSession({
               scheduleSave();
             } else if (part.type === "error") {
               turnFailed = true;
-              error = "The provider could not complete this turn. Check the key, model access, and provider status.";
+              error = providerTurnError(part.error, selectedEffort);
               scheduleSave();
             }
           }
@@ -1754,10 +1758,9 @@ export function createSession({
               save();
             }
           }
-        } catch {
+        } catch (cause) {
           turnFailed = true;
-          if (!controller.signal.aborted && version === resetVersion)
-            error = "The provider could not complete this turn. Check the key, model access, and provider status.";
+          if (!controller.signal.aborted && version === resetVersion) error = providerTurnError(cause, selectedEffort);
         } finally {
           await closeModel(aiModel);
           await closeActiveExplorationBrowser();

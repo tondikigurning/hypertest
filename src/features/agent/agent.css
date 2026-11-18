@@ -3106,3 +3106,111 @@ body:has(dialog[open]) .agent-widget:not(:has(.agent-confirm-dialog[open])) {
 .agent-widget .agent-toggle:active {
   cursor: grabbing;
 }
+
+/* Model picker and model-specific effort presets. */
+.agent-model-picker-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 220px;
+  height: 30px;
+  padding: 0 8px;
+  border: 1px solid var(--agent-border);
+  border-radius: 7px;
+  background: #fafbfc;
+  color: #526078;
+  font-size: 11px;
+}
+.agent-model-picker-trigger span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.agent-model-picker-trigger i {
+  flex: none;
+  width: 14px;
+  height: 14px;
+}
+.agent-model-dialog {
+  width: min(460px, calc(100vw - 32px));
+  max-height: calc(100dvh - 48px);
+  padding: 20px;
+  color: #263650;
+}
+.agent-model-dialog-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.agent-model-dialog-heading h2 {
+  margin: 0;
+}
+.agent-model-dialog-heading button {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 6px;
+  border: 1px solid #e5e9f1;
+  border-radius: 7px;
+  background: white;
+}
+.agent-model-provider .filter-select,
+.agent-model-dialog > input {
+  box-sizing: border-box;
+  width: 100%;
+  margin-top: 8px;
+}
+.agent-model-dialog > input {
+  padding: 10px;
+  border: 1px solid #e5e9f1;
+  border-radius: 7px;
+  font: inherit;
+}
+.agent-model-results {
+  display: grid;
+  align-content: start;
+  gap: 4px;
+  max-height: min(340px, 45dvh);
+  margin-top: 12px;
+  overflow-y: auto;
+}
+.agent-model-results > button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 10px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: white;
+  color: #263650;
+  font: inherit;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+.agent-model-results > button:where(:hover, [aria-pressed="true"]) {
+  border-color: #d8dff3;
+  background: #f0f3fc;
+}
+.agent-model-results > button > span:last-child:not(:first-child) {
+  flex: none;
+  color: #4058a8;
+  font-size: 11px;
+}
+.agent-effort {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.filter-select-option[data-disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.agent-model-dialog button:focus-visible,
+.agent-model-dialog input:focus-visible {
+  outline: 2px solid #7054bf;
+  outline-offset: 2px;
+}

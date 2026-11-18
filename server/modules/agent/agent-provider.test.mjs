@@ -5,145 +5,49 @@ import { createServer } from "node:http";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import { createAnthropic } from "@ai-sdk/anthropic";
-import { createOpenAI } from "@ai-sdk/openai";
 import { generateText } from "ai";
 import { initializeAgentEncryption } from "./agent-crypto.mjs";
-import { agentEffortProfile } from "./agent-effort.mjs";
 import {
-  agentProviders,
   agentReasoningSettings,
   closeAgentLanguageModel,
   createAgentLanguageModel,
-  discoverAgentEffortProfile,
   discoverCompatibleModels,
   modelIsListed,
   normalizeOpenAICompatibleBaseUrl,
   verifyToolCalling,
 } from "./agent-provider.mjs";
 
-test("effort options require explicit provider metadata, never model-name inference", () => {
-  for (const { id } of agentProviders) {
-    assert.deepEqual(agentReasoningSettings(id, undefined), {});
-    assert.equal(agentEffortProfile(id, "gpt-5.4").levels, null);
-    assert.throws(() => agentReasoningSettings(id, "high", "gpt-5.4"), /not available/);
-  }
-  assert.equal(agentEffortProfile("openrouter", "model", { supported_parameters: ["reasoning"] }).levels, null);
-  assert.equal(agentEffortProfile("9router", "model", { reasoning_efforts: "high" }).levels, null);
-  assert.deepEqual(
-    agentEffortProfile("9router", "model", {
-      reasoning_efforts: ["high", "low", "high", "unsupported", null],
-    }).levels,
-    ["low", "high"],
-  );
-  const metadata = {
-    capabilities: {
-      effort: {
-        supported: true,
-        low: { supported: true },
-        high: { supported: true },
-        max: { supported: false },
-      },
-    },
-  };
-  const profile = agentEffortProfile("anthropic", "new-model", metadata);
-  assert.deepEqual(profile.levels, ["low", "high"]);
-  assert.throws(() => agentReasoningSettings("anthropic", "max", "new-model", profile), /not available/);
-  assert.throws(() => agentReasoningSettings("anthropic", "high", "other-model", profile), /not available/);
-  assert.throws(() => agentReasoningSettings("openai", "high", "new-model", profile), /not available/);
-  assert.equal(
-    agentEffortProfile("anthropic", "model", {
-      capabilities: {
-        effort: {
-          supported: false,
-          high: { supported: true },
-        },
-      },
-    }).levels,
-    null,
-  );
-});
-
-test("native SDK adapters serialize metadata-authorized effort into provider requests", async () => {
-  for (const [provider, createModel, verify] of [
-    ["openai", createOpenAI, (body) => assert.equal(body.reasoning.effort, "high")],
-    [
-      "anthropic",
-      createAnthropic,
-      (body) => {
-        assert.equal(body.output_config.effort, "high");
-        assert.equal(body.thinking.type, "adaptive");
-      },
-    ],
+test("native SDKs send each selected effort in the provider-specific field", async (t) => {
+  let captured;
+  t.mock.method(globalThis, "fetch", async (_url, init) => {
+    captured = JSON.parse(init.body);
+    throw new Error("Captured request");
+  });
+  for (const [provider, modelId, field] of [
+    ["openai", "gpt-5.4", (body) => body.reasoning?.effort],
+    ["anthropic", "claude-opus-4-6", (body) => body.output_config?.effort],
+    ["google", "gemini-3.1-pro-preview", (body) => body.generationConfig?.thinkingConfig?.thinkingLevel],
   ]) {
-    let body;
-    const fetch = async (_url, init) => {
-      body = JSON.parse(init.body);
-      throw new Error("Captured request");
-    };
-    const modelId = provider === "openai" ? "gpt-5.4" : "claude-opus-4-6";
-    const profile = agentEffortProfile(provider, modelId, {
-      reasoning_efforts: ["high"],
-      capabilities: {
-        effort: { supported: true, high: { supported: true } },
-        thinking: { types: { adaptive: { supported: true } } },
-      },
-    });
-    const model = createModel({ apiKey: "test-key", fetch })(modelId);
-    await assert.rejects(
-      generateText({
-        model,
-        prompt: "Hello",
-        maxRetries: 0,
-        ...agentReasoningSettings(provider, "high", modelId, profile),
-      }),
-    );
-    assert.ok(body);
-    verify(body);
+    for (const effort of ["low", "medium", "high", "xhigh"]) {
+      if (provider === "google" && effort === "xhigh") {
+        assert.throws(() => agentReasoningSettings(provider, effort), /Google adapter does not support xhigh/);
+        continue;
+      }
+      captured = undefined;
+      const model = createAgentLanguageModel({ provider, modelId, apiKey: "fixture-key" });
+      await assert.rejects(
+        generateText({ model, prompt: "Hello", maxRetries: 0, ...agentReasoningSettings(provider, effort) }),
+      );
+      assert.ok(captured, provider);
+      assert.equal(field(captured), effort, provider);
+    }
   }
 });
 
-test("Anthropic effort discovery reads capabilities from its model API", async (t) => {
-  t.mock.method(globalThis, "fetch", async (url, init) => {
-    assert.equal(url, "https://api.anthropic.com/v1/models/claude-custom");
-    assert.equal(init.headers["anthropic-version"], "2026-10-21");
-    assert.equal(init.headers["x-api-key"], "fake-key");
-    return Response.json({
-      id: "claude-custom",
-      capabilities: {
-        effort: { supported: true, low: { supported: true }, high: { supported: true } },
-        thinking: { types: { adaptive: { supported: true } } },
-      },
-    });
-  });
-  const profile = await discoverAgentEffortProfile({
-    provider: "anthropic",
-    modelId: "claude-custom",
-    apiKey: "fake-key",
-  });
-  assert.deepEqual(profile.levels, ["low", "high"]);
-  assert.equal(profile.adaptiveThinking, true);
-});
-
-test("model API responses without effort metadata keep the control unavailable", async (t) => {
-  t.mock.method(globalThis, "fetch", async (url) => {
-    assert.equal(url, "https://api.openai.com/v1/models/gpt-5.4");
-    return Response.json({ id: "gpt-5.4", object: "model", owned_by: "openai" });
-  });
-  const profile = await discoverAgentEffortProfile({ provider: "openai", modelId: "gpt-5.4", apiKey: "fake-key" });
-  assert.equal(profile.levels, null);
-  assert.throws(() => agentReasoningSettings("openai", "high", "gpt-5.4", profile), /not available/);
-});
-
-test("compatible model metadata controls effort and provider default omits it", async (t) => {
+test("compatible SDK sends all four efforts unchanged in the provider-specific request body", async (t) => {
   const bodies = [];
-  let metadata = { reasoning_efforts: ["low", "high"] };
   const server = createServer((req, res) => {
-    if (req.url === "/v1/models") {
-      res.writeHead(200, { "content-type": "application/json" });
-      res.end(JSON.stringify({ data: [{ id: "test", ...metadata }] }));
-      return;
-    }
+    assert.equal(req.url, "/v1/chat/completions");
     let body = "";
     req.on("data", (chunk) => {
       body += chunk;
@@ -153,10 +57,10 @@ test("compatible model metadata controls effort and provider default omits it", 
       res.writeHead(200, { "content-type": "application/json" });
       res.end(
         JSON.stringify({
-          id: "test",
+          id: "fixture",
           object: "chat.completion",
           created: 1,
-          model: "test",
+          model: "test/model",
           choices: [{ index: 0, message: { role: "assistant", content: "OK" }, finish_reason: "stop" }],
         }),
       );
@@ -165,22 +69,40 @@ test("compatible model metadata controls effort and provider default omits it", 
   server.listen(0, "127.0.0.1");
   await once(server, "listening");
   t.after(() => new Promise((resolve, reject) => server.close((error) => (error ? reject(error) : resolve()))));
-  const connection = { provider: "9router", modelId: "test", baseUrl: `http://127.0.0.1:${server.address().port}/v1` };
-  const model = createAgentLanguageModel(connection);
-  try {
-    const profile = await discoverAgentEffortProfile(connection);
-    assert.deepEqual(profile.levels, ["low", "high"]);
-    await generateText({ model, prompt: "Hello", ...agentReasoningSettings("9router", "high", "test", profile) });
-    await generateText({ model, prompt: "Hello", ...agentReasoningSettings("9router", undefined, "test", profile) });
-    assert.equal(bodies[0].reasoning_effort, "high");
-    assert.equal(Object.hasOwn(bodies[1], "reasoning_effort"), false);
-    metadata = {};
-    const missing = await discoverAgentEffortProfile(connection);
-    assert.equal(missing.levels, null);
-    assert.throws(() => agentReasoningSettings("9router", "high", "test", missing), /not available/);
-  } finally {
-    await closeAgentLanguageModel(model);
+  const baseUrl = `http://127.0.0.1:${server.address().port}/v1`;
+  for (const provider of [
+    "9router",
+    "openrouter",
+    "groq",
+    "deepseek",
+    "xai",
+    "mistral",
+    "ollama",
+    "openai-compatible",
+  ]) {
+    const model = createAgentLanguageModel({ provider, modelId: "cx/gpt-6-luna", baseUrl });
+    try {
+      for (const effort of ["low", "medium", "high", "xhigh"]) {
+        await generateText({ model, prompt: "Hello", ...agentReasoningSettings(provider, effort) });
+        const body = bodies.at(-1);
+        assert.equal(body.model, "cx/gpt-6-luna");
+        if (provider === "openrouter") assert.deepEqual(body.reasoning, { effort });
+        else assert.equal(body.reasoning_effort, effort, provider);
+        if (provider === "deepseek") assert.deepEqual(body.thinking, { type: "enabled" });
+      }
+    } finally {
+      await closeAgentLanguageModel(model);
+    }
   }
+  assert.equal(bodies.length, 32);
+});
+
+test("server rejects unsupported effort values instead of substituting a different level", () => {
+  for (const effort of ["none", "minimal", "max", "ultra", "provider-default", "invented", "", undefined])
+    assert.throws(() => agentReasoningSettings("9router", effort), /Choose low, medium, high, or xhigh/);
+  assert.throws(() => agentReasoningSettings("missing-provider", "high"), /supported provider/);
+  assert.equal(modelIsListed("9router", "cx/gpt-6-luna[1m]"), true);
+  assert.equal(modelIsListed("9router", "cx/gpt-6-luna[bad]"), false);
 });
 
 test("UI encryption setup creates a stable local key without replacing an existing one", async (t) => {

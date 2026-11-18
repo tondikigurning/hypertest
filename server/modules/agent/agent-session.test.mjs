@@ -104,134 +104,148 @@ async function waitUntil(predicate) {
   throw new Error("Agent did not reach the expected state.");
 }
 
-test("agent loop pauses for a user answer and redacts provider keys", async (t) => {
-  const root = await mkdtemp(join(tmpdir(), "automation-agent-session-"));
-  const workspace = join(root, "workspace");
-  await mkdir(join(workspace, ".agents/skills/ask-qa"), { recursive: true });
-  await mkdir(join(workspace, "e2e/node_modules"), { recursive: true });
-  await mkdir(join(workspace, "node_modules"), { recursive: true });
-  await mkdir(join(workspace, "packages/internal/test-utils/node_modules"), { recursive: true });
-  await writeFile(join(workspace, ".gitignore"), "node_modules/\n");
-  await writeFile(join(workspace, ".agents/skills/ask-qa/SKILL.md"), "Answer the user's QA question.");
-  const options = { cwd: workspace };
-  await git("git", ["init", "--quiet"], options);
-  await git("git", ["add", "."], options);
-  await git(
-    "git",
-    [
-      "-c",
-      "user.name=Test",
-      "-c",
-      "user.email=test@example.invalid",
-      "-c",
-      "commit.gpgsign=false",
-      "commit",
-      "-qm",
-      "base",
-    ],
-    options,
-  );
-  const head = (await git("git", ["rev-parse", "HEAD"], options)).stdout.trim();
-  const branch = (await git("git", ["branch", "--show-current"], options)).stdout.trim();
-  let calls = 0;
-  const requestBodies = [];
-  const server = createServer((req, res) => {
-    if (req.url === "/v1/models") {
-      res.writeHead(200, { "content-type": "application/json" });
-      res.end(JSON.stringify({ data: [{ id: "test/model", reasoning_efforts: ["low", "high"] }] }));
+for (const rejectEffort of [false, true])
+  test(`agent loop pauses and redacts keys (effort rejection: ${rejectEffort})`, async (t) => {
+    const root = await mkdtemp(join(tmpdir(), "automation-agent-session-"));
+    const workspace = join(root, "workspace");
+    await mkdir(join(workspace, ".agents/skills/ask-qa"), { recursive: true });
+    await mkdir(join(workspace, "e2e/node_modules"), { recursive: true });
+    await mkdir(join(workspace, "node_modules"), { recursive: true });
+    await mkdir(join(workspace, "packages/internal/test-utils/node_modules"), { recursive: true });
+    await writeFile(join(workspace, ".gitignore"), "node_modules/\n");
+    await writeFile(join(workspace, ".agents/skills/ask-qa/SKILL.md"), "Answer the user's QA question.");
+    const options = { cwd: workspace };
+    await git("git", ["init", "--quiet"], options);
+    await git("git", ["add", "."], options);
+    await git(
+      "git",
+      [
+        "-c",
+        "user.name=Test",
+        "-c",
+        "user.email=test@example.invalid",
+        "-c",
+        "commit.gpgsign=false",
+        "commit",
+        "-qm",
+        "base",
+      ],
+      options,
+    );
+    const head = (await git("git", ["rev-parse", "HEAD"], options)).stdout.trim();
+    const branch = (await git("git", ["branch", "--show-current"], options)).stdout.trim();
+    let calls = 0;
+    const requestBodies = [];
+    let rejectedRequests = 0;
+    const server = createServer((req, res) => {
+      let body = "";
+      req.setEncoding("utf8");
+      req.on("data", (chunk) => {
+        body += chunk;
+      });
+      req.on("end", () => {
+        requestBodies.push(body);
+        if (rejectEffort && !rejectedRequests && JSON.parse(body).reasoning_effort) {
+          rejectedRequests++;
+          res.writeHead(400, { "content-type": "application/json" });
+          res.end(JSON.stringify({ error: { message: "Unsupported parameter: reasoning_effort" } }));
+          return;
+        }
+        calls++;
+        const delta =
+          calls === 1
+            ? {
+                role: "assistant",
+                tool_calls: [
+                  {
+                    index: 0,
+                    id: "call-1",
+                    type: "function",
+                    function: {
+                      name: "ask_user",
+                      arguments: JSON.stringify({ question: `Which option? ${secret}`, options: [], isSecret: false }),
+                    },
+                  },
+                ],
+              }
+            : { role: "assistant", content: `Done. ${secret}` };
+        const finish = calls === 1 ? "tool_calls" : "stop";
+        res.writeHead(200, { "content-type": "text/event-stream" });
+        res.write(
+          `data: ${JSON.stringify({ id: `response-${calls}`, object: "chat.completion.chunk", created: 1, model: "test/model", choices: [{ index: 0, delta, finish_reason: null }] })}\n\n`,
+        );
+        res.write(
+          `data: ${JSON.stringify({ id: `response-${calls}`, object: "chat.completion.chunk", created: 1, model: "test/model", choices: [{ index: 0, delta: {}, finish_reason: finish }] })}\n\n`,
+        );
+        res.end("data: [DONE]\n\n");
+      });
+    });
+    server.listen(0, "127.0.0.1");
+    await once(server, "listening");
+    t.after(async () => {
+      await new Promise((resolve, reject) => server.close((error) => (error ? reject(error) : resolve())));
+      await rm(root, { recursive: true, force: true });
+    });
+    const baseUrl = `http://127.0.0.1:${server.address().port}/v1`;
+    const session = createSession({
+      stateFile: join(root, "session.json"),
+      prepareWorkspace: async () => ({ workspace, branch, baseCommit: head, expectedHead: head, baseBranch: branch }),
+      runtime: {
+        getProviderCredential: async () => ({ apiKey: secret, baseUrl }),
+        isModelVerified: async () => true,
+        createAgentLanguageModel,
+        recordAgentUsage: async () => {},
+      },
+    });
+    await session.setModel("9router", "test/model");
+    const effortTarget = { provider: "9router", model: "test/model" };
+    await assert.rejects(
+      session.send("Hello", undefined, undefined, [], undefined, undefined, undefined, "high"),
+      /different provider or model/,
+    );
+    await assert.rejects(
+      session.send("Hello", undefined, undefined, [], undefined, undefined, undefined, "invented-effort", effortTarget),
+      /Choose low, medium, high, or xhigh/,
+    );
+    assert.equal(session.snapshot().busy, false);
+    assert.equal(session.snapshot().messages.length, 0);
+    await session.send(
+      "Please help with QA.",
+      undefined,
+      undefined,
+      [],
+      undefined,
+      undefined,
+      undefined,
+      "high",
+      effortTarget,
+    );
+    if (rejectEffort) {
+      await waitUntil(() => !session.snapshot().busy);
+      assert.match(session.snapshot().error, /provider rejected the selected high reasoning effort/i);
+      assert.equal(rejectedRequests, 1);
+      assert.equal(requestBodies.length, 1);
+      assert.equal(JSON.parse(requestBodies[0]).reasoning_effort, "high");
+      assert.equal(calls, 0);
+      assert.doesNotMatch(JSON.stringify(session.snapshot()), /fake-private-provider-value/);
       return;
     }
-    let body = "";
-    req.setEncoding("utf8");
-    req.on("data", (chunk) => {
-      body += chunk;
-    });
-    req.on("end", () => {
-      requestBodies.push(body);
-      calls++;
-      const delta =
-        calls === 1
-          ? {
-              role: "assistant",
-              tool_calls: [
-                {
-                  index: 0,
-                  id: "call-1",
-                  type: "function",
-                  function: {
-                    name: "ask_user",
-                    arguments: JSON.stringify({ question: `Which option? ${secret}`, options: [], isSecret: false }),
-                  },
-                },
-              ],
-            }
-          : { role: "assistant", content: `Done. ${secret}` };
-      const finish = calls === 1 ? "tool_calls" : "stop";
-      res.writeHead(200, { "content-type": "text/event-stream" });
-      res.write(
-        `data: ${JSON.stringify({ id: `response-${calls}`, object: "chat.completion.chunk", created: 1, model: "test/model", choices: [{ index: 0, delta, finish_reason: null }] })}\n\n`,
-      );
-      res.write(
-        `data: ${JSON.stringify({ id: `response-${calls}`, object: "chat.completion.chunk", created: 1, model: "test/model", choices: [{ index: 0, delta: {}, finish_reason: finish }] })}\n\n`,
-      );
-      res.end("data: [DONE]\n\n");
-    });
+    const question = await waitUntil(() => session.snapshot().userRequest);
+    assert.equal(session.snapshot().busy, true);
+    assert.match(question.questions[0].question, /\[redacted\]/);
+    assert.equal(calls, 1);
+    session.answer(question.id, { [question.questions[0].id]: "Use the first option" });
+    await waitUntil(() => !session.snapshot().busy);
+    assert.equal(session.snapshot().error, "");
+    assert.equal(calls, 2);
+    assert.ok(requestBodies.every((body) => JSON.parse(body).reasoning_effort === "high"));
+    assert.equal(rejectedRequests, 0);
+    await session.send("Continue with the default medium effort.");
+    await waitUntil(() => !session.snapshot().busy);
+    assert.equal(calls, 3);
+    assert.equal(JSON.parse(requestBodies[2]).reasoning_effort, "medium");
+    assert.match(JSON.stringify(session.snapshot().messages), /Done\. \[redacted\]/);
+    assert.doesNotMatch(JSON.stringify(session.snapshot()), /fake-private-provider-value/);
+    assert.doesNotMatch(requestBodies.join("\n"), /fake-private-provider-value/);
+    assert.doesNotMatch(await readFile(join(root, "session.json"), "utf8"), /fake-private-provider-value/);
   });
-  server.listen(0, "127.0.0.1");
-  await once(server, "listening");
-  t.after(async () => {
-    await new Promise((resolve, reject) => server.close((error) => (error ? reject(error) : resolve())));
-    await rm(root, { recursive: true, force: true });
-  });
-  const baseUrl = `http://127.0.0.1:${server.address().port}/v1`;
-  const session = createSession({
-    stateFile: join(root, "session.json"),
-    prepareWorkspace: async () => ({ workspace, branch, baseCommit: head, expectedHead: head, baseBranch: branch }),
-    runtime: {
-      getProviderCredential: async () => ({ apiKey: secret, baseUrl }),
-      isModelVerified: async () => true,
-      createAgentLanguageModel,
-      recordAgentUsage: async () => {},
-    },
-  });
-  await session.setModel("9router", "test/model");
-  const effortTarget = { provider: "9router", model: "test/model" };
-  await assert.rejects(
-    session.send("Hello", undefined, undefined, [], undefined, undefined, undefined, "high"),
-    /different provider or model/,
-  );
-  await assert.rejects(
-    session.send("Hello", undefined, undefined, [], undefined, undefined, undefined, "max", effortTarget),
-    /not available/,
-  );
-  assert.equal(session.snapshot().busy, false);
-  assert.equal(session.snapshot().messages.length, 0);
-  await session.send(
-    "Please help with QA.",
-    undefined,
-    undefined,
-    [],
-    undefined,
-    undefined,
-    undefined,
-    "high",
-    effortTarget,
-  );
-  const question = await waitUntil(() => session.snapshot().userRequest);
-  assert.equal(session.snapshot().busy, true);
-  assert.match(question.questions[0].question, /\[redacted\]/);
-  assert.equal(calls, 1);
-  session.answer(question.id, { [question.questions[0].id]: "Use the first option" });
-  await waitUntil(() => !session.snapshot().busy);
-  assert.equal(session.snapshot().error, "");
-  assert.equal(calls, 2);
-  assert.ok(requestBodies.every((body) => JSON.parse(body).reasoning_effort === "high"));
-  await session.send("Continue with the provider default.");
-  await waitUntil(() => !session.snapshot().busy);
-  assert.equal(calls, 3);
-  assert.equal(Object.hasOwn(JSON.parse(requestBodies[2]), "reasoning_effort"), false);
-  assert.match(JSON.stringify(session.snapshot().messages), /Done\. \[redacted\]/);
-  assert.doesNotMatch(JSON.stringify(session.snapshot()), /fake-private-provider-value/);
-  assert.doesNotMatch(requestBodies.join("\n"), /fake-private-provider-value/);
-  assert.doesNotMatch(await readFile(join(root, "session.json"), "utf8"), /fake-private-provider-value/);
-});

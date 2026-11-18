@@ -19,21 +19,21 @@ Skill files and product/test sources are read from the selected draft's committe
 Preparing a workspace uses the locally cached target branch without contacting GitHub. Synchronizing a
 draft fetches the target branch from origin and may require Git authentication.
 
-The Q-Rex header lets you choose a model from the current provider and checks tool support before
-switching, just like Provider settings. Configure a different provider in Provider settings.
-The header offers reasoning effort only when the provider's model API explicitly returns supported
-levels for the selected model. There is no hardcoded model table or fallback list. Without that
-metadata (or if loading fails), the control is hidden and requests omit effort, using the provider's
-default. OpenAI and Google model APIs currently do not expose effort levels, so their controls are
-hidden even for reasoning models. Anthropic levels come from `capabilities.effort` in its model API.
-Compatible endpoints may advertise `reasoning_efforts` (strings) or `supported_reasoning_efforts`
-(strings or objects with `reasoning_effort`) on each `/models` entry. These are optional extensions,
-not guaranteed by the OpenAI-compatible contract; `supported_parameters` alone is insufficient.
-The server fetches metadata again before accepting an explicit effort and rejects stale model
-selections or unavailable levels. Anthropic uses `output_config.effort`, with adaptive thinking when
-advertised; compatible endpoints receive `reasoning_effort`. DeepSeek's `none` uses its thinking
-toggle instead. The tool-calling check does not verify effort support. The choice is scoped to the
-selected provider and model and is not saved across reloads.
+The Q-Rex header opens a searchable model picker for connected providers, following the
+[Hermes model-picker workflow](https://hermes-agent.nousresearch.com/docs/user-guide/desktop#choosing-a-model).
+Choose a provider inside the picker to load its models. Selecting a model checks tool support before
+switching; failed checks leave the current selection unchanged. Add or edit connections in Provider settings.
+The effort selector offers low, medium, high and xhigh, defaults to medium, and remembers a choice
+for each provider/model pair in this browser. Older saved values outside this list reset to medium.
+The installed Google SDK does not support xhigh, so that option is disabled for Google.
+
+The server sends the selected value without converting it: OpenAI uses its SDK's reasoning effort,
+Anthropic uses output_config.effort, Google uses thinkingConfig.thinkingLevel, OpenRouter uses
+reasoning.effort, and 9Router and other compatible endpoints use reasoning_effort. DeepSeek also
+receives its thinking toggle. Providers and models may reject unsupported levels; Q-Rex reports
+the failure instead of silently retrying without the selection. The tool-support check is independent
+of effort. Tests cover outgoing SDK request shapes and provider errors, but a successful request does
+not prove that a gateway or upstream model actually honors the selected value.
 
 For tenant exploration, select the environment and enter `E2E_USERNAME` and `E2E_PASSWORD` in browser
 Variables. Chat sends these variables separately to the local API, including when starting from
@@ -100,6 +100,7 @@ From the repository root (use `pnpm.cmd` if PowerShell blocks the `.ps1` shim):
 
 ```powershell
 node --test server/modules/agent/*.test.mjs
+node --import tsx --test src/features/agent/*.test.ts
 node --import tsx --test src/features/scenarios/*.test.ts server/modules/runs/*.test.mjs
 node --test server/modules/agent/exploration-browser.smoke.mjs
 pnpm exec biome check src server vite.config.ts drizzle.config.ts
