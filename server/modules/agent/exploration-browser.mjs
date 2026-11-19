@@ -1,6 +1,6 @@
 ﻿import { execFile, execFileSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
@@ -44,7 +44,7 @@ export async function startExplorationBrowser({ workspace, target, variables }, 
       configPath,
       JSON.stringify({
         browser: {
-          launchOptions: { proxy, args: ["--proxy-bypass-list=<-loopback>"] },
+          launchOptions: { headless: true, proxy, args: ["--proxy-bypass-list=<-loopback>"] },
           contextOptions: { proxy },
         },
       }),
@@ -105,7 +105,7 @@ export async function startExplorationBrowser({ workspace, target, variables }, 
     opened = true;
     await runCli(["state-load", state]);
     await runCli(["goto", target]);
-    activeBrowsers.set(name, { workspace, directory, configPath, egressProxy, runCli });
+    activeBrowsers.set(name, { workspace, directory, configPath, egressProxy, runCli, queue: Promise.resolve() });
     return name;
   } catch (cause) {
     if (opened) await runCli(["close"]).catch(() => {});
@@ -125,8 +125,11 @@ export async function startExplorationBrowser({ workspace, target, variables }, 
 export async function closeExplorationBrowser(workspace, name) {
   const browser = activeBrowsers.get(name);
   try {
-    if (browser) await browser.runCli(["close"]);
-    else
+    if (browser) {
+      activeBrowsers.delete(name);
+      await browser.queue.catch(() => {});
+      await browser.runCli(["close"]);
+    } else
       await execFileAsync(process.execPath, [cliScript(), `-s=${name}`, "close"], {
         cwd: workspace,
         timeout: 15000,
@@ -151,10 +154,41 @@ export async function runExplorationBrowserCommand(workspace, name, args) {
   const browser = activeBrowsers.get(name);
   if (!browser || browser.workspace !== workspace)
     throw new Error("The exploration browser has expired. Start a new scoped browser session.");
-  return execFileAsync(process.execPath, [cliScript(), `-s=${name}`, ...args], {
-    cwd: workspace,
-    timeout: 60000,
-    maxBuffer: 256 * 1024,
-    windowsHide: true,
+  return enqueue(browser, () =>
+    execFileAsync(process.execPath, [cliScript(), `-s=${name}`, ...args], {
+      cwd: workspace,
+      timeout: 60000,
+      maxBuffer: 256 * 1024,
+      windowsHide: true,
+    }),
+  );
+}
+
+function enqueue(browser, operation) {
+  const result = browser.queue.then(operation);
+  browser.queue = result.catch(() => {});
+  return result;
+}
+
+export async function explorationFrame(name) {
+  const browser = activeBrowsers.get(name);
+  if (!browser) return undefined;
+  if (browser.framePending) return browser.framePending;
+  const pending = enqueue(browser, async () => {
+    if (activeBrowsers.get(name) !== browser) return undefined;
+    const path = join(browser.directory, "preview.jpeg");
+    try {
+      await browser.runCli(["screenshot", `--filename=${path}`, "--type=jpeg"]);
+      if (activeBrowsers.get(name) !== browser) return undefined;
+      return await readFile(path);
+    } catch {
+      return undefined;
+    }
   });
+  browser.framePending = pending;
+  try {
+    return await pending;
+  } finally {
+    if (browser.framePending === pending) browser.framePending = undefined;
+  }
 }

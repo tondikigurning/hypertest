@@ -29,6 +29,7 @@ import {
 } from "./components/agent-review-controls";
 import { AgentStarterButton } from "./components/agent-starter-button";
 import { AgentWorkspaceTab } from "./components/agent-workspace-tab";
+import { ExplorationPreview } from "./components/exploration-preview";
 import { QRex, type QRexMood } from "./q-rex";
 import { useAgentEffort } from "./use-agent-effort";
 import { useWidgetDrag } from "./use-widget-drag";
@@ -72,6 +73,7 @@ interface Session {
   messages: Array<Message>;
   history?: Array<{ title: string; url: string; number: number; status: string; createdAt: string }>;
   busy: boolean;
+  explorationActive?: boolean;
   error: string;
   mode: string;
   provider?: string;
@@ -1216,6 +1218,7 @@ export function AgentWidget({
                             : undefined;
   return (
     <div ref={widgetDrag.ref} style={widgetDrag.style} className={home ? "agent-widget agent-home" : "agent-widget"}>
+      {session?.explorationActive && <ExplorationPreview key={activeDraftId} />}
       {(open || home) && (
         <section id="agent-panel" className="agent-panel" aria-label="Q-Rex">
           <header className="agent-header" {...(!home ? widgetDrag.handleProps : {})}>

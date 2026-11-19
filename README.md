@@ -33,7 +33,7 @@ node --input-type=module -e "import { randomBytes } from 'node:crypto'; console.
 
 The API encrypts provider keys before storing them in PostgreSQL. Saved keys are visible in the local provider settings and are not added to the agent prompt. An explicitly configured environment key takes precedence over the generated key: do not switch keys while retaining encrypted credentials. Provider keys and token totals are partitioned by this browser's local preview identity, which is an identifier and does not authenticate a user.
 
-The QA Agent does not execute scenarios from its workspace. The explorer runner executes scenarios from the current checkout and cannot verify unmerged agent changes. Browser exploration uses an origin-restricted proxy and may not work when the target depends on separate SSO, API, or asset origins.
+The QA Agent does not execute scenarios from its workspace. The explorer runner executes scenarios from the current checkout and cannot verify unmerged agent changes. Browser exploration uses an origin-restricted proxy and may not work when the target depends on separate SSO, API, or asset origins. While Q-Rex explores, a draggable browser preview appears in Hypertest and closes when exploration ends. Chromium runs headlessly so no desktop browser window opens; the preview shows the managed CLI session.
 
 ## Scenario safety
 

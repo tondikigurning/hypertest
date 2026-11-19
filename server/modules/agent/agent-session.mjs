@@ -19,6 +19,7 @@ import { draftScenarios } from "./draft-scenarios.mjs";
 import { draftMergeInProgress, synchronizeDraftWorkspace } from "./draft-workspace.mjs";
 import {
   closeExplorationBrowser,
+  explorationFrame,
   runExplorationBrowserCommand,
   startExplorationBrowser,
 } from "./exploration-browser.mjs";
@@ -444,6 +445,7 @@ export function createSession({
   let allowAll = false;
   const automaticallyConfirmedFlows = new Set();
   const snapshot = () => ({
+    explorationActive: Boolean(explorationBrowser),
     messages,
     history,
     taskId,
@@ -2010,6 +2012,7 @@ export function createSession({
   return {
     send,
     snapshot,
+    explorationFrame: () => explorationFrame(explorationBrowser),
     reset,
     answer,
     decideApproval,

@@ -8,6 +8,7 @@ import test from "node:test";
 import { createAgentTools } from "./agent-tools.mjs";
 import {
   closeExplorationBrowser,
+  explorationFrame,
   runExplorationBrowserCommand,
   startExplorationBrowser,
 } from "./exploration-browser.mjs";
@@ -74,6 +75,10 @@ test("authenticated browser bridge explores a local fixture with real CLI comman
   });
   const snapshot = await tools.playwright_cli.execute({ action: "snapshot" });
   assert.match(snapshot, /Fixture dashboard/);
+  const frame = await explorationFrame(browser);
+  assert.ok(frame?.length > 100, "The active CLI session should produce a browser preview");
+  assert.equal(frame[0], 0xff);
+  assert.equal(frame[1], 0xd8);
   const reference = snapshot.match(/button "Orders" \[ref=(e\d+)\]/)?.[1];
   assert.ok(reference, "Authenticated CLI snapshot must expose current element references");
   assert.match(

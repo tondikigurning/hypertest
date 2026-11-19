@@ -3214,3 +3214,34 @@ body:has(dialog[open]) .agent-widget:not(:has(.agent-confirm-dialog[open])) {
   outline: 2px solid #7054bf;
   outline-offset: 2px;
 }
+
+.exploration-preview {
+  position: fixed;
+  z-index: 1050;
+  right: 24px;
+  bottom: 100px;
+  width: min(380px, calc(100vw - 32px));
+  height: min(250px, calc(100dvh - 32px));
+  overflow: hidden;
+  border: 1px solid #d9dfeb;
+  border-radius: 10px;
+  box-shadow: 0 12px 36px #1c29403d;
+}
+.exploration-preview.expanded {
+  inset: 20px;
+  width: auto;
+  height: auto;
+}
+.exploration-preview .live-browser {
+  height: 100%;
+}
+.exploration-bar {
+  cursor: grab;
+  touch-action: none;
+}
+.exploration-preview.expanded .exploration-bar {
+  cursor: default;
+}
+.exploration-expand {
+  margin-left: auto;
+}

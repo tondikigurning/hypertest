@@ -1,3 +1,4 @@
+export { BrowserPreview } from "./browser-preview";
 export { CloseButton } from "./close-button";
 export { CollapsibleRegion } from "./collapsible-region";
 export { FormField } from "./form-field";

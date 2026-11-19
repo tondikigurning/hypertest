@@ -296,6 +296,11 @@ export function createAgentRouter({ resolveSession = sessionFor, resolveIdentity
     }
   });
   router.get("/session", (req, res) => res.json({ ...req.agentSession.snapshot(), draft: req.agentDraft }));
+  router.get("/exploration-frame", async (req, res) => {
+    const frame = await req.agentSession.explorationFrame();
+    if (!frame) return res.status(204).end();
+    return res.type("image/jpeg").send(frame);
+  });
   router.get("/model", async (req, res) => {
     const snapshot = req.agentSession.snapshot();
     res.json({ provider: snapshot.provider, model: snapshot.model });
