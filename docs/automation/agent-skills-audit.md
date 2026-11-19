@@ -8,7 +8,7 @@ The acceptance baseline is the current README, contributor instructions, workflo
 
 ## Project and skill model
 
-The local Automation app composes a feature-sourced scenario explorer, a checkout runner, evidence viewing and a QA drafting agent. The explorer checkout and the agent's committed-base worktree are separate. Running the explorer cannot verify unmerged agent changes. Q-Rex PRDs are database documents addressed through virtual `docs/prd/<module>/<menu>.md` identifiers; they are separate from checkout Markdown files.
+The local Automation app composes a feature-sourced scenario explorer, a checkout runner, evidence viewing and a QA drafting agent. The explorer checkout and the agent's committed-base worktree are separate. Running the explorer cannot verify unmerged agent changes. Q-Rex and terminal agents use database PRDs addressed through virtual `docs/prd/<module>/<menu>.md` identifiers; PRDs are not workspace or checkout files.
 
 | Skill | Responsibility | Successful boundary |
 | --- | --- | --- |

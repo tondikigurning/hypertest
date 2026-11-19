@@ -183,7 +183,7 @@ export function createPrdDatabase(userId) {
       if (Buffer.byteLength(content) > 262144) throw new Error("PRD versions are limited to 256 KB.");
       const { state, revision } = await load(id.module, id.menu);
       let active = state.versions.find((item) => item.id === state.activeVersionId);
-      if (expected !== undefined && active?.content !== expected)
+      if (expected !== undefined && (active?.content ?? null) !== expected)
         throw new Error("The PRD changed. Read it again before editing.");
       const reviewed = await approve(active?.content || "", content, path, requestApproval, signal, redact);
       if (signal?.aborted) throw new Error("Session stopped.");

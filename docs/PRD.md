@@ -76,7 +76,7 @@ Izin tulis ke repo tetap dibatasi izin GitHub milik pengguna.
 ## 7. Alur Kerja Utama
 
 1. Engineer membuat **draft** baru (branch dari branch target) dan membuka sesi chat.
-2. **PRD**: upload PRD (dikonversi ke Markdown) atau minta `write-prd` menghasilkannya lewat wawancara dan eksplorasi. Hasil di `docs/prd/<module>/<menu>.md`.
+2. **PRD**: upload PRD (dikonversi ke Markdown) atau minta `write-prd` menghasilkannya lewat wawancara dan eksplorasi. Hasil disimpan di database dan diakses lewat identifier virtual `docs/prd/<module>/<menu>.md`.
 3. **Scenario**: `write-e2e-scenarios` menemukan dan mengonfirmasi daftar flow, menulis scenario dengan tag `@flow:` ke `.feature`, lalu berhenti di gerbang review. Catalog menampilkan flow sebagai kategori yang bisa di-collapse.
 4. **Code**: setelah approve, `write-e2e-code` menulis steps, POM, COM, fixture, dan mock, lalu menjalankan test di env yang dipilih.
 5. **Run**: Engineer atau Viewer menjalankan scenario; hasil dan evidence masuk ke DB dan R2.
@@ -161,7 +161,7 @@ Fitur jadwal ditunda dan belum tersedia di preview lokal. Kebutuhan berikut dica
 - FR-46. **Jalur upload**: PDF, DOCX, Markdown, atau teks dikonversi ke Markdown mengikuti template PRD, lalu ditinjau pengguna.
 - FR-47. **Jalur eksplorasi**: wawancara singkat + eksplorasi `playwright-cli` per menu. Tiap butir diberi label sumber: `spec` (dari dokumen atau pengguna), `observed` (teramati, belum divalidasi), atau `assumed`.
 - FR-48. Gerbang review: butir `observed` baru menjadi `validated` setelah Engineer menyetujui. PRD tidak menyimpulkan niat bisnis dari perilaku UI saja.
-- FR-49. Output: `docs/prd/<module>/<menu>.md` dengan front matter (module, menu, status, sumber, env dan tanggal eksplorasi terakhir).
+- FR-49. Output: record PRD database dengan identifier virtual `docs/prd/<module>/<menu>.md` dan front matter (module, menu, status, sumber, env dan tanggal eksplorasi terakhir).
 - FR-50. Template PRD menu memetakan topik wawancara konteks `write-e2e-scenarios` (tujuan dan kebutuhan, flow bisnis dan happy path smoke, aturan validasi dan pesan, akses atau role, data dan mutasi, known issue dan di luar cakupan) agar skill scenario dapat memakai ulang jawaban dan tidak menanyakannya lagi.
 
 ### 8.10 Akses dan audit
@@ -275,6 +275,6 @@ Semua tabel berkunci `project_id` agar siap multi-Project.
 - Konfigurasi Playwright BDD (`playwright.bdd.config.ts`) dengan baseURL dan kredensial dari env yang disuntikkan app.
 - Reporter kustom yang menulis result contract (JSON) untuk diingest app; menggantikan penulisan catalog Markdown.
 - `.agents/skills/` berisi skill hasil adaptasi + `playwright-cli` dan referensinya.
-- `docs/prd/<module>/<menu>.md` untuk PRD target; scenario dan kategori flow berada di `<menu>.feature` atau child files di `<module>/<menu>/`, sesuai [test organization](automation/test-organization.md).
+- Record PRD database beridentifier virtual `docs/prd/<module>/<menu>.md`; scenario dan kategori flow berada di `<menu>.feature` atau child files di `<module>/<menu>/`, sesuai [test organization](automation/test-organization.md).
 - MSW untuk scenario `@mock`, `package.json`, dan `tsconfig` minimal.
 - Tidak ada `.env.local` di repo; semua nilai env datang dari app.

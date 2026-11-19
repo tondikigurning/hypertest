@@ -19,7 +19,6 @@ const empty: PrdResult = { items: [], error: "", loading: false };
 
 export function usePrds() {
   const [draft, setDraft] = useState(getActiveDraftId);
-  const [checkout, setCheckout] = useState<PrdResult>({ ...empty, loading: true });
   const [draftPrds, setDraftPrds] = useState<PrdResult>(empty);
   useEffect(() => {
     const update = () => setDraft(getActiveDraftId());
@@ -57,8 +56,6 @@ export function usePrds() {
           }));
       }
     }
-    setCheckout({ ...empty, loading: true });
-    void load("/api/agent/checkout-prds", setCheckout);
     setDraftPrds(draft ? { ...empty, loading: true } : empty);
     if (draft) {
       const poll = async () => {
@@ -72,5 +69,5 @@ export function usePrds() {
       window.clearTimeout(timer);
     };
   }, [draft]);
-  return { checkout, draftPrds, draft };
+  return { draftPrds, draft };
 }

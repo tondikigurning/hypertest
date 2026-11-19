@@ -13,52 +13,14 @@ import { createSession } from "./agent-session.mjs";
 const git = promisify(execFile);
 const secret = "fake-private-provider-value";
 
-test("PRD versions can be managed in the draft workspace", async (t) => {
+test("PRD operations fail when the database store is unavailable", async (t) => {
   const root = await mkdtemp(join(tmpdir(), "automation-prd-session-"));
   t.after(() => rm(root, { recursive: true, force: true }));
-  const workspace = join(root, "workspace");
-  await mkdir(workspace);
-  await git("git", ["init", "--quiet"], { cwd: workspace });
-  await git(
-    "git",
-    [
-      "-c",
-      "user.name=Test",
-      "-c",
-      "user.email=test@example.invalid",
-      "-c",
-      "commit.gpgsign=false",
-      "commit",
-      "--allow-empty",
-      "-qm",
-      "base",
-    ],
-    { cwd: workspace },
-  );
-  const head = (await git("git", ["rev-parse", "HEAD"], { cwd: workspace })).stdout.trim();
-  const branch = (await git("git", ["branch", "--show-current"], { cwd: workspace })).stdout.trim();
-  const session = createSession({
-    stateFile: join(root, "session.json"),
-    prepareWorkspace: async () => ({ workspace, branch, baseCommit: head, baseBranch: branch, expectedHead: head }),
-  });
-  assert.deepEqual((await session.prdVersions("sales", "orders")).items, []);
-  const created = await session.createPrdVersion({
-    module: "sales",
-    menu: "orders",
-    initialContent: "# Orders\n",
-  });
-  assert.equal(created.items[0].content, "# Orders\n");
-  await session.updatePrdVersion({
-    module: "sales",
-    menu: "orders",
-    versionId: "v1",
-    name: "First",
-    content: "# Updated\n",
-  });
-  assert.equal(await readFile(join(workspace, "docs/prd/sales/orders.md"), "utf8"), "# Updated\n");
-  assert.equal((await session.prdVersions("sales", "orders")).items[0].name, "First");
-  await session.deletePrdVersion({ module: "sales", menu: "orders", versionId: "v1" });
-  assert.deepEqual((await session.prdVersions("sales", "orders")).items, []);
+  const session = createSession({ stateFile: join(root, "session.json") });
+  await assert.rejects(session.prds(), /database store is unavailable/);
+  await assert.rejects(session.prdVersions("sales", "orders"), /database store is unavailable/);
+  await assert.rejects(session.createPrdVersion({ module: "sales", menu: "orders" }), /database store is unavailable/);
+  await assert.rejects(readFile(join(root, "docs/prd/sales/orders.md")), { code: "ENOENT" });
 });
 
 test("selected provider and model survive session reload before a workspace exists", async (t) => {

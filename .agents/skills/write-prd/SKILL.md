@@ -7,7 +7,7 @@ description: Create, import, refresh or review a menu PRD or product requirement
 
 Read the [shared workflow contract](../ask-qa/references/workflow-contract.md) for scope reuse, context gaps, environment/entity defaults, native PRD approval and review provenance. This skill owns product documentation; the contract owns shared host and review mechanics.
 
-Produces one reviewed Markdown PRD for one menu at `docs/prd/<module>/<menu>.md`. It runs **before** `write-e2e-scenarios`: the scenario skill reads this PRD for product context instead of tracing frontend source, which this project cannot see.
+Produces one reviewed database PRD per menu, addressed by the virtual identifier `docs/prd/<module>/<menu>.md`. It runs **before** `write-e2e-scenarios`: the scenario skill reads this PRD for product context instead of tracing frontend source, which this project cannot see.
 
 The PRD belongs to the real product menu and covers its child test groups and files, including cross-menu or
 cross-platform journeys. When the request names a child, resolve its owning menu and create or update that same
@@ -15,7 +15,7 @@ menu PRD. Record child requirements, dependencies and gaps within its sections, 
 and existing validated content. Record areas outside the explored or reviewed scope as unverified; do not imply the
 whole menu was explored or validated. Never create a separate PRD for a child group or feature file.
 
-In Q-Rex, that path is a virtual PRD identifier backed by the database. Use the agent's file tools with this identifier; the content and versions are not repository changes. Review the proposed PRD in the PRD interface and approval request. In a terminal host, use the same path as a repository file and the shared contract's explicit review procedure. A terminal draft is a local repo change; it becomes `reviewed` only after the user accepts the concrete document. If the host cannot load project skills by name, read this skill and its linked references directly before working.
+That path is a virtual database PRD identifier for both hosts. Q-Rex uses its file tools and native PRD review. Terminal hosts use the [database access procedure](../ask-qa/references/prd-database-access.md) and the shared contract's explicit review procedure. A terminal draft becomes `reviewed` only after the user accepts the concrete document. If the host cannot load project skills by name, read this skill and its linked references directly before working.
 
 This skill writes documentation only. It does not write `.feature` files, flow registries, scenario or flow IDs, steps, POMs or mocks. Those belong to `write-e2e-scenarios` and `write-e2e-code`.
 
@@ -33,7 +33,7 @@ Without frontend source, every statement in the PRD comes from one of three plac
 - `observed`: seen in the live app during exploration. It shows what the product does, not what it should do. Never promote it to intent on your own.
 - `assumed`: filled in because the user delegated or skipped a question. State the assumption so it can be challenged.
 
-After review each item is marked `validated` (accepted through the applicable review gate) or `needs-review` (unconfirmed, changed or conflicting). Record `review_method` so automatic acceptance is distinguishable from human confirmation. Step 6 is the only place an `observed` item becomes `validated`; its provenance remains observed.
+Only items accepted through the review gate carry `[validated]`; an item without it is unvalidated. Legacy `[needs-review]` also means unvalidated. Record `review_method` so automatic acceptance is distinguishable from human confirmation. Step 6 is the only place an `observed` item becomes `validated`; its provenance remains observed.
 
 ## Data safety
 
@@ -63,7 +63,7 @@ Use the shared contract's six context topics as a gap checklist, reusing documen
 
 ## Step 1 — Check existing artifacts
 
-1. Resolve the owning product menu, then inspect its existing `docs/prd/<module>/<menu>.md`, flat `.feature` and all files beneath its feature folder. Follow [test organization](../../../docs/automation/test-organization.md). Inventory known child groups and check which areas the existing PRD covers. Record requirements, cross-menu/platform dependencies, outcomes and unverified gaps in that single document; reference other PRDs as supporting context. Reuse the existing document and its IDs for child-scoped work.
+1. Resolve the owning product menu, then read its existing database PRD through the virtual identifier `docs/prd/<module>/<menu>.md`, plus the flat `.feature` and all files beneath its feature folder. Q-Rex uses file tools; terminal hosts follow the [database access procedure](../ask-qa/references/prd-database-access.md). Follow [test organization](../../../docs/automation/test-organization.md). Inventory known child groups and check which areas the existing PRD covers. Record requirements, cross-menu/platform dependencies, outcomes and unverified gaps in that single document; reference other database PRDs as supporting context. Reuse the existing document and its IDs for child-scoped work.
 2. Choose the mode:
    - **Create**: no PRD exists.
    - **Import**: the user supplied a document. Normalize it (Step 2A), then explore (Step 2B).
@@ -110,7 +110,7 @@ Compare the sources: the spec (interview answers and document) against what you 
 
 ## Step 4 — Write the PRD
 
-Follow [references/prd-template.md](references/prd-template.md) exactly. Write in English, because the repository content is English.
+Follow [references/prd-template.md](references/prd-template.md) for new documents. Preserve the existing structure of a PRD during a scoped review or refresh; do not reorganize it solely to match the new template. Write in English, because the repository content is English.
 
 - Give every behavioral statement a stable ID `PRD_<CODE>_<NNN>` and a provenance tag. IDs are never renumbered or reused; retire an obsolete item instead of deleting its ID.
 - Quote UI messages exactly as seen and say where you saw them (screen, environment, date). They feed later scenario assertions, so paraphrasing them is a defect.
@@ -127,16 +127,16 @@ Check the PRD against this list and fix what fails:
 - No credentials, tokens, personal data or real customer records appear anywhere.
 - Messages are exact, and each states where it was observed.
 - Discrepancies, candidate defects, unverified branches and open questions are listed, not buried.
-- New or changed items are `needs-review`; preserve earlier validations for unchanged items. Only the review gate validates items.
+- New or changed items have no `[validated]` tag; preserve earlier validations for unchanged items. Only the review gate validates items.
 - The exploration log states the environment, date, role used, and what was not covered.
 
 ## Step 6 — Review gate and stop
 
-Present a short summary table (area, number of items by provenance, discrepancies, candidate defects, open questions) and make the exact proposed PRD available for review. In Q-Rex, direct the user to its PRD view; the PRD is not in the Git diff. In a terminal host, save the complete proposal at its repository path with `status: draft`, new/changed items marked `needs-review`, and prior accepted content preserved. Link the file and show its diff or otherwise make the complete saved content inspectable.
+Present a short summary table (area, number of items by provenance, discrepancies, candidate defects, open questions) and make the exact proposed PRD available for review. In Q-Rex, direct the user to its PRD view. In a terminal host, save the complete proposal in the database with `status: draft`, new/changed items unvalidated, and prior accepted content preserved. Make the complete saved content inspectable and identify the database PRD.
 
-Follow the shared contract's **PRD review** procedure. In Q-Rex propose the complete reviewed version through the file tool: include the intended validated items, `status: reviewed`, reviewer/date and `review_method`; the native approval request displays that exact proposal and prevents saving until accepted. Keep unresolved conflicts `needs-review`. Do not first collect a competing blanket approval with `ask_user`; use questions only for consequential item decisions. If rejected, preserve the draft, revise the proposal and request native review again. In automatic mode record automatic acceptance and continue under the contract rather than pausing for a manual review.
+Follow the shared contract's **PRD review** procedure. In Q-Rex propose the complete reviewed version through the file tool: include the intended validated items, `status: reviewed`, reviewer/date and `review_method`; the native approval request displays that exact proposal and prevents saving until accepted. Keep unresolved conflicts unvalidated. Do not first collect a competing blanket approval with `ask_user`; use questions only for consequential item decisions. If rejected, preserve the draft, revise the proposal and request native review again. In automatic mode record automatic acceptance and continue under the contract rather than pausing for a manual review.
 
-In a terminal host, follow the shared contract's review procedure: save and present the complete draft, then wait for explicit review of that exact content. If the user requests changes, revise the draft and present the new proposal. Do not mark it reviewed or add validations before acceptance. A create request is not approval. After acceptance, apply the agreed validations and metadata; keep unresolved items `needs-review`. Silence or general permission to proceed is insufficient. A reviewed document may retain unresolved items; unvalidated observations, assumptions and conflicting requirements do not establish intended behavior.
+In a terminal host, follow the shared contract's review procedure: save and present the complete draft, then wait for explicit review of that exact content. If the user requests changes, revise the draft and present the new proposal. Do not mark it reviewed or add validations before acceptance. A create request is not approval. After acceptance, apply the agreed validations and metadata; keep unresolved items unvalidated. Silence or general permission to proceed is insufficient. A reviewed document may retain unresolved items; unvalidated observations, assumptions and conflicting requirements do not establish intended behavior.
 
 In manual mode report the accepted PRD and end the turn. Resume scenario discovery on a subsequent user turn with the same scope and prior answers. The shared contract defines reviewer identity and provenance; the local preview does not authenticate an individual account.
 
@@ -147,8 +147,8 @@ End with the next step: the PRD is ready as input for `write-e2e-scenarios` for 
 Use it when the app may have changed or the user wants to extend a reviewed PRD.
 
 - Re-explore only the affected areas and compare with the existing items.
-- Set `status: draft` while changes await review; preserve prior reviewer/date/method in the change log and clear current review fields until the proposed version is accepted.
-- Keep IDs. Mark changed or conflicting items `needs-review` and list the change in the PRD's change log. Never overwrite a `validated` item silently.
+- Set `status: draft` while changes await review and clear current review fields until the proposed version is accepted. Include prior reviewer/date/method, when known, in the review summary.
+- Keep IDs. Remove `[validated]` from changed or conflicting items and identify those items and their changes in the review summary. Never overwrite a `validated` item silently.
 - Add new items with new IDs. Retire removed behavior instead of deleting it.
 - Update `last_explored` for the areas you actually re-checked, not for the whole PRD.
 - Run the review gate again, scoped to the changed items.

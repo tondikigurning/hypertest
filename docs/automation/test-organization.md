@@ -73,7 +73,7 @@ For example, with the illustrative Cases files above, `/case-management/cases` s
 search results retain the selected source. Old menu links still open the menu after a split.
 
 Each real menu has one PRD covering its own behavior and all child test groups/files:
-`docs/prd/<module>/<menu>.md`. In Q-Rex this is a database-backed virtual identifier. Select the menu
+`docs/prd/<module>/<menu>.md`. This is a database-backed virtual identifier for both Q-Rex and terminal agents. Select the menu
 in the sidebar to view or manage its PRD; child views contain no PRD button. Older child URLs with `?view=prd`
 open the parent menu PRD. Multiple versions remain versions of that same menu document.
 

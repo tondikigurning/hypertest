@@ -115,10 +115,7 @@ export function App() {
       setOpenModules((previous) => new Set([...previous, routeModule]));
     }
   }, [location.pathname, navigationType, routeModule]);
-  const modules = useMemo(
-    () => groupModules(scenarios, [...prds.checkout.items, ...prds.draftPrds.items]),
-    [scenarios, prds.checkout.items, prds.draftPrds.items],
-  );
+  const modules = useMemo(() => groupModules(scenarios, prds.draftPrds.items), [scenarios, prds.draftPrds.items]);
   const selectedGroup = useMemo(() => findScenarioGroup(modules, routeScope), [modules, routeScope]);
   const scopedScenarios = useMemo(
     () => (selectedGroup ? scenarios.filter((item) => isScenarioInScope(item.file, selectedGroup.path)) : []),
@@ -271,7 +268,7 @@ export function App() {
           collapsed={sidebarCollapsed}
           onToggleSidebar={() => setSidebarCollapsed((value) => !value)}
           onToggleModule={toggleModule}
-          prdError={prds.checkout.error || prds.draftPrds.error}
+          prdError={prds.draftPrds.error}
           onSelectGroup={(module, path) => {
             if (window.matchMedia("(max-width: 650px)").matches) setSidebarCollapsed(true);
             setOpenModules((previous) => new Set([...previous, module]));
@@ -498,7 +495,6 @@ export function App() {
               key={`${routeModule}/${routeMenu}`}
               module={routeModule}
               menu={routeMenu}
-              checkout={prds.checkout}
               draftPrds={prds.draftPrds}
               draft={prds.draft}
               returnFocus={prdButton}

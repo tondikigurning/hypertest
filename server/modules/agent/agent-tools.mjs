@@ -10,6 +10,7 @@ const execFileAsync = promisify(execFile);
 const blockedPath =
   /(?:^|\/)(?:\.env(?:\.[^/]*)?|\.npmrc|\.netrc|\.git-credentials|\.ssh|\.aws|\.kube|id_(?:rsa|ed25519)|[^/]*\.(?:pem|key|p12|pfx)|secrets?|credentials?|auth\.json|storage[-_.]?state|node_modules|\.git)(?:\/|$)/i;
 const mutatingBrowserActions = new Set(["click", "fill", "press", "check", "uncheck", "select"]);
+const prdPath = (path) => /^docs\/prd(?:\/|$)/i.test(path.replaceAll("\\", "/"));
 
 export async function safeWorkspacePath(workspace, input) {
   if (typeof input !== "string" || !input.trim() || input.length > 512)
@@ -129,30 +130,31 @@ export function createAgentTools({
         }
       : {}),
     list_files: tool({
-      description: "List source files available in this draft workspace. Secret files and dependencies are omitted.",
+      description:
+        "List source files available in this draft workspace and menu PRDs from the database. Secret files and dependencies are omitted.",
       inputSchema: z.object({ directory: z.string().optional().describe("Optional relative directory to list.") }),
       execute: async ({ directory }) => {
         const files = await listWorkspaceFiles(workspace, directory || "").catch((error) => {
-          if (prdStore && error.code === "ENOENT" && /^docs\/prd(?:\/|$)/.test(directory || "")) return [];
+          if (error.code === "ENOENT" && prdPath(directory || "")) return [];
           throw error;
         });
         if (prdStore && (!directory || directory === "docs/prd" || directory.startsWith("docs/prd/"))) {
           const prds = await prdStore.list();
           return [
             ...new Set([
-              ...files.filter((path) => !/^docs\/prd\/[^/]+\/[^/]+\.md$/i.test(path)),
+              ...files.filter((path) => !prdPath(path)),
               ...prds
                 .map(({ module, menu }) => `docs/prd/${module}/${menu}.md`)
                 .filter((path) => !directory || path.startsWith(`${directory}/`)),
             ]),
           ].slice(0, 400);
         }
-        return files.slice(0, 400);
+        return files.filter((path) => !prdPath(path)).slice(0, 400);
       },
     }),
     read_file: tool({
       description:
-        "Read a text file from the draft workspace. For large files, request a bounded page with startLine and lineCount. Secret files and dependency folders are blocked.",
+        "Read a text file from the draft workspace or a database PRD using its virtual identifier. For large content, request a bounded page with startLine and lineCount. Secret files and dependency folders are blocked.",
       inputSchema: pathSchema.extend({
         startLine: z.number().int().min(1).optional().describe("First line to read, starting at 1."),
         lineCount: z
@@ -178,6 +180,7 @@ export function createAgentTools({
             variables,
           );
         }
+        if (prdPath(path)) throw new Error("PRDs are available only from the database store.");
         const absolute = await safeWorkspacePath(workspace, path);
         const info = await lstat(absolute);
         if (!info.isFile() || info.nlink > 1 || info.size > 2 * 1024 * 1024)
@@ -194,7 +197,7 @@ export function createAgentTools({
     }),
     write_file: tool({
       description:
-        "Create or replace a text file in the draft workspace. Changes remain in the private draft for review.",
+        "Create or replace a text file in the draft workspace, or write a database PRD using its virtual identifier. Workspace changes remain in the private draft for review.",
       inputSchema: z.object({
         path: z.string().describe("Relative file path inside the draft workspace."),
         content: z.string().max(262144).describe("Complete UTF-8 file contents, up to 256 KB."),
@@ -204,8 +207,7 @@ export function createAgentTools({
           await prdStore.write(path, content);
           return { path, bytesWritten: Buffer.byteLength(content), storage: "database" };
         }
-        if (prdStore && /^docs\/prd\//i.test(path.replaceAll("\\", "/")))
-          throw new Error("Use a valid module and menu PRD identifier.");
+        if (prdPath(path)) throw new Error("PRDs are available only from the database store.");
         const absolute = await safeWorkspacePath(workspace, path);
         const before = await readExistingForWrite(absolute);
         await authorizeFileWrite?.(path, content);
@@ -220,7 +222,8 @@ export function createAgentTools({
       },
     }),
     edit_file: tool({
-      description: "Replace one exact text fragment in a draft file. The old text must occur exactly once.",
+      description:
+        "Replace one exact text fragment in a draft file or database PRD. The old text must occur exactly once.",
       inputSchema: z.object({
         path: z.string().describe("Relative file path inside the draft workspace."),
         oldText: z.string().min(1).max(32000),
@@ -240,8 +243,7 @@ export function createAgentTools({
           );
           return { path, updated: true, storage: "database" };
         }
-        if (prdStore && /^docs\/prd\//i.test(path.replaceAll("\\", "/")))
-          throw new Error("Use a valid module and menu PRD identifier.");
+        if (prdPath(path)) throw new Error("PRDs are available only from the database store.");
         const absolute = await safeWorkspacePath(workspace, path);
         const info = await lstat(absolute);
         if (!info.isFile() || info.nlink > 1 || info.size > 262144)

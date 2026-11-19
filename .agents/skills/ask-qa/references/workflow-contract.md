@@ -14,13 +14,13 @@ Apply the matching specialist yourself in the same conversation; in Q-Rex activa
 
 ## Hosts and review gates
 
-**Q-Rex** has scoped file tools and `playwright_cli`; it has no shell or draft test/typecheck execution. PRD identifiers refer to database documents, not Git files. Use [browser capabilities](../../write-e2e-scenarios/references/playwright-cli-exploration.md) before live work. **Terminal agents** use repository files, an owned CLI browser and commands actually supported by the checkout.
+**Q-Rex** has scoped file tools and `playwright_cli`; it has no shell or draft test/typecheck execution. **Terminal agents** use an owned CLI browser and the [database PRD access procedure](prd-database-access.md). Both hosts use database PRDs; identifiers are not Git files. Use [browser capabilities](../../write-e2e-scenarios/references/playwright-cli-exploration.md) before live work.
 
 Prepare the concrete artifact before its review. Keep these decisions distinct:
 
 | Gate | Q-Rex procedure | Terminal procedure |
 | --- | --- | --- |
-| PRD review | Propose the complete reviewed version through `write_file`/`edit_file`; that operation presents native approval and saves only after acceptance. Use `ask_user` for unresolved item choices, not an extra blanket approval. | Save the proposal at the repository path as `draft`, with changed items `needs-review`; show the file and diff and request explicit review of that exact content. Revise and repeat if requested. After acceptance, mark only agreed items `validated`, set `status: reviewed`, and record manual review metadata. Keep unresolved items `needs-review`. A create request or silence is not approval. |
+| PRD review | Propose the complete reviewed version through `write_file`/`edit_file`; that operation presents native approval and saves only after acceptance. Use `ask_user` for unresolved item choices, not an extra blanket approval. | Save the proposal in the database as `draft`, with changed items unvalidated; present its exact content and request explicit review. Revise and repeat if requested. After acceptance, mark only agreed items `validated`, set `status: reviewed`, and record manual review metadata. Keep unresolved items unvalidated. A create request or silence is not approval. |
 | Flow confirmation | Call `confirm_flows` with the owning reviewed PRD, exact feature path and described flow IDs. Repeat for each affected file. | Present exact files, flow IDs/descriptions, exclusions and gaps; wait for explicit confirmation. |
 | Scenario approval | Use `show_diff`, direct the user to **Changes > Approve scenarios**, and stop. Chat Yes does not replace the panel decision. | Present the exact feature changes and scenario IDs, ask explicit approval, and stop for the decision. |
 | Live-data authorization | Follow [data safety](../../write-e2e-scenarios/references/data-safety.md) and native tool approvals, including approvals requested for read-only clicks/fills. | Follow the same business data-safety rules and the host's tool permissions. |
@@ -29,9 +29,9 @@ Use the host's actual decision and artifact snapshot. Changed scenario contents 
 
 Q-Rex's explicitly enabled **Allow all agent approvals** mode automatically accepts native PRD, flow and live-browser requests and bypasses scenario approval gates. In that mode, continue through those gates without another approval question or a manual-only stop. Questions, explicit publication, source identity, workspace/origin restrictions and data-safety scope still apply. Record automatic acceptance as automatic, never as human review. When it is off, use the manual procedures above. A general request to proceed does not enable this mode. Record the decision mode actually used if it changes while a request is pending.
 
-For a reviewed PRD, keep requirement provenance and record `review_method: manual` or `automatic`. In local Q-Rex use `reviewed_by: Local preview user` for manual acceptance and `reviewed_by: Q-Rex automatic approval` for automatic acceptance. Terminal hosts use explicit manual review and record the established reviewer identity without inventing one. `[validated]` means accepted through the applicable review gate; `review_method` distinguishes human confirmation from configured automatic acceptance. Unresolved conflicts remain `needs-review` in either mode.
+For a reviewed PRD, keep requirement provenance and record `review_method: manual` or `automatic`. In local Q-Rex use `reviewed_by: Local preview user` for manual acceptance and `reviewed_by: Q-Rex automatic approval` for automatic acceptance. Terminal hosts use explicit manual review and record the established reviewer identity without inventing one. `[validated]` means accepted through the applicable review gate; `review_method` distinguishes human confirmation from configured automatic acceptance. Items without `[validated]`, including legacy `[needs-review]` items and unresolved conflicts, remain unvalidated in either mode.
 
-Preserve older reviewed documents and their IDs. If historical review metadata lacks a method, its method is unknown; do not silently relabel it manual or automatic. Record the actual method for newly accepted versions and preserve prior metadata in the change log.
+Preserve older reviewed documents and their IDs. If historical review metadata lacks a method, its method is unknown; do not silently relabel it manual or automatic. Record the actual method for newly accepted versions and retain historical metadata in existing documents or versions.
 
 ## Turns, batches and completion
 

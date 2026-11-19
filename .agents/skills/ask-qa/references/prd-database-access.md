@@ -1,0 +1,9 @@
+# Terminal PRD database access
+
+PRDs use the same PostgreSQL store and browser identity as Q-Rex. Set `AUTOMATION_PRD_IDENTITY` to the intended browser's `automation-dummy-user-id` value from local storage. Confirm the intended browser identity with the user if it is not established; never choose another identity or enumerate other users' documents. This identifier partitions local preview data; it is not authentication. Configure `AUTOMATION_DATABASE_URL` as for the API. If access is unavailable, report the blocker instead of creating a repository PRD.
+
+From the repository root, `node server/modules/agent/prd-cli.mjs list` lists active PRDs and `node server/modules/agent/prd-cli.mjs read docs/prd/<module>/<menu>.md` reads one. These paths are virtual identifiers. `write <identifier>` reads a JSON object from stdin with `content` and `expected` (the exact previously read content, or null if absent). It rejects stale changes. A draft must preserve unchanged validations and leave new or changed items without `[validated]`.
+
+Present the complete saved draft for explicit review. After the user accepts the exact proposed reviewed content, provide `approvedSha256` in the write JSON as the SHA-256 of that exact UTF-8 content. This value records the human decision in the agent workflow; calculating a hash, a create request, or silence is not approval. The write fails if approval is required and the digest does not match. Preserve the existing review gate and reviewer metadata. Do not write PRD contents to the repository.
+
+If an update to a reviewed PRD would remove or change an existing validated line, the database requires approval before saving it even as a draft. Present the exact proposed content first, obtain the explicit scoped decision, then write with its digest; retain the existing document if the decision is absent or rejected.

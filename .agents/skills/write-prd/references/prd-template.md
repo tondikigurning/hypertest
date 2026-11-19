@@ -1,6 +1,6 @@
 # PRD template
 
-The exact structure for `docs/prd/<module>/<menu>.md`. Copy the skeleton, fill every section, and keep the section order. If a section has nothing to say, keep the heading and write `None.` so the reader knows it was considered, not forgotten.
+The structure for new `docs/prd/<module>/<menu>.md` documents. Copy the skeleton and keep the main sections and review-findings subsections in order. Use `None.` for an empty section or findings subsection. Behavior subsections depend on the menu. Existing PRDs remain valid in their original structure; follow the scoped refresh rules rather than reorganizing them solely to match this template.
 
 ## Contents
 
@@ -38,7 +38,7 @@ review_method:                # empty until accepted; manual | automatic (Q-Rex 
 Rules:
 
 - `code` reuses an established prefix when available. For a new allocation, inspect existing feature/PRD codes and choose an unused three-letter uppercase code compatible with the scenario convention. Preserve legacy codes and IDs instead of renumbering them.
-- `status` stays `draft` until Step 6's gate accepts the proposed version. In Q-Rex the reviewed payload is proposed to the native write approval before saving; include `reviewed_by`, `reviewed_at` and `review_method` for the actual decision mode. In a terminal host, save and present the draft first, then set review metadata only after explicit acceptance under the [shared review contract](../../ask-qa/references/workflow-contract.md#hosts-and-review-gates). Automatic acceptance is not human confirmation. A reviewed PRD may retain `needs-review` items: stated `spec` stays attributed, while conflicts and unvalidated observations/assumptions do not establish intent.
+- `status` stays `draft` until Step 6's gate accepts the proposed database version. In Q-Rex the reviewed payload is proposed to the native write approval before saving; include `reviewed_by`, `reviewed_at` and `review_method` for the actual decision mode. Terminal hosts use the [database access procedure](../../ask-qa/references/prd-database-access.md), present the complete draft, and set review metadata only after explicit acceptance under the [shared review contract](../../ask-qa/references/workflow-contract.md#hosts-and-review-gates). Automatic acceptance is not human confirmation. A reviewed PRD may contain unvalidated items: stated `spec` stays attributed, while conflicts and unvalidated observations/assumptions do not establish intent.
 - `sources` lists every origin of content: each uploaded file, the interview, and each exploration pass. Never include credentials or URLs that embed tokens.
 - `last_explored` is updated per area, never for the whole PRD at once, unless every area was re-checked.
 
@@ -47,12 +47,10 @@ Rules:
 ```markdown
 # <Menu> PRD
 
-## 1. Purpose
+## 1. Overview and scope
 
 <One or two sentences: what this menu does for the business and who uses it.>
 Requirement sources: <document path, ticket keys such as ABC-123, or "none stated">.
-
-## 2. Scope
 
 **In scope**
 
@@ -62,18 +60,18 @@ Requirement sources: <document path, ticket keys such as ABC-123, or "none state
 
 - <function, child group, flow or role deliberately excluded, with the reason if the user gave one>
 
-## 3. Roles and access
+## 2. Roles and access
 
 | Role | Can open the page | Can do | Must be denied | Provenance |
 | --- | --- | --- | --- | --- |
 | <role> | yes / no | <actions> | <actions> | spec / observed / assumed |
 
-## 4. Data and preconditions
+## 3. Data and preconditions
 
 - <records that must exist first>
 - <whether E2E-owned records may be created or deleted in which environment, per the data-safety rules>
 
-## 5. Candidate business flows
+## 4. Candidate business flows
 
 Input for the flow-list confirmation in `write-e2e-scenarios`. No flow or scenario IDs here.
 
@@ -81,31 +79,13 @@ Input for the flow-list confirmation in `write-e2e-scenarios`. No flow or scenar
 | --- | --- | --- | --- | --- |
 | <name> | <one line> | high / medium / low | yes / no | spec / observed / assumed |
 
-## 6. Behavior
+## 5. Behavior and business rules
 
-### 6.1 Entry and navigation
+### <Relevant activity, for example Entry and navigation>
 
-- **PRD_<CODE>_001** [spec][needs-review] <statement>.
+- **PRD_<CODE>_001** [spec] <statement>.
 
-### 6.2 List
-
-### 6.3 Detail
-
-### 6.4 Actions
-
-#### 6.4.1 <Action name, for example Create>
-
-### 6.5 Validation and business rules
-
-### 6.6 Empty, loading and error states
-
-### 6.7 Role-dependent and state-dependent behavior
-
-### 6.8 Cross-menu and platform integrations
-
-- <requirements, participating menus/platforms, prerequisites and observable outcomes owned by this menu>
-
-## 7. UI messages
+## 6. UI messages
 
 Exact text as seen, one row per message.
 
@@ -113,22 +93,24 @@ Exact text as seen, one row per message.
 | --- | --- | --- | --- | --- |
 | "<exact text>" | <what causes it> | <screen or dialog> | observed | <env>, YYYY-MM-DD |
 
-## 8. Discrepancies
+## 7. Review findings and gaps
+
+### Discrepancies
 
 Spec and live behavior disagree. Do not resolve them here.
 
-### DISC-001 <short title>
+#### DISC-001 <short title>
 
 - Spec says: <fact> (source: <document or interview answer>)
 - Observed: <fact> (evidence: `<evidence ref>`, <env>, YYYY-MM-DD)
 - Open question: which one is right?
 - Related items: PRD_<CODE>_NNN
 
-## 9. Candidate defects
+### Candidate defects
 
 Live behavior that looks like a real product defect, not an environment quirk.
 
-### CAND-001 <short title>
+#### CAND-001 <short title>
 
 - Expected: <behavior> (source: <spec or ticket>)
 - Actual: <behavior>
@@ -136,17 +118,17 @@ Live behavior that looks like a real product defect, not an environment quirk.
 - Ticket: <ID given by the user, or "none yet, ticket requested">
 - Related items: PRD_<CODE>_NNN
 
-## 10. Unverified
+### Unverified
 
 | Item | Why it could not be verified | Needed to verify |
 | --- | --- | --- |
 | <branch, role, state or flow> | <no such role, no data, needs a mutation not permitted, and so on> | <account, data or permission> |
 
-## 11. Open questions
+### Open questions
 
 1. <question> (raised in: <section or item ID>)
 
-## 12. Exploration log
+## 8. Exploration log
 
 - Environment: <name>
 - Date: YYYY-MM-DD
@@ -160,11 +142,6 @@ Live behavior that looks like a real product defect, not an environment quirk.
 
 Content from an uploaded document that did not fit any section, kept verbatim or close to it, with its origin.
 
-## 13. Change log
-
-| Date | Change | Items affected | By |
-| --- | --- | --- | --- |
-| YYYY-MM-DD | Created (draft) | all | <identity> |
 ```
 
 ## Requirement line format
@@ -172,14 +149,14 @@ Content from an uploaded document that did not fit any section, kept verbatim or
 Every behavioral statement is one bullet, so it can be grepped and referenced:
 
 ```markdown
-- **PRD_STM_014** [observed][needs-review] Clicking "Add" opens a dialog titled "Add Store". _Seen:_ Store list, staging, 2026-11-09. _Evidence:_ `STM-list-01`
+- **PRD_STM_014** [observed] Clicking "Add" opens a dialog titled "Add Store". _Seen:_ Store list, staging, 2026-11-09. _Evidence:_ `STM-list-01`
 ```
 
 Parts, in order:
 
 1. `**PRD_<CODE>_<NNN>**`: the stable ID.
 2. `[provenance]`: one of `spec`, `observed`, `assumed`.
-3. `[review]`: one of `needs-review`, `validated`.
+3. Optional `[validated]`: present only after acceptance through the review gate. Without it, the item is unvalidated.
 4. The statement: one sentence, consumer-visible behavior, present tense.
 5. `_Seen:_` for `observed` items: screen, environment, date.
 6. `_Evidence:_` for `observed` items: an accessible safe artifact path, or a reference to a dated, sanitized factual entry in the exploration log if no artifact can safely be retained. State that limitation; do not imply an artifact exists.
@@ -199,10 +176,9 @@ A statement states one behavior. Split compound statements ("shows X and also al
 
 | Review | Meaning |
 | --- | --- |
-| `needs-review` | Not yet confirmed by the user, or changed, or in conflict |
 | `validated` | Accepted through the review gate; `review_method` distinguishes manual confirmation from configured automatic acceptance |
 
-- New and changed items start as `needs-review`; retain validation for unchanged items during refresh.
+- New, changed and conflicting items have no `[validated]` tag; retain validation for unchanged items during refresh. Legacy `[needs-review]` means unvalidated and may be removed when that item is edited; never treat it as acceptance.
 - Only Step 6's accepted review sets saved content to `validated`. A Q-Rex native write proposal may contain its intended validations, but it is not an accepted version until the write's review gate succeeds. Matching observations/specs alone do not validate a draft.
 - An `observed` item that was `validated` stays `observed`; validation records acceptance under the recorded review method, not a change to its source provenance. Automatic acceptance must not be described as a human establishing product intent.
 - When agreement between spec and observation exists, keep the item with its strongest source (`spec`) and cite the observation as evidence.
@@ -227,21 +203,21 @@ A statement states one behavior. Split compound statements ("shows X and also al
 
 **Purpose and scope.** Use the user's words from the context interview. Identify known child test groups and which journeys are covered, excluded or unverified within this one menu PRD. Out-of-scope items come from the "known issues and scope" answer. A scoped refresh must not imply every child was explored.
 
-**Roles and access.** One row per role the user named or that you observed. A role you could not test is listed with `Can do` and `Must be denied` marked `unverified`, and also appears in section 10.
+**Roles and access.** One row per role the user named or that you observed. A role you could not test is listed with `Can do` and `Must be denied` marked `unverified`, and also appears under Review findings and gaps > Unverified.
 
 **Data and preconditions.** Record what must exist before the flows work and what the data-safety rules allow. Never assume mutation permission.
 
 **Candidate business flows.** Cover at least each supported create, read, update and delete happy path plus other main business functions. Recommend happy paths as smoke candidates. These are candidates only; `write-e2e-scenarios` confirms and numbers them.
 
-**Behavior.** Group by what the user does, not by DOM structure. Use sub-sections 6.4.x for each action (create, edit, delete, export, status change, and so on). Record integration requirements in 6.8. Add or remove sub-sections to fit the menu, but keep 6.1 to 6.8 present.
+**Behavior and business rules.** Group requirements by relevant user activities and business journeys, not DOM structure. Add subsections only for areas relevant to the menu, such as navigation, list, create, edit, assignment or integration. Include applicable validations, empty/loading/error states, role/state conditions and cross-menu or platform dependencies with the activity they affect. For integration journeys record participants, prerequisites and observable outcomes owned by this menu. Use the exploration checklist for every area, without requiring its categories as headings. Summarize checked areas that are not present in the exploration log; record inaccessible or untested areas under Unverified with the reason.
 
 **UI messages.** One row per distinct message. If the same message appears in several places, list the trigger and screen for each.
 
-**Discrepancies and candidate defects.** Keep them separate: a discrepancy is "sources disagree", a candidate defect is "the app looks broken". A conflict can be both; then record it in both and cross-link.
+**Review findings and gaps.** Keep the four subsections distinct: a discrepancy is "sources disagree", a candidate defect is "the app looks broken", an unverified item needs evidence, and an open question needs a decision. A conflict can be both a discrepancy and a candidate defect; cross-link them instead of repeating details. Keep each finding's ID, evidence, related requirements and ticket status where applicable.
 
 **Unverified.** Absence from the current account or data is not evidence a feature does not exist. List the item and what would be needed to verify it.
 
-**Change log.** Required in every PRD. In Refresh mode, list each changed or newly conflicting item and mark it `needs-review`.
+**Avoid repetition.** Put each behavioral rule in Behavior, exact messages in UI messages and factual evidence in the exploration log; cross-reference them where needed. Scope records deliberate exclusions, while Unverified records in-scope areas that could not be checked. Preserve enough detail for reviewers and scenario discovery to understand each finding without consulting unavailable evidence.
 
 ## Worked example
 
@@ -269,18 +245,20 @@ review_method:
 
 # Store List PRD
 
-## 1. Purpose
+## 1. Overview and scope
 
 Lets operations staff view, add, edit and deactivate stores.
 Requirement sources: none stated.
 
-### 6.4.1 Create
+## 5. Behavior and business rules
 
-- **PRD_STL_007** [spec][needs-review] A user with the Admin role can create a store. _Source:_ interview answer.
-- **PRD_STL_008** [observed][needs-review] Clicking "Add" opens a dialog titled "Add Store" with required fields Name and Code. _Seen:_ Store list, staging, 2026-11-09. _Evidence:_ `STL-create-01`
-- **PRD_STL_009** [assumed][needs-review] Duplicate store codes are rejected. _Assumption:_ the user delegated the duplicate rule; common for unique identifiers.
+### Create
 
-## 7. UI messages
+- **PRD_STL_007** [spec] A user with the Admin role can create a store. _Source:_ interview answer.
+- **PRD_STL_008** [observed] Clicking "Add" opens a dialog titled "Add Store" with required fields Name and Code. _Seen:_ Store list, staging, 2026-11-09. _Evidence:_ `STL-create-01`
+- **PRD_STL_009** [assumed] Duplicate store codes are rejected. _Assumption:_ the user delegated the duplicate rule; common for unique identifiers.
+
+## 6. UI messages
 
 | Message (exact) | Trigger | Screen | Provenance | Seen (env, date) |
 | --- | --- | --- | --- | --- |

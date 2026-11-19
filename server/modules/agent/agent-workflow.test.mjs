@@ -29,6 +29,21 @@ async function waitFor(session, predicate) {
 async function workflow(t, responses, runtime = {}, files = {}, prdStore) {
   const root = await mkdtemp(join(tmpdir(), "automation-agent-workflow-"));
   const workspace = join(root, "workspace");
+  const documents = new Map(Object.entries(files).filter(([path]) => path.startsWith("docs/prd/")));
+  prdStore ??= {
+    list: async () =>
+      [...documents].map(([path, content]) => {
+        const [, , module, file] = path.split("/");
+        return { module, menu: file.slice(0, -3), content };
+      }),
+    read: async (path) => documents.get(path),
+    write: async (path, content, { requestApproval, signal }) => {
+      const accepted = await requestApproval({ kind: "prd-review", reason: "Review PRD", command: content, signal });
+      if (!accepted) throw new Error("Declined");
+      documents.set(path, content);
+      return true;
+    },
+  };
   for (const name of ["ask-qa", "write-prd", "write-e2e-scenarios", "write-e2e-code"]) {
     await mkdir(join(workspace, ".agents/skills", name), { recursive: true });
     await writeFile(join(workspace, ".agents/skills", name, "SKILL.md"), `Active workflow instructions: ${name}`);
@@ -38,6 +53,7 @@ async function workflow(t, responses, runtime = {}, files = {}, prdStore) {
     await mkdir(join(workspace, path), { recursive: true });
   }
   for (const [path, content] of Object.entries(files)) {
+    if (path.startsWith("docs/prd/")) continue;
     await mkdir(join(workspace, path, ".."), { recursive: true });
     await writeFile(join(workspace, path), content);
   }
@@ -118,7 +134,7 @@ async function workflow(t, responses, runtime = {}, files = {}, prdStore) {
     await rm(root, { recursive: true, force: true });
   });
   await session.setModel("9router", "test/model");
-  return { session, workspace, requests };
+  return { session, workspace, requests, prdStore };
 }
 
 test("PRD workflow writes through the database adapter and requests review", async (t) => {
@@ -162,7 +178,7 @@ test("chat hands off skills and reviews artifacts without running workspace scen
     { text: "PRD reviewed. Continue with scenario discovery on a subsequent turn." },
   ];
   let runs = 0;
-  const { session, workspace, requests } = await workflow(t, responses, {
+  const { session, workspace, requests, prdStore } = await workflow(t, responses, {
     startIsolatedDraftRun: async (input) => {
       runs++;
       assert.equal(input.scenarioId, scenarioId);
@@ -188,7 +204,8 @@ test("chat hands off skills and reviews artifacts without running workspace scen
   assert.equal(prdReview.approvalRequest?.kind, "prd-review", "ask-qa must be able to activate the PRD skill");
   session.decideApproval(prdReview.approvalRequest.id, "accept");
   await waitFor(session, (state) => !state.busy);
-  assert.equal(await readFile(join(workspace, prdPath), "utf8"), prd);
+  assert.equal(await prdStore.read(prdPath), prd);
+  await assert.rejects(readFile(join(workspace, prdPath)), { code: "ENOENT" });
   assert.match(JSON.stringify(requests[1].messages[0]), /Active workflow instructions: write-prd/);
   assert.equal(session.snapshot().requestedSkill, "write-prd", "PRD review must end the current workflow turn");
   assert.match(

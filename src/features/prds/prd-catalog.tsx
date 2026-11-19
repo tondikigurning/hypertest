@@ -29,20 +29,18 @@ function VersionItem({
   status,
   active,
   selected,
-  baseline,
   onSelect,
 }: {
   name: string;
   status: string;
   active: boolean;
   selected: boolean;
-  baseline?: boolean;
   onSelect: () => void;
 }) {
   return (
     <button
       type="button"
-      className={baseline ? "prd-baseline-item prd-version-item" : "prd-version-item"}
+      className="prd-version-item"
       data-selected={selected}
       aria-pressed={selected}
       onClick={onSelect}
@@ -97,7 +95,6 @@ function EditorActions({ busy, label, onCancel }: { busy: boolean; label: string
 export function PrdCatalog({
   module,
   menu,
-  checkout,
   draftPrds,
   draft,
   onCreate,
@@ -107,7 +104,6 @@ export function PrdCatalog({
 }: {
   module: string;
   menu: string;
-  checkout: PrdResult;
   draftPrds: PrdResult;
   draft: string;
   onCreate: () => void;
@@ -127,25 +123,15 @@ export function PrdCatalog({
   const [confirmation, setConfirmation] = useState<
     { kind: "discard"; proceed: () => void } | { kind: "delete"; id: string; name: string } | null
   >(null);
-  const checkoutItem = checkout.items.find((entry) => entry.module === module && entry.menu === menu);
   const draftItem = draftPrds.items.find((entry) => entry.module === module && entry.menu === menu);
   const selectedVersion =
-    selectedId === "__checkout__"
-      ? undefined
-      : (versions.items.find((version) => version.id === selectedId) ??
-        versions.items.find((version) => version.active) ??
-        versions.items[0]);
-  const selectedContent =
-    selectedVersion?.content ??
-    (selectedId === "__checkout__"
-      ? checkoutItem?.content
-      : draft
-        ? (draftItem?.content ?? checkoutItem?.content)
-        : checkoutItem?.content);
-  const isBaseline = !selectedVersion && !(selectedId !== "__checkout__" && draftItem);
+    versions.items.find((version) => version.id === selectedId) ??
+    versions.items.find((version) => version.active) ??
+    versions.items[0];
+  const selectedContent = selectedVersion?.content ?? draftItem?.content;
   const hasContent = selectedContent !== undefined;
-  const loading = versions.loading || checkout.loading || draftPrds.loading;
-  const loadError = versions.error || draftPrds.error || checkout.error;
+  const loading = versions.loading || draftPrds.loading;
+  const loadError = versions.error || draftPrds.error;
   const hasUnsavedChanges = editingContent
     ? contentDraft !== selectedVersion?.content
     : editingName && name !== selectedVersion?.name;
@@ -177,7 +163,7 @@ export function PrdCatalog({
   }
 
   async function createVersion() {
-    const initialContent = draftItem?.content ?? checkoutItem?.content ?? emptyPrd;
+    const initialContent = draftItem?.content ?? emptyPrd;
     const result = (await versions.create("", initialContent)) as { activeVersionId?: string };
     if (result.activeVersionId) setSelectedId(result.activeVersionId);
   }
@@ -255,9 +241,7 @@ export function PrdCatalog({
           <div>
             <SectionEyebrow className="prd-kicker">PRODUCT REQUIREMENTS</SectionEyebrow>
             <h2 id="prd-dialog-title">{label(menu)}</h2>
-            <p>
-              {label(module)} <span aria-hidden="true">/</span> {draft ? "Draft workspace" : "Checkout baseline"}
-            </p>
+            <p>{label(module)}</p>
           </div>
         </div>
         <CloseButton label="Close PRD" onClick={closeDialog} className="prd-close" />
@@ -294,20 +278,7 @@ export function PrdCatalog({
               ))}
             </ul>
           )}
-          {checkoutItem && (
-            <div className="prd-baseline-group">
-              <span className="prd-baseline-label">BASELINE</span>
-              <VersionItem
-                name="Checkout"
-                status={checkoutItem.status}
-                active={!draft}
-                selected={selectedId === "__checkout__" || (isBaseline && !selectedId)}
-                baseline
-                onSelect={() => selectVersion("__checkout__")}
-              />
-            </div>
-          )}
-          {draft && noVersions && !checkoutItem && <p className="prd-version-empty">No versions yet.</p>}
+          {draft && noVersions && <p className="prd-version-empty">No versions yet.</p>}
         </aside>
 
         <div className="prd-version-content">
@@ -355,7 +326,6 @@ export function PrdCatalog({
                 <div className="prd-reader-controls">
                   <div className="prd-reader-badges">
                     {selectedVersion?.active && <span className="prd-active-badge">Active</span>}
-                    {isBaseline && !draft && <span className="prd-active-badge">Active</span>}
                     {selectedVersion && (
                       <span className="prd-status" data-reviewed={selectedVersion.status.toLowerCase() === "reviewed"}>
                         <span className="prd-status-dot" aria-hidden="true" />

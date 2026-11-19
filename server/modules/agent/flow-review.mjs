@@ -89,7 +89,7 @@ export async function confirmFlowReview({
   redact,
   requestApproval,
   signal,
-  readPrd = (path) => readOptionalFile(workspace, path),
+  readPrd,
 }) {
   const feature = featureReviewPath(featurePath);
   const prd = prdPath.replaceAll("\\", "/");
@@ -98,7 +98,7 @@ export async function confirmFlowReview({
   if (!matchesMenuPrd(feature, prd))
     throw new Error("Choose the owning menu PRD at docs/prd/<module>/<menu>.md for this feature.");
   await safePath(workspace, feature);
-  await safePath(workspace, prd);
+  if (typeof readPrd !== "function") throw new Error("PRD database store is unavailable.");
   const ids = flows.map((flow) => flow.id.trim());
   if (
     !ids.length ||
@@ -121,7 +121,6 @@ export async function confirmFlowReview({
   });
   if (!accepted || signal?.aborted) return undefined;
   await safePath(workspace, feature);
-  await safePath(workspace, prd);
   if ((await readOptionalFile(workspace, feature)) !== featureContent || ((await readPrd(prd)) || "") !== prdContent)
     throw new Error("The feature or PRD changed while awaiting confirmation. Review the flow list again.");
   return {
@@ -134,14 +133,7 @@ export async function confirmFlowReview({
   };
 }
 
-export async function authorizeFlowWrite({
-  workspace,
-  path,
-  content,
-  confirmations,
-  safePath,
-  readPrd = (value) => readOptionalFile(workspace, value),
-}) {
+export async function authorizeFlowWrite({ workspace, path, content, confirmations, readPrd }) {
   const feature = featureReviewPath(path);
   if (!feature) return;
   const before = await readOptionalFile(workspace, feature);
@@ -150,7 +142,7 @@ export async function authorizeFlowWrite({
   const changedFlows = changedScenarioFlows(feature, before, content);
   if (!changedFlows.length) return;
   const approval = confirmations[key];
-  if (approval && typeof approval.prd === "string") await safePath(workspace, approval.prd);
+  if (typeof readPrd !== "function") throw new Error("PRD database store is unavailable.");
   if (
     !approval ||
     approval.featureDigest !== contentDigest(before) ||

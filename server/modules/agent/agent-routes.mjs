@@ -36,7 +36,6 @@ import {
   updateLocalPullRequests,
 } from "./draft-store.mjs";
 import { createDraftWorkspace, listDraftTargets } from "./draft-workspace.mjs";
-import { listPrds } from "./prd-catalog.mjs";
 import { createPrdDatabase } from "./prd-database.mjs";
 import { refreshPullRequests } from "./publish-draft.mjs";
 
@@ -146,13 +145,6 @@ export function createAgentRouter({ resolveSession = sessionFor, resolveIdentity
       });
     }),
   );
-  router.get("/checkout-prds", async (_req, res) => {
-    try {
-      res.json(await listPrds(resolve(import.meta.dirname, "../../../")));
-    } catch {
-      res.status(503).json({ error: "Could not read checkout PRDs." });
-    }
-  });
   router.get("/draft-targets", async (_req, res) => {
     try {
       res.json(await listDraftTargets());

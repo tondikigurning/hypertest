@@ -339,23 +339,6 @@
   font-size: 10px;
   text-transform: capitalize;
 }
-.prd-baseline-group {
-  margin-top: 19px;
-  padding-top: 15px;
-  border-top: 1px solid #edf0f4;
-}
-.prd-baseline-label {
-  display: block;
-  margin: 0 7px 7px;
-  color: #9aa3b1;
-  font-size: 9px;
-  font-weight: 750;
-  letter-spacing: 0.08em;
-}
-.prd-baseline-item .prd-version-item-icon {
-  background: #eef3f8;
-  color: #70849b;
-}
 .prd-version-empty {
   margin: 5px 7px;
   color: #8993a2;
@@ -676,13 +659,6 @@
   .prd-version-list .prd-version-item {
     width: auto;
     min-width: 155px;
-  }
-  .prd-baseline-group {
-    margin-top: 12px;
-    padding-top: 10px;
-  }
-  .prd-baseline-group .prd-version-item {
-    max-width: 220px;
   }
   .prd-version-content .prd-reader {
     padding: 20px 18px 36px;

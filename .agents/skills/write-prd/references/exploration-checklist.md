@@ -153,7 +153,7 @@ Then write the PRD line in the format from [prd-template.md](prd-template.md). K
 
 ## Recording what you could not reach
 
-Absence from the current account or data is not evidence that a feature does not exist. Record it in the PRD's "Unverified" section with a reason:
+Absence from the current account or data is not evidence that a feature does not exist. Record it under the PRD's Review findings and gaps > Unverified, or the equivalent section in an existing PRD, with a reason:
 
 | Reason | How to write it |
 | --- | --- |

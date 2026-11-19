@@ -14,7 +14,7 @@ import {
   contentDigest,
   flowReviewKey,
 } from "./flow-review.mjs";
-import { authorizePrdWrite, requiresPrdReview } from "./prd-review.mjs";
+import { requiresPrdReview } from "./prd-review.mjs";
 
 const git = promisify(execFile);
 
@@ -132,66 +132,6 @@ test("closing an exploration browser does not start a new one", async () => {
   assert.deepEqual(calls, ["close"]);
 });
 
-test("PRD validation requires explicit approval of the proposed version", async (t) => {
-  const workspace = await mkdtemp(join(tmpdir(), "automation-agent-prd-"));
-  t.after(() => rm(workspace, { recursive: true, force: true }));
-  const path = "docs/prd/module/example.md";
-  const draft = "---\nstatus: draft\n---\n- [observed][needs-review] A behavior.\n";
-  const reviewed = "---\nstatus: reviewed\n---\n- [observed][validated] A behavior.\n";
-  let decision = false;
-  let request;
-  const tools = createAgentTools({
-    workspace,
-    authorizeFileWrite: (file, content) =>
-      authorizePrdWrite({
-        workspace,
-        path: file,
-        content,
-        redact: (value) => value,
-        requestApproval: async (value) => {
-          request = value;
-          return decision;
-        },
-      }),
-  });
-  await tools.write_file.execute({ path, content: draft });
-  await assert.rejects(tools.write_file.execute({ path, content: reviewed }), /not approved/);
-  assert.equal(await readFile(join(workspace, path), "utf8"), draft);
-  assert.equal(request.kind, "prd-review");
-  assert.equal(request.command, reviewed);
-  decision = true;
-  await tools.write_file.execute({ path, content: reviewed });
-  assert.equal(await readFile(join(workspace, path), "utf8"), reviewed);
-  decision = false;
-  await assert.rejects(
-    tools.edit_file.execute({ path, oldText: "A behavior.", newText: "A different behavior." }),
-    /not approved/,
-  );
-  assert.equal(await readFile(join(workspace, path), "utf8"), reviewed);
-});
-
-test("PRD approval cannot apply to a file changed while awaiting review", async (t) => {
-  const workspace = await mkdtemp(join(tmpdir(), "automation-agent-prd-race-"));
-  t.after(() => rm(workspace, { recursive: true, force: true }));
-  const path = "docs/prd/module/example.md";
-  await mkdir(join(workspace, "docs/prd/module"), { recursive: true });
-  await writeFile(join(workspace, path), "original");
-  await assert.rejects(
-    authorizePrdWrite({
-      workspace,
-      path,
-      content: "---\nstatus: reviewed\n---\n",
-      redact: (value) => value,
-      requestApproval: async () => {
-        await writeFile(join(workspace, path), "changed externally");
-        return true;
-      },
-    }),
-    /changed while awaiting review/,
-  );
-  assert.equal(await readFile(join(workspace, path), "utf8"), "changed externally");
-});
-
 test("retained PRD validation is distinguished from newly validated content", () => {
   const previous = "---\nstatus: draft\n---\n- [observed][validated] Existing.\n";
   assert.equal(requiresPrdReview(previous, `${previous}- [observed][needs-review] New.\n`), false);
@@ -264,10 +204,9 @@ test("scenario intent changes require scoped flow confirmation against a current
   const prdPath = "docs/prd/module/example.md";
   const before = "Feature: Example\n  @flow:ONE\n  Scenario: Existing\n    Given a step\n";
   const after = `${before}\n  @flow:ONE\n  Scenario: New\n    Given another step\n`;
+  let prdContent = "---\nstatus: reviewed\n---\nContext\n";
   await mkdir(join(workspace, "e2e/tests/bdd/features/module"), { recursive: true });
-  await mkdir(join(workspace, "docs/prd/module"), { recursive: true });
   await writeFile(join(workspace, featurePath), before);
-  await writeFile(join(workspace, prdPath), "---\nstatus: reviewed\n---\nContext\n");
   const confirmations = {};
   let accept = false;
   const tools = createAgentTools({
@@ -281,12 +220,20 @@ test("scenario intent changes require scoped flow confirmation against a current
         safePath: safeWorkspacePath,
         redact: (value) => value,
         requestApproval: async () => accept,
+        readPrd: async () => prdContent,
       });
       if (approval) confirmations[flowReviewKey(approval.feature)] = approval;
       return { approved: Boolean(approval) };
     },
     authorizeFileWrite: (path, content) =>
-      authorizeFlowWrite({ workspace, path, content, confirmations, safePath: safeWorkspacePath }),
+      authorizeFlowWrite({
+        workspace,
+        path,
+        content,
+        confirmations,
+        safePath: safeWorkspacePath,
+        readPrd: async () => prdContent,
+      }),
     onFileWritten: (path, content) => {
       if (confirmations[flowReviewKey(path)]) confirmations[flowReviewKey(path)].featureDigest = contentDigest(content);
     },
@@ -316,7 +263,7 @@ test("scenario intent changes require scoped flow confirmation against a current
     /Confirm the affected flow/,
   );
   assert.equal((await tools.confirm_flows.execute(input)).approved, true);
-  await writeFile(join(workspace, prdPath), "---\nstatus: draft\n---\nChanged\n");
+  prdContent = "---\nstatus: draft\n---\nChanged\n";
   await assert.rejects(
     tools.write_file.execute({ path: featurePath, content: after.replace("another step", "changed step") }),
     /Confirm the affected flow/,
@@ -327,8 +274,6 @@ test("a draft PRD cannot be used to confirm a flow list", async (t) => {
   const workspace = await mkdtemp(join(tmpdir(), "automation-agent-flow-prd-"));
   t.after(() => rm(workspace, { recursive: true, force: true }));
   await mkdir(join(workspace, "e2e/tests/bdd/features/module"), { recursive: true });
-  await mkdir(join(workspace, "docs/prd/module"), { recursive: true });
-  await writeFile(join(workspace, "docs/prd/module/example.md"), "---\nstatus: draft\n---\n");
   await assert.rejects(
     confirmFlowReview({
       workspace,
@@ -338,6 +283,7 @@ test("a draft PRD cannot be used to confirm a flow list", async (t) => {
       safePath: safeWorkspacePath,
       redact: (value) => value,
       requestApproval: async () => true,
+      readPrd: async () => "---\nstatus: draft\n---\n",
     }),
     /reviewed PRD is required/,
   );
@@ -348,9 +294,8 @@ test("flow confirmation is rejected if the PRD changes while the user reviews it
   t.after(() => rm(workspace, { recursive: true, force: true }));
   const featurePath = "e2e/tests/bdd/features/module/example.feature";
   const prdPath = "docs/prd/module/example.md";
+  let prdContent = "---\nstatus: reviewed\n---\n";
   await mkdir(join(workspace, "e2e/tests/bdd/features/module"), { recursive: true });
-  await mkdir(join(workspace, "docs/prd/module"), { recursive: true });
-  await writeFile(join(workspace, prdPath), "---\nstatus: reviewed\n---\n");
   await assert.rejects(
     confirmFlowReview({
       workspace,
@@ -360,9 +305,10 @@ test("flow confirmation is rejected if the PRD changes while the user reviews it
       safePath: safeWorkspacePath,
       redact: (value) => value,
       requestApproval: async () => {
-        await writeFile(join(workspace, prdPath), "---\nstatus: draft\n---\n");
+        prdContent = "---\nstatus: draft\n---\n";
         return true;
       },
+      readPrd: async () => prdContent,
     }),
     /changed while awaiting confirmation/,
   );
