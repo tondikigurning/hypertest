@@ -398,6 +398,7 @@ export function linkWorkspaceDependencies(workspace) {
 export function createSession({
   userId = "local-preview-user",
   prepareWorkspace,
+  refreshWorkspace,
   prdStore,
   stateFile = sessionFile,
   preferencesFile,
@@ -1412,6 +1413,19 @@ export function createSession({
     try {
       await ensureWorkspace();
       await verifyHead();
+      if (refreshWorkspace) {
+        const refreshed = await refreshWorkspace({ workspace, baseCommit, baseBranch, branch });
+        if (refreshed.updated) {
+          if (refreshed.baseCommit !== baseCommit) expectedHead = refreshed.baseCommit;
+          baseCommit = refreshed.baseCommit;
+          baseBranch = refreshed.baseBranch;
+          branch = refreshed.branch;
+          approvedScenarioDigest = undefined;
+          confirmedFlows = {};
+          automaticallyConfirmedFlows.clear();
+          save();
+        }
+      }
       let activeSkill = skill;
       const readSkill = async (name) => {
         if (!skills.has(name)) throw new Error("Choose an available QA workflow.");

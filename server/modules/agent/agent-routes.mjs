@@ -35,7 +35,7 @@ import {
   touchLocalDraft,
   updateLocalPullRequests,
 } from "./draft-store.mjs";
-import { createDraftWorkspace, listDraftTargets } from "./draft-workspace.mjs";
+import { createDraftWorkspace, listDraftTargets, refreshDraftForTurn } from "./draft-workspace.mjs";
 import { createPrdDatabase } from "./prd-database.mjs";
 import { refreshPullRequests } from "./publish-draft.mjs";
 
@@ -80,6 +80,7 @@ function sessionFor(id, draftId, draft) {
         prdStore: createPrdDatabase(id),
         stateFile,
         preferencesFile: join(sessionsRoot, id, "model-preferences.json"),
+        refreshWorkspace: refreshDraftForTurn,
         ...(draftId !== "default" && draft
           ? {
               prepareWorkspace: () =>

@@ -47,6 +47,11 @@ function normalizeTargetBranch(value) {
 async function resolveTarget(targetBranch, { refresh = true } = {}) {
   const branch = normalizeTargetBranch(targetBranch);
   await git(["check-ref-format", "--branch", branch]);
+  if (!refresh && (await localBranchExists(branch))) {
+    const ref = `refs/heads/${branch}`;
+    const result = await git(["rev-parse", "--verify", `${ref}^{commit}`]);
+    return { branch, ref, commit: result.stdout.trim(), remote: false };
+  }
   if (await originExists()) {
     if (refresh) {
       try {
@@ -100,11 +105,8 @@ export async function listDraftTargets() {
   } catch {
     // A detached local checkout still offers the standard development default when present.
   }
-  const defaultBranch = branches.includes("development")
-    ? "development"
-    : branches.includes(currentBranch)
-      ? currentBranch
-      : branches[0];
+  if (currentBranch && !branches.includes(currentBranch)) branches.push(currentBranch);
+  const defaultBranch = currentBranch || (branches.includes("development") ? "development" : branches[0]);
   return { branches, defaultBranch };
 }
 
@@ -183,6 +185,33 @@ async function mergeIsInProgress(workspace) {
 
 export function draftMergeInProgress(workspace) {
   return mergeIsInProgress(validateWorktreePath(workspace));
+}
+
+export async function refreshDraftForTurn({ workspace, baseCommit, baseBranch, branch }) {
+  workspace = validateWorktreePath(workspace);
+  const currentBranch = (await git(["branch", "--show-current"])).stdout.trim();
+  if (!currentBranch) throw new Error("The workspace needs a local branch checked out before Q-Rex can continue.");
+  const target = await resolveTarget(currentBranch, { refresh: false });
+  if (target.commit === baseCommit)
+    return { baseCommit, baseBranch: currentBranch, branch, updated: currentBranch !== baseBranch };
+  const head = (await git(["rev-parse", "HEAD"], workspace)).stdout.trim();
+  if (head !== baseCommit)
+    throw new Error(
+      "The workspace contains committed draft changes and the local source branch changed. Review the draft before continuing.",
+    );
+  const status = await git(["status", "--porcelain", "--untracked-files=normal"], workspace);
+  if (status.stdout.trim() || (await mergeIsInProgress(workspace)))
+    throw new Error(
+      "The workspace has draft changes and the local source branch changed. Review the draft before continuing.",
+    );
+  try {
+    await git(["switch", "--detach", target.commit], workspace);
+  } catch (cause) {
+    throw new Error("The workspace could not switch to the current local branch. Review the draft before continuing.", {
+      cause,
+    });
+  }
+  return { baseCommit: target.commit, baseBranch: currentBranch, branch: undefined, updated: true };
 }
 
 export async function synchronizeDraftWorkspace({ workspace, branch, targetBranch }) {

@@ -13,11 +13,10 @@ confirmation and scenario review identify the exact files and scenario IDs in th
 ## Start and prerequisites
 
 Follow the root [README](../../README.md) for dependencies, PostgreSQL, migrations and local startup.
-The agent automatically prepares one workspace using the default target branch (development when available). Configure a provider and choose a model that has passed the tool-calling check. Drafts use committed source in a separate worktree; uncommitted changes in
+The agent automatically prepares one workspace using the current local checkout branch. Configure a provider and choose a model that has passed the tool-calling check. Drafts use committed source in a separate worktree; uncommitted changes in
 the explorer checkout do not appear there. The API runtime uses the running checkout's implementation.
 Skill files and product/test sources are read from the selected draft's committed base and draft edits.
-Preparing a workspace uses the locally cached target branch without contacting GitHub. Synchronizing a
-draft fetches the target branch from origin and may require Git authentication.
+Before each chat turn, Q-Rex checks the current local checkout branch and its committed HEAD. A clean draft at its base updates automatically; if the source changes while the draft contains changes, review the draft before continuing. Chat does not fetch from origin. Explicit synchronization and publication can contact GitHub.
 
 The Q-Rex header opens a searchable model picker for connected providers, following the
 [Hermes model-picker workflow](https://hermes-agent.nousresearch.com/docs/user-guide/desktop#choosing-a-model).
