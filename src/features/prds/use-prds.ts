@@ -5,7 +5,6 @@ import { agentFetch, getActiveDraftId } from "../agent/agent-api";
 export interface Prd {
   module: string;
   menu: string;
-  status: string;
   content: string;
 }
 

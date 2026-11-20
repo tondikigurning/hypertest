@@ -9,7 +9,7 @@ Paths are relative to the repository root. Follow callers and imports when the r
 | Local preview, setup, secrets and runner limits | `README.md`, `docs/automation/README.md`; `docs/SPEC.md` describes the hosted draft |
 | Shared scope, host capabilities, approvals and batch completion | `.agents/skills/ask-qa/references/workflow-contract.md` |
 | Contributor rules | `AGENTS.md`, `CLAUDE.md` |
-| E2E business-flow discovery and review gates | `.agents/skills/write-e2e-scenarios/SKILL.md`, its `references/flow-discovery.md`, matching reviewed `docs/prd/` PRD and scoped `.feature` files |
+| E2E business-flow discovery and review gates | `.agents/skills/write-e2e-scenarios/SKILL.md`, its `references/flow-discovery.md`, matching `docs/prd/` PRD and scoped `.feature` files |
 | Menu PRD authoring and product context | `.agents/skills/write-prd/SKILL.md`, `.agents/skills/ask-qa/references/prd-database-access.md` |
 | Scenario IDs, tags, data safety and reusable contracts | `.agents/skills/write-e2e-scenarios/references/e2e-conventions.md`, `.agents/skills/write-e2e-scenarios/references/data-safety.md`, `e2e/tests/bdd/features/_components/` |
 | Menu ownership, child feature groups, integration journeys and file splits | `docs/automation/test-organization.md` |
@@ -30,7 +30,7 @@ The README and live implementation describe the local preview. The specification
 
 ## E2E sources and artifacts
 
-The tenant frontend source is not part of this repository. Use the reviewed PRD and `playwright-cli` observations for tenant product behavior; the paths below are test code and artifacts, not frontend implementation.
+The tenant frontend source is not part of this repository. Use the PRD and `playwright-cli` observations for tenant product behavior; the paths below are test code and artifacts, not frontend implementation.
 
 | Topic | Start here |
 | --- | --- |

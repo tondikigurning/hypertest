@@ -23,7 +23,7 @@ For scoped work, read the [shared workflow contract](references/workflow-contrac
 | --- | --- |
 | Strategy, commands, IDs/tags, coverage or onboarding | Explain from the source map; use the teaching guidance below |
 | Run selected BDD, reproduce failures, investigate flakes, sync catalog | Follow testing operations; apply authoring specialists if repairs change their artifacts |
-| Discover/audit business journeys or change scenario intent | Apply [write-e2e-scenarios](../write-e2e-scenarios/SKILL.md): reviewed parent PRD, live discovery, flow confirmation and scenario review |
+| Discover/audit business journeys or change scenario intent | Apply [write-e2e-scenarios](../write-e2e-scenarios/SKILL.md): parent PRD, live discovery, flow confirmation and scenario review |
 | Create/import/refresh/review product context | Apply [write-prd](../write-prd/SKILL.md): provenance, exploration and PRD review |
 | Implement reviewed Gherkin or repair steps/POMs/COMs/fixtures/mocks | Apply [write-e2e-code](../write-e2e-code/SKILL.md); preserve existing intent and IDs for technical repairs |
 | Browser/locator/traffic inspection | Apply [playwright-cli](../playwright-cli/SKILL.md), using the active host's supported capabilities |

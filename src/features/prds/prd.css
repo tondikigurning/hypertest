@@ -762,6 +762,38 @@
   margin: 0;
 }
 
+.prd-icon-action {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: #7154ad;
+  cursor: pointer;
+}
+.prd-icon-action svg {
+  width: 18px;
+  height: 18px;
+}
+.prd-icon-action:hover:not(:disabled) {
+  border-color: #e4ddf1;
+  background: #f5f2fa;
+}
+.prd-icon-delete {
+  color: #a84e4a;
+}
+.prd-icon-delete:hover:not(:disabled) {
+  border-color: #f1d8d7;
+  background: #fff5f4;
+}
+.prd-icon-action:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 .prd-version-title {
   display: flex;
   min-width: 0;
@@ -1044,5 +1076,8 @@
   }
   .prd-editor-preview {
     padding: 16px;
+  }
+  .prd-management-layout {
+    grid-template-rows: auto minmax(0, 1fr);
   }
 }

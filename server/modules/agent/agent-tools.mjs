@@ -308,7 +308,7 @@ export function createAgentTools({
       ? {
           confirm_flows: tool({
             description:
-              "Present discovered business flows for explicit confirmation before writing scenarios. Supply the target feature path, its owning menu's reviewed PRD at docs/prd/<module>/<menu>.md, and flow IDs without the @flow: prefix with descriptions. Child files use the same menu PRD. Shared component masters use the reviewed PRD for the consuming menu. For an existing scenario without a flow tag, use '(no flow tag)'. This does not approve scenarios or live-data actions.",
+              "Present discovered business flows for explicit confirmation before writing scenarios. Supply the target feature path, its owning menu's PRD at docs/prd/<module>/<menu>.md, and flow IDs without the @flow: prefix with descriptions. Child files use the same menu PRD. Shared component masters use the PRD for the consuming menu. For an existing scenario without a flow tag, use '(no flow tag)'. This does not approve scenarios or live-data actions.",
             inputSchema: z.object({
               featurePath: z.string().min(1).max(512),
               prdPath: z.string().min(1).max(512),

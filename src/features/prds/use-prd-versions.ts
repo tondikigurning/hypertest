@@ -4,7 +4,6 @@ import { agentFetch } from "../agent/agent-api";
 export interface PrdVersion {
   id: string;
   name: string;
-  status: string;
   content: string;
   active: boolean;
   createdAt: string;
@@ -82,12 +81,12 @@ export function usePrdVersions(module: string, menu: string, draft: string) {
     ...result,
     create: (name: string, initialContent: string) =>
       mutate("/api/agent/prd-versions", "POST", { module, menu, name, initialContent }),
-    update: (versionId: string, name: string, content?: string) =>
+    update: (versionId: string, name?: string, content?: string, expectedContent?: string) =>
       mutate(`/api/agent/prd-versions/${encodeURIComponent(versionId)}`, "PUT", {
         module,
         menu,
         name,
-        ...(content === undefined ? {} : { content }),
+        ...(content === undefined ? {} : { content, expectedContent }),
       }),
     activate: (versionId: string) =>
       mutate(`/api/agent/prd-versions/${encodeURIComponent(versionId)}/activate`, "POST", { module, menu }),

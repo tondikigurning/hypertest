@@ -137,7 +137,7 @@ test("retained PRD validation is distinguished from newly validated content", ()
   assert.equal(requiresPrdReview(previous, `${previous}- [observed][needs-review] New.\n`), false);
   assert.equal(requiresPrdReview(previous, previous.replace("Existing.", "Changed.")), true);
   assert.equal(requiresPrdReview(previous, `${previous}- [observed][validated] Existing.\n`), true);
-  assert.equal(requiresPrdReview(previous, previous.replace("status: draft", "status: 'reviewed'")), true);
+  assert.equal(requiresPrdReview(previous, previous.replace("status: draft", "status: 'reviewed'")), false);
 });
 
 test("an edit does not overwrite a file changed while approval is pending", async (t) => {
@@ -270,23 +270,23 @@ test("scenario intent changes require scoped flow confirmation against a current
   );
 });
 
-test("a draft PRD cannot be used to confirm a flow list", async (t) => {
+test("flow confirmation requires a PRD but does not require a document status", async (t) => {
   const workspace = await mkdtemp(join(tmpdir(), "automation-agent-flow-prd-"));
   t.after(() => rm(workspace, { recursive: true, force: true }));
   await mkdir(join(workspace, "e2e/tests/bdd/features/module"), { recursive: true });
-  await assert.rejects(
-    confirmFlowReview({
-      workspace,
-      featurePath: "e2e/tests/bdd/features/module/example.feature",
-      prdPath: "docs/prd/module/example.md",
-      flows: [{ id: "ONE", description: "A flow" }],
-      safePath: safeWorkspacePath,
-      redact: (value) => value,
-      requestApproval: async () => true,
-      readPrd: async () => "---\nstatus: draft\n---\n",
-    }),
-    /reviewed PRD is required/,
-  );
+  const options = {
+    workspace,
+    featurePath: "e2e/tests/bdd/features/module/example.feature",
+    prdPath: "docs/prd/module/example.md",
+    flows: [{ id: "ONE", description: "A flow" }],
+    safePath: safeWorkspacePath,
+    redact: (value) => value,
+    requestApproval: async () => true,
+    readPrd: async () => "",
+  };
+  await assert.rejects(confirmFlowReview(options), /matching PRD is required/);
+  assert.ok(await confirmFlowReview({ ...options, readPrd: async () => "# Requirements\nA flow" }));
+  assert.ok(await confirmFlowReview({ ...options, readPrd: async () => "---\nstatus: draft\n---\nA flow" }));
 });
 
 test("flow confirmation is rejected if the PRD changes while the user reviews it", async (t) => {
@@ -367,7 +367,7 @@ test("flow confirmation uses the owning menu PRD for flat and nested features", 
       safePath: async () => {},
       readPrd: async () => reviewed,
     }),
-    /matching reviewed PRD/,
+    /matching PRD/,
   );
 });
 

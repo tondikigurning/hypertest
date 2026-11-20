@@ -40,11 +40,6 @@ export async function readOptionalFile(workspace, path) {
   }
 }
 
-export function isReviewedPrd(content) {
-  const frontMatter = content.match(/^---\s*\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/)?.[1] || "";
-  return /^status\s*:\s*["']?reviewed["']?\s*(?:#.*)?$/im.test(frontMatter);
-}
-
 export function changedScenarioFlows(path, before, after) {
   const relative = path.slice(featurePrefix.length);
   const semantic = ({ title, feature, tags, background, steps, outline }) =>
@@ -109,13 +104,13 @@ export async function confirmFlowReview({
     throw new Error("Provide distinct flow IDs and descriptions.");
   const featureContent = await readOptionalFile(workspace, feature);
   const prdContent = (await readPrd(prd)) || "";
-  if (!isReviewedPrd(prdContent)) throw new Error("A matching reviewed PRD is required before confirming flows.");
+  if (!prdContent.trim()) throw new Error("A matching PRD is required before confirming flows.");
   const list = flows.map((flow) => `${flow.id.trim()}: ${flow.description.trim()}`).join("\n");
   if (redact(list) !== list)
     throw new Error("The flow list contains text that cannot be safely displayed. Remove sensitive content first.");
   const accepted = await requestApproval({
     kind: "flow-review",
-    reason: `Confirm the described flows for ${feature} using reviewed PRD ${prd}. This does not approve scenarios or live-data actions.`,
+    reason: `Confirm the described flows for ${feature} using PRD ${prd}. This does not approve scenarios or live-data actions.`,
     command: list,
     signal,
   });
@@ -152,5 +147,5 @@ export async function authorizeFlowWrite({ workspace, path, content, confirmatio
     !matchesMenuPrd(feature, approval.prd) ||
     approval.prdDigest !== contentDigest((await readPrd(approval.prd)) || "")
   )
-    throw new Error("Confirm the affected flow list with the matching reviewed PRD before changing scenario intent.");
+    throw new Error("Confirm the affected flow list with the matching PRD before changing scenario intent.");
 }

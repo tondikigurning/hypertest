@@ -233,7 +233,7 @@ export function createAgentRouter({ resolveSession = sessionFor, resolveIdentity
     try {
       res.json(await req.agentSession.prds());
     } catch {
-      res.status(503).json({ error: "Could not read draft PRDs." });
+      res.status(503).json({ error: "Could not read PRDs." });
     }
   });
   router.get("/prd-versions", async (req, res) => {
@@ -261,6 +261,7 @@ export function createAgentRouter({ resolveSession = sessionFor, resolveIdentity
           versionId: req.params.versionId,
           name: req.body?.name,
           content: req.body?.content,
+          expectedContent: req.body?.expectedContent,
         }),
       );
     } catch (error) {

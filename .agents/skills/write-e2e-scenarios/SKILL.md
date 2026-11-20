@@ -1,6 +1,6 @@
 ---
 name: write-e2e-scenarios
-description: Use a reviewed menu PRD and playwright-cli exploration to discover tenant business flows and write or maintain Gherkin scenarios with stable IDs and reusable references. Use for E2E discovery or scenario-intent changes; stops for review before implementation.
+description: Use a menu PRD and playwright-cli exploration to discover tenant business flows and write or maintain Gherkin scenarios with stable IDs and reusable references. Use for E2E discovery or scenario-intent changes; stops for review before implementation.
 ---
 
 # Write E2E Scenarios (Phase 0 + maintenance)
@@ -13,7 +13,7 @@ Read the [shared workflow contract](../ask-qa/references/workflow-contract.md) f
 
 Resolve module/menu and consequential context gaps using the shared contract, prior answers, supplied documents and existing artifacts. If the parent is unclear, investigate PRDs, features and navigation before asking one combined scope question. Derive routes and file names; do not ask the user to supply discoverable paths. Default to a full pass; use smoke-only when requested or established by the user.
 
-Before discovery in **any mode**, read the owning menu's single database PRD using its virtual identifier `docs/prd/<module>/<menu>.md`. Q-Rex uses file tools; terminal agents use the [database access procedure](../ask-qa/references/prd-database-access.md). `status: reviewed` and relevant coverage are mandatory, including for child groups. If absent, draft or insufficient, apply [write-prd](../write-prd/SKILL.md) to that same parent and stop at its review gate. Other menus' PRDs provide supporting context only. Record the PRD identifier, status, relevant requirement IDs and gaps for flow review.
+Before discovery in **any mode**, read the owning menu's single database PRD using its virtual identifier `docs/prd/<module>/<menu>.md`. Q-Rex uses file tools; terminal agents use the [database access procedure](../ask-qa/references/prd-database-access.md). Relevant coverage is mandatory, including for child groups. If absent or insufficient, apply [write-prd](../write-prd/SKILL.md) to that same parent and stop at its review gate. Other menus' PRDs provide supporting context only. Record the PRD identifier, relevant requirement IDs and gaps for flow review.
 
 Use validated items according to their recorded review method and unvalidated `spec` as attributed requirements. Unvalidated observations, assumptions and unresolved conflicts do not establish intent. Reuse the shared context checklist; ask only consequential unanswered decisions. Include supported in-scope CRUD happy paths and other main business functions when discussing release priorities. Recommend their happy paths as smoke; do not infer “no smoke” from undocumented P0 priorities. Reuse authorized data scope and inspect owned-data prerequisites; a missing ticket or inaccessible branch remains an explicit gap.
 
@@ -40,7 +40,7 @@ If live exploration is unavailable, retain a draft inventory and the exact block
 
 Present the discovered flows with IDs, short goals/outcomes, exact feature files, total count, exclusions, relevant PRD IDs and unresolved gaps. For existing features include retained categories and proposed additions/changes/removals. Do not claim completeness beyond available evidence.
 
-Use the shared contract's **flow confirmation** procedure: Q-Rex calls `confirm_flows` for each affected file with its owning reviewed PRD; terminal agents explicitly ask whether the list has missing or extra flows and wait for confirmation. A chat answer is not a replacement for the Q-Rex tool. Confirmation approves only that described inventory, not scenarios or live mutations. Before detailed batch work or authoring, obtain the applicable decision. Reconfirm affected work if later discovery materially changes the inventory; preserve IDs.
+Use the shared contract's **flow confirmation** procedure: Q-Rex calls `confirm_flows` for each affected file with its owning PRD; terminal agents explicitly ask whether the list has missing or extra flows and wait for confirmation. A chat answer is not a replacement for the Q-Rex tool. Confirmation approves only that described inventory, not scenarios or live mutations. Before detailed batch work or authoring, obtain the applicable decision. Reconfirm affected work if later discovery materially changes the inventory; preserve IDs.
 
 ## Step 2 — Explore selected journeys in depth
 

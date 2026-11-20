@@ -46,7 +46,7 @@ appears once and its total includes both. Prefer the folder layout for new multi
 
 Keep an E2E journey crossing menus, modules or external platforms under the **menu that owns its business
 outcome**. Record entry points, participating menus/platforms, prerequisites, observable outcome, cleanup and
-unverified boundaries in its reviewed PRD and scenario review. Link related scenario contracts with existing
+unverified boundaries in its PRD and scenario review. Link related scenario contracts with existing
 `@ref:` tags where appropriate. Store one authored copy of a journey; additional participants do not require copies.
 Resolve unclear ownership from the requirements and user context before authoring.
 
@@ -83,7 +83,7 @@ requirements; it does not imply full coverage. If a child introduces missing req
 through its review workflow. Use other menu PRDs as supporting context, and keep review ownership with the
 menu whose feature is being authored. The flow-confirmation tool validates that a flat or nested feature uses
 its owning menu PRD. Shared `_components` master contracts have no product owner in their path, so they use
-the reviewed PRD of the consuming menu; the workflow must resolve that owner from context.
+the PRD of the consuming menu; the workflow must resolve that owner from context.
 The reusable `_components` navigation is not a product menu and does not expose a PRD button.
 
 Run can select a scenario, file, flow category within a file, or a menu/folder. The server resolves every group

@@ -29,7 +29,7 @@ be created or otherwise provisioned within the authorized scope, the agent must 
 explain it and present the scoped non-E2E exception for that specific scenario under the approval procedure below before concluding Tier 3.
 This is an explicit approval gate, not automatic fallback permission. Without approval, skip the mutation.
 
-Apply these tiers to every entity based on capabilities verified in the current UI and reviewed PRD, not a predefined
+Apply these tiers to every entity based on capabilities verified in the current UI and PRD, not a predefined
 module or entity list. Discover the supported lookup, creation or provisioning flow, required permissions and
 state, and whether it is feasible within the authorized scope. Do not assume a dialog, wizard or upstream flow
 exists based on the module name. If neither Tier 1 nor Tier 2 can produce an E2E-owned record, the mutation

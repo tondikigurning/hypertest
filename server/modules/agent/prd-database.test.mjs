@@ -97,6 +97,27 @@ test("PRDs and versions persist in the database without writing a repository fil
   assert.equal((await store.versions("knowledge", "articles")).items.length, 2);
   await store.write(path, "---\nstatus: reviewed\n---\n[validated] Read articles\n", approval);
   assert.equal(approvals, 1);
+  const version = (await store.versions("knowledge", "articles")).items.find((item) => item.active);
+  const manualContent = "---\nstatus: reviewed\n---\n[validated] Edited manually\n";
+  await store.mutate("update", {
+    module: "knowledge",
+    menu: "articles",
+    versionId: version.id,
+    content: manualContent,
+    expectedContent: version.content,
+  });
+  assert.equal(await store.read(path), manualContent);
+  assert.equal(approvals, 1, "manual edits must not request agent approval");
+  await assert.rejects(
+    store.mutate("update", {
+      module: "knowledge",
+      menu: "articles",
+      versionId: version.id,
+      content: "stale",
+      expectedContent: version.content,
+    }),
+    /changed/,
+  );
   await assert.rejects(store.write(path, "old", { ...approval, expected: "outdated" }), /changed/);
   const feature = "e2e/tests/bdd/features/knowledge/articles.feature";
   const confirmation = await confirmFlowReview({

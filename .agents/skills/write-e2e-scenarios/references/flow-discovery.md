@@ -1,16 +1,16 @@
 # Discover end-to-end business flows
 
-Use this reference in every exploration mode. Start with the reviewed PRD, user context and existing E2E scenarios; explore the live app with `playwright-cli` to identify and check journeys before flow-list confirmation. A PRD or a single account cannot prove that every possible journey has been found.
+Use this reference in every exploration mode. Start with the PRD, user context and existing E2E scenarios; explore the live app with `playwright-cli` to identify and check journeys before flow-list confirmation. A PRD or a single account cannot prove that every possible journey has been found.
 
 ## Decide what is a flow
 
 A flow is a meaningful business journey with a user goal and an observable outcome, possibly spanning screens, roles, services or a sequence of status changes. Trace how the user enters, performs and completes or leaves the journey. Group related interactions and branches under one flow when they serve the same goal; distinguish journeys when the goal, outcome, lifecycle transition or responsible actor is materially different. Do not invent a separate flow for every tab, button, field or technical endpoint. Include shared controls in E2E scenarios when they enable an important business journey.
 
-Prioritize real business outcomes and meaningful lifecycle paths. Include variants when they change the business outcome, permissions, a consequential decision, or an integration boundary; avoid enumerating every validation, visual state, mock error and component behavior merely because the UI exposes it. Use the reviewed PRD and user context for intent; observed behavior does not establish intent. Record assumptions where requirements are absent.
+Prioritize real business outcomes and meaningful lifecycle paths. Include variants when they change the business outcome, permissions, a consequential decision, or an integration boundary; avoid enumerating every validation, visual state, mock error and component behavior merely because the UI exposes it. Use the PRD and user context for intent; observed behavior does not establish intent. Record assumptions where requirements are absent.
 
 ## Build and reconcile the inventory
 
-1. Establish scope from the reviewed PRD, user context, existing features and app navigation. Explore in-page tabs, menus and multi-step dialogs; not every journey has its own route.
+1. Establish scope from the PRD, user context, existing features and app navigation. Explore in-page tabs, menus and multi-step dialogs; not every journey has its own route.
 2. Follow user goals and observable outcomes through reachable entry points, dialogs, wizards and navigation. Look for lifecycle transitions, create/update/assignment/closure, related entities, bulk operations, handoffs and cross-module journeys. Observe conditional visibility and enablement using available roles, records and states; record untestable conditions as unverified.
 3. Reconcile PRD candidates and browser observations with existing feature scenarios. Preserve existing flow and scenario IDs. Compare outcomes and business branches, not just titles or tags; record partial coverage and existing scenario IDs. Keep PRD-only candidates unverified in the browser; do not infer inaccessible journeys are absent.
 4. For each candidate record its goal and outcome, relevant PRD IDs and browser evidence, entry point, preconditions, actors, business branches, existing scenario IDs, priority and limitations. Keep discovery gaps and evidence paths in the conversation and review summary for the next batch. Identify inaccessible roles, unavailable data, blocked mutations, uncertain conditions and missing requirements.

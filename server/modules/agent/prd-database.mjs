@@ -13,13 +13,6 @@ function validate(module, menu) {
   if (!identity.test(module || "") || !identity.test(menu || "")) throw new Error("Choose a valid module and menu.");
 }
 
-function status(content) {
-  return (
-    content.match(/^---\s*\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/)?.[1].match(/^status\s*:\s*["']?([^\s"'#]+)/im)?.[1] ||
-    "unknown"
-  );
-}
-
 function serialize(state, module, menu) {
   return {
     module,
@@ -27,7 +20,6 @@ function serialize(state, module, menu) {
     activeVersionId: state.activeVersionId,
     items: state.versions.map((version) => ({
       ...version,
-      status: status(version.content),
       active: version.id === state.activeVersionId,
     })),
   };
@@ -73,7 +65,7 @@ export function createPrdDatabase(userId) {
     if (redact(content) !== content) throw new Error("Remove sensitive content before PRD review.");
     const accepted = await requestApproval({
       kind: "prd-review",
-      reason: `Review the complete proposed PRD ${path}. Approving accepts its shown status and validated items.`,
+      reason: `Review the complete proposed PRD ${path}, including its validated items.`,
       command: content,
       signal,
     });
@@ -85,27 +77,25 @@ export function createPrdDatabase(userId) {
       const rows = await database().select().from(agentPrds).where(eq(agentPrds.userId, userId));
       return rows.flatMap(({ module, menu, state }) => {
         const active = state.versions.find((item) => item.id === state.activeVersionId);
-        return active ? [{ module, menu, content: active.content, status: status(active.content) }] : [];
+        return active ? [{ module, menu, content: active.content }] : [];
       });
     },
     async versions(module, menu) {
       const { state } = await load(module, menu);
       return serialize(state, module, menu);
     },
-    async mutate(action, input, approval) {
+    async mutate(action, input) {
       const { module, menu, versionId } = input;
       const { state, revision } = await load(module, menu);
       const active = state.versions.find((item) => item.id === state.activeVersionId);
       const selected = state.versions.find((item) => item.id === versionId);
-      const path = `docs/prd/${module}/${menu}.md`;
       const now = new Date().toISOString();
       if (action === "create") {
         if (state.versions.length >= 100) throw new Error("A PRD can have up to 100 versions.");
         const number = Math.max(0, ...state.versions.map((item) => Number(item.id.slice(1)))) + 1;
-        const content = active?.content ?? input.initialContent ?? "---\nstatus: draft\n---\n\n";
+        const content = active?.content ?? input.initialContent ?? "";
         if (typeof content !== "string" || Buffer.byteLength(content) > 262144)
           throw new Error("PRD versions are limited to 256 KB.");
-        await approve(active?.content || "", content, path, approval.requestApproval, approval.signal, approval.redact);
         state.versions.push({
           id: `v${number}`,
           name: input.name?.trim() || `Version ${number}`,
@@ -122,14 +112,6 @@ export function createPrdDatabase(userId) {
           state.versions = state.versions.filter((item) => item !== selected);
           if (selected === active) state.activeVersionId = undefined;
         } else if (action === "activate") {
-          await approve(
-            active?.content || "",
-            selected.content,
-            path,
-            approval.requestApproval,
-            approval.signal,
-            approval.redact,
-          );
           state.activeVersionId = selected.id;
           selected.updatedAt = now;
         } else if (action === "update") {
@@ -137,21 +119,8 @@ export function createPrdDatabase(userId) {
           if (input.content !== undefined) {
             if (typeof input.content !== "string" || Buffer.byteLength(input.content) > 262144)
               throw new Error("PRD versions are limited to 256 KB.");
-            if (
-              status(selected.content).toLowerCase() === "reviewed" ||
-              selected.content
-                .split(/\r?\n/)
-                .some((line) => /\[validated\]/i.test(line) && !input.content.split(/\r?\n/).includes(line))
-            )
-              throw new Error("Use Q-Rex to update reviewed requirements.");
-            await approve(
-              selected.content,
-              input.content,
-              path,
-              approval.requestApproval,
-              approval.signal,
-              approval.redact,
-            );
+            if (typeof input.expectedContent !== "string" || input.expectedContent !== selected.content)
+              throw new Error("The PRD changed. Reload and try again.");
             selected.content = input.content;
           }
           selected.updatedAt = now;
