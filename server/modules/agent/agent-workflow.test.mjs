@@ -86,6 +86,31 @@ async function workflow(t, responses, runtime = {}, files = {}, prdStore) {
     req.on("end", () => {
       requests.push(JSON.parse(body));
       const response = responses.shift();
+      if (response?.error) {
+        res.writeHead(400, { "content-type": "application/json" });
+        res.end(JSON.stringify({ error: { message: response.error, type: "invalid_request_error" } }));
+        return;
+      }
+      if (!JSON.parse(body).stream) {
+        res.writeHead(200, { "content-type": "application/json" });
+        res.end(
+          JSON.stringify({
+            id: `response-${requests.length}`,
+            object: "chat.completion",
+            created: 1,
+            model: "test/model",
+            choices: [
+              {
+                index: 0,
+                message: { role: "assistant", content: response?.text || "Checkpoint" },
+                finish_reason: "stop",
+              },
+            ],
+            usage: { prompt_tokens: 10, completion_tokens: 5, total_tokens: 15 },
+          }),
+        );
+        return;
+      }
       const delta = response?.tool
         ? {
             role: "assistant",
@@ -102,10 +127,10 @@ async function workflow(t, responses, runtime = {}, files = {}, prdStore) {
       res.writeHead(200, { "content-type": "text/event-stream" });
       for (const [value, finish] of [
         [delta, null],
-        [{}, response?.tool ? "tool_calls" : "stop"],
+        [{}, response?.finish || (response?.tool ? "tool_calls" : "stop")],
       ]) {
         res.write(
-          `data: ${JSON.stringify({ id: `response-${requests.length}`, object: "chat.completion.chunk", created: 1, model: "test/model", choices: [{ index: 0, delta: value, finish_reason: finish }] })}\n\n`,
+          `data: ${JSON.stringify({ id: `response-${requests.length}`, object: "chat.completion.chunk", created: 1, model: "test/model", choices: [{ index: 0, delta: value, finish_reason: finish }], ...(finish && response?.usage ? { usage: response.usage } : {}) })}\n\n`,
         );
       }
       res.end("data: [DONE]\n\n");
@@ -124,6 +149,7 @@ async function workflow(t, responses, runtime = {}, files = {}, prdStore) {
       }),
       isModelVerified: async () => true,
       recordAgentUsage: async () => {},
+      getAgentModelContextWindow: async () => undefined,
       ...runtime,
     },
   });
@@ -134,8 +160,104 @@ async function workflow(t, responses, runtime = {}, files = {}, prdStore) {
     await rm(root, { recursive: true, force: true });
   });
   await session.setModel("9router", "test/model");
-  return { session, workspace, requests, prdStore };
+  return { session, workspace, requests, prdStore, stateFile: join(root, "session.json") };
 }
+
+test("a turn continues beyond 80 tool steps and saves the complete checkpoint", async (t) => {
+  const responses = Array.from({ length: 85 }, () => ({ tool: "list_files", input: {} }));
+  responses.push({ text: "Finished all steps." });
+  const { session, requests, stateFile } = await workflow(t, responses);
+  await session.send("Inspect the workspace.");
+  await waitFor(session, (state) => !state.busy);
+  assert.equal(requests.length, 86);
+  assert.equal(session.snapshot().error, "");
+  assert.match(JSON.stringify(session.snapshot().messages), /Finished all steps/);
+  assert.doesNotMatch(JSON.stringify(session.snapshot().messages), /step limit/);
+  const saved = JSON.parse(await readFile(stateFile, "utf8"));
+  assert.match(JSON.stringify(saved.modelMessages), /Finished all steps/);
+});
+
+test("completed tool results are saved while a later user question is pending", async (t) => {
+  const responses = [
+    { tool: "list_files", input: {} },
+    { tool: "ask_user", input: { question: "Continue?", options: [], isSecret: false } },
+  ];
+  const { session, stateFile } = await workflow(t, responses);
+  await session.send("Inspect the workspace.");
+  await waitFor(session, (state) => state.userRequest);
+  const saved = JSON.parse(await readFile(stateFile, "utf8"));
+  assert.equal(saved.pendingRequest, "question");
+  assert.match(JSON.stringify(saved.modelMessages), /list_files/);
+  assert.doesNotMatch(JSON.stringify(saved.modelMessages), /ask_user/);
+});
+
+test("context overflow compacts the checkpoint and resumes without repeating completed tools", async (t) => {
+  const responses = [
+    { tool: "list_files", input: {} },
+    { error: "maximum context length exceeded" },
+    { text: "The workspace was listed. The user requested an inspection." },
+    { text: "Inspection finished." },
+  ];
+  const { session, requests } = await workflow(t, responses);
+  await session.send("Inspect the workspace.");
+  await waitFor(session, (state) => !state.busy);
+  assert.equal(session.snapshot().error, "");
+  assert.equal(requests.length, 4);
+  assert.match(JSON.stringify(requests[3].messages), /The workspace was listed/);
+  assert.match(JSON.stringify(session.snapshot().messages), /Inspection finished/);
+});
+
+test("known model context usage triggers compaction before the next tool step", async (t) => {
+  const responses = [
+    { tool: "list_files", input: {}, usage: { prompt_tokens: 85, completion_tokens: 5, total_tokens: 90 } },
+    { text: "The workspace was listed." },
+    { text: "Inspection finished." },
+  ];
+  const { session, requests } = await workflow(t, responses, { getAgentModelContextWindow: async () => 100 });
+  await session.send("Inspect the workspace.");
+  await waitFor(session, (state) => !state.busy);
+  assert.equal(session.snapshot().error, "");
+  assert.equal(requests.length, 3);
+  assert.match(JSON.stringify(requests[2].messages), /The workspace was listed/);
+});
+
+test("unchanged high context usage does not repeatedly compact every step", async (t) => {
+  const usage = { prompt_tokens: 85, completion_tokens: 5, total_tokens: 90 };
+  const responses = [
+    { tool: "list_files", input: {}, usage },
+    { text: "The workspace was listed." },
+    { tool: "list_files", input: {}, usage },
+    { tool: "list_files", input: {}, usage },
+    { text: "Inspection finished." },
+  ];
+  const { session, requests } = await workflow(t, responses, { getAgentModelContextWindow: async () => 100 });
+  await session.send("Inspect the workspace.");
+  await waitFor(session, (state) => !state.busy);
+  assert.equal(session.snapshot().error, "");
+  assert.equal(requests.filter((request) => !request.stream).length, 1);
+});
+
+test("failed compaction retains the completed tool checkpoint and reports the failure", async (t) => {
+  const responses = [
+    { tool: "list_files", input: {} },
+    { error: "maximum context length exceeded" },
+    { error: "provider unavailable" },
+  ];
+  const { session, requests, stateFile } = await workflow(t, responses);
+  await session.send("Inspect the workspace.");
+  await waitFor(session, (state) => !state.busy);
+  assert.match(session.snapshot().error, /context limit prevented automatic compaction/i);
+  assert.equal(requests.length, 3);
+  const saved = JSON.parse(await readFile(stateFile, "utf8"));
+  assert.match(JSON.stringify(saved.modelMessages), /list_files/);
+});
+
+test("provider output truncation is reported as incomplete work", async (t) => {
+  const { session } = await workflow(t, [{ text: "Partial answer.", finish: "length" }]);
+  await session.send("Inspect the workspace.");
+  await waitFor(session, (state) => !state.busy);
+  assert.match(session.snapshot().error, /output limit before the turn finished/i);
+});
 
 test("PRD workflow writes through the database adapter and requests review", async (t) => {
   let content;

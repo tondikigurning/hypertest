@@ -12,6 +12,7 @@ import {
   closeAgentLanguageModel,
   createAgentLanguageModel,
   discoverCompatibleModels,
+  getAgentModelContextWindow,
   modelIsListed,
   normalizeOpenAICompatibleBaseUrl,
   verifyToolCalling,
@@ -140,7 +141,12 @@ test("local model discovery uses the configured endpoint and filters malformed I
     res.writeHead(200, { "content-type": "application/json" });
     res.end(
       JSON.stringify({
-        data: [{ id: "router/model" }, { id: "router/model" }, { id: "bad model" }, { id: "local:latest" }],
+        data: [
+          { id: "router/model", context_length: 131072 },
+          { id: "router/model" },
+          { id: "bad model" },
+          { id: "local:latest" },
+        ],
       }),
     );
   });
@@ -152,6 +158,24 @@ test("local model discovery uses the configured endpoint and filters malformed I
     "router/model",
     "local:latest",
   ]);
+  assert.equal(
+    await getAgentModelContextWindow({
+      provider: "9router",
+      modelId: "router/model",
+      apiKey: "fake-test-key",
+      baseUrl,
+    }),
+    131072,
+  );
+  assert.equal(
+    await getAgentModelContextWindow({
+      provider: "9router",
+      modelId: "local:latest",
+      apiKey: "fake-test-key",
+      baseUrl,
+    }),
+    undefined,
+  );
 });
 
 test("a local OpenAI-compatible provider can pass the tool check without an API key", async (t) => {

@@ -13,8 +13,7 @@ confirmation and scenario review identify the exact files and scenario IDs in th
 ## Start and prerequisites
 
 Follow the root [README](../../README.md) for dependencies, PostgreSQL, migrations and local startup.
-The agent automatically prepares one workspace using the current local checkout branch. Configure a provider and choose a model that has passed the tool-calling check. Drafts use committed source in a separate worktree; uncommitted changes in
-the explorer checkout do not appear there. The API runtime uses the running checkout's implementation.
+The agent automatically prepares one workspace using the current local checkout branch. Configure a provider and choose a model that has passed the tool-calling check. Drafts use committed source in a separate worktree; uncommitted checkout changes do not appear in the draft. Q-Rex can inspect tracked and non-ignored local checkout files through separate read-only tools. The API runtime uses the running checkout's implementation.
 Skill files and product/test sources are read from the selected draft's committed base and draft edits.
 Before each chat turn, Q-Rex checks the current local checkout branch and its committed HEAD. A clean draft at its base updates automatically; if the source changes while the draft contains changes, review the draft before continuing. Chat does not fetch from origin. Explicit synchronization and publication can contact GitHub.
 
@@ -84,9 +83,16 @@ scenario approval and live-data approval are separate decisions.
 
 Tools replace the shell examples in skills: `list_files`, `read_file`, `write_file`, `edit_file`,
 `show_diff`, `ask_user`, `confirm_flows`, `playwright_cli` and `use_skill`.
+`list_local_files` and `read_local_file` inspect the local checkout, including uncommitted changes; the draft catalog, scenario approval and changes view continue to use the draft worktree.
 Large source files can be read in pages with `startLine` and `lineCount`. References resolve relative
-to the skill document but tool paths are relative to the worktree root. The model has a bounded
-80-step turn; reaching that limit saves context and asks for a follow-up without claiming completion.
+to the skill document but tool paths are relative to the worktree root. Turns have no fixed step count
+or overall time limit. Q-Rex checkpoints completed model/tool steps and compacts conversation context
+with the selected model when reported input usage approaches a provider-reported context window, or
+after a recognizable context-window error. Not all providers report a window or usage; their errors must
+identify a context overflow for automatic recovery. Compaction is a lossy model-generated summary and
+incurs provider usage. Review decisions and workspace state remain authoritative on the server, not in
+the summary. If compaction fails, Q-Rex reports the error and retains its last saved checkpoint. Providers
+and individual tools may still impose their own timeouts; cancellation remains available.
 There is no standalone draft TypeScript-check tool; Q-Rex must report that check as unperformed
 unless it has separate execution evidence.
 

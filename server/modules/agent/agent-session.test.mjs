@@ -36,6 +36,48 @@ test("selected provider and model survive session reload before a workspace exis
   assert.equal(restored.model, "example-model");
 });
 
+test("a recovered session save clears the previous persistence error", async (t) => {
+  const root = await mkdtemp(join(tmpdir(), "automation-agent-save-recovery-"));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const stateFile = join(root, "session.json");
+  const session = createSession({
+    stateFile,
+    runtime: { getProviderCredential: async () => ({ apiKey: secret }), isModelVerified: async () => true },
+  });
+  await mkdir(`${stateFile}.tmp`);
+  await assert.rejects(session.setModel("openai", "example-model"), /Could not save/);
+  assert.match(session.snapshot().error, /Could not save this conversation for restart/);
+  await rm(`${stateFile}.tmp`, { recursive: true });
+  await session.setModel("openai", "example-model");
+  assert.equal(session.snapshot().error, "");
+  const saved = JSON.parse(await readFile(stateFile, "utf8"));
+  assert.equal(saved.error, "");
+});
+
+test("a previously saved persistence error clears after a successful save following restart", async (t) => {
+  const root = await mkdtemp(join(tmpdir(), "automation-agent-save-restart-"));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const stateFile = join(root, "session.json");
+  await writeFile(
+    stateFile,
+    JSON.stringify({
+      workspace: root,
+      baseCommit: "fixture",
+      messages: [],
+      error: "Could not save this conversation for restart. The current workspace is retained.",
+    }),
+  );
+  const options = {
+    stateFile,
+    runtime: { getProviderCredential: async () => ({ apiKey: secret }), isModelVerified: async () => true },
+  };
+  const session = createSession(options);
+  assert.match(session.snapshot().error, /Could not save this conversation/);
+  await session.setModel("openai", "example-model");
+  assert.equal(session.snapshot().error, "");
+  assert.equal(createSession(options).snapshot().error, "");
+});
+
 test("new chats and draft sessions retain the selected provider and model", async (t) => {
   const root = await mkdtemp(join(tmpdir(), "automation-agent-preferences-"));
   t.after(() => rm(root, { recursive: true, force: true }));
@@ -157,6 +199,7 @@ for (const rejectEffort of [false, true])
         isModelVerified: async () => true,
         createAgentLanguageModel,
         recordAgentUsage: async () => {},
+        getAgentModelContextWindow: async () => undefined,
       },
     });
     await session.setModel("9router", "test/model");

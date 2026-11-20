@@ -299,6 +299,21 @@ export async function discoverCompatibleModels(connection) {
   ].slice(0, 1000);
 }
 
+// Provider model listings are optional and heterogeneous; absence is not a guessed limit.
+export async function getAgentModelContextWindow({ provider, modelId, apiKey, baseUrl }) {
+  let entry;
+  if (isCompatibleAgentProvider(provider)) {
+    entry = (await readCompatibleModels({ provider, apiKey, baseUrl })).find((item) => item?.id === modelId);
+  } else if (provider === "google") {
+    const data = await readProviderModels("https://generativelanguage.googleapis.com/v1beta/models?pageSize=1000", {
+      "x-goog-api-key": apiKey,
+    });
+    entry = data?.models?.find((item) => item?.name === `models/${modelId}`);
+  }
+  const value = entry?.context_length ?? entry?.context_window ?? entry?.inputTokenLimit;
+  return Number.isSafeInteger(value) && value > 0 ? value : undefined;
+}
+
 async function readProviderModels(url, headers) {
   const response = await fetch(url, {
     headers,
