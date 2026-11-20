@@ -224,6 +224,21 @@ export function PrdCatalog({
     setActionError("");
   }
 
+  function downloadPrd() {
+    if (selectedContent === undefined) return;
+    const filename = [module, menu, selectedVersion?.name]
+      .filter(Boolean)
+      .join("-")
+      .replace(/[^a-zA-Z0-9_-]+/g, "-")
+      .replace(/-+$/g, "");
+    const url = URL.createObjectURL(new Blob([selectedContent], { type: "text/markdown;charset=utf-8" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${filename || "prd"}.md`;
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
   const hasValidatedRequirements = Boolean(
     selectedVersion?.content.split(/\r?\n/).some((line) => /\[validated\]/i.test(line)),
   );
@@ -333,6 +348,11 @@ export function PrdCatalog({
                       </span>
                     )}
                   </div>
+                  {!editingContent && !editingName && (
+                    <button type="button" className="prd-action-button" onClick={downloadPrd} disabled={busy}>
+                      Download Markdown
+                    </button>
+                  )}
                   {selectedVersion && !editingContent && !editingName && (
                     <div className="prd-version-actions">
                       <button type="button" className="prd-action-button" onClick={startRename} disabled={busy}>

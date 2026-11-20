@@ -61,6 +61,44 @@ test("terminal PRD access shares the selected database identity and rejects stal
   assert.equal(await createPrdDatabase(userId).read(path), draft);
 });
 
+test("terminal PRD read resolves only a unique active document for the exact menu", async (t) => {
+  const first = randomUUID();
+  const second = randomUUID();
+  const menu = `cases-${randomUUID()}`;
+  const path = `docs/prd/example/${menu}.md`;
+  const content = "---\nstatus: reviewed\n---\n# Cases\n";
+  t.after(async () => {
+    await database().delete(agentPrds).where(eq(agentPrds.userId, first));
+    await database().delete(agentPrds).where(eq(agentPrds.userId, second));
+    await closeDatabase();
+  });
+  assert.match((await runCli(undefined, ["read", path])).error, /not found/);
+  await createPrdDatabase(first).mutate(
+    "create",
+    { module: "example", menu, initialContent: content },
+    {
+      requestApproval: async () => true,
+      redact: (value) => value,
+    },
+  );
+  assert.equal((await runCli(undefined, ["read", path])).output, content);
+  await createPrdDatabase(second).mutate(
+    "create",
+    { module: "example", menu, initialContent: content },
+    {
+      requestApproval: async () => true,
+      redact: (value) => value,
+    },
+  );
+  const ambiguous = await runCli(undefined, ["read", path]);
+  assert.notEqual(ambiguous.code, 0);
+  assert.match(ambiguous.error, /Multiple PRDs/);
+  assert.equal(ambiguous.output, "");
+  assert.equal((await runCli(first, ["read", path])).output, content);
+  assert.notEqual((await runCli(undefined, ["list"])).code, 0);
+  assert.notEqual((await runCli(undefined, ["write", path], { content, expected: null })).code, 0);
+});
+
 test("PRDs and versions persist in the database without writing a repository file", async (t) => {
   const userId = `test-${randomUUID()}`;
   const workspace = await mkdtemp(join(tmpdir(), "qrex-prd-db-"));

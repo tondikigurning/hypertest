@@ -14,7 +14,7 @@ Use this for E2E execution, scenario maintenance, test infrastructure and Automa
 These execution steps apply to a terminal host with the checkout runner. Q-Rex has no shell or draft execution tool: inspect the selected source safely and provide the [external verification handoff](workflow-contract.md#turns-batches-and-completion). Do not treat an explorer checkout run as verification of unmerged draft changes or express a shell command through browser tools.
 
 1. Read the selected .feature setup, steps, tags and page/component objects. Follow .agents/skills/write-e2e-scenarios/references/data-safety.md before scenarios that can mutate live data.
-2. Establish the target environment and credentials without printing secret values. A configured fallback URL does not prove that it is the intended environment.
+2. Establish the target environment using the [shared contract](workflow-contract.md#scope-and-questions) and credentials without printing secret values. A hard-coded fallback alone is insufficient.
 3. Check the working tree and report the command, selection and material side effects before running.
 4. Inspect e2e/package.json and its runner script, then select only the authorized scenarios using supported options. pnpm test:bdd runs BDD generation and Playwright and may sync the catalog, import results and upload evidence when configured. Do not run BDD generation concurrently with the Automation local runner because generated files are shared.
 5. Inspect the selected count, failures, skips and generated output paths. A filtered run does not freshly verify scenarios it did not execute.

@@ -55,7 +55,7 @@ The default workflow uses the review gates below. When an approval is pending, *
    PRD approval. PRDs and their versions are stored in PostgreSQL; their `docs/prd/...` paths are
    virtual identifiers for the agent tools, not Git changes. After approval Q-Rex reports and stops;
    scenario discovery resumes on another turn.
-   Terminal agents use the same database via the [terminal access procedure](../../.agents/skills/ask-qa/references/prd-database-access.md): save a `draft` for inspection, wait for explicit review, then record only accepted validations and reviewed metadata. A create request is not review approval.
+   Terminal agents use the same database via the [terminal access procedure](../../.agents/skills/ask-qa/references/prd-database-access.md): read a unique menu PRD directly, and select the intended browser identity for ambiguous matches or writes. Save a `draft` for inspection, wait for explicit review, then record only accepted validations and reviewed metadata. A create request is not review approval.
 3. `write-e2e-scenarios` reads the matching reviewed PRD and explores the tenant. `confirm_flows`
    presents the described flow list for confirmation before scenario-intent changes. Confirmation
    is tied to the current PRD and feature contents and does not approve the scenarios.
