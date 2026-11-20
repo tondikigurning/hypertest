@@ -98,6 +98,7 @@ async function readExistingForWrite(path) {
 
 export function createAgentTools({
   workspace,
+  localCheckout,
   requestUserInput,
   requestApproval,
   runBrowserCommand,
@@ -119,6 +120,77 @@ export function createAgentTools({
 }) {
   const pathSchema = z.object({ path: z.string().describe("Relative path inside this draft workspace.") });
   const agentTools = {
+    ...(localCheckout
+      ? {
+          list_local_files: tool({
+            description:
+              "List tracked and non-ignored files in the current local checkout, including uncommitted files. Use this to inspect current local source. Draft edits are in list_files instead.",
+            inputSchema: z.object({ directory: z.string().optional().describe("Optional relative directory prefix.") }),
+            execute: async ({ directory }) => {
+              if (directory) await safeWorkspacePath(localCheckout, directory);
+              const result = await execFileAsync(
+                "git",
+                ["ls-files", "-z", "--cached", "--others", "--exclude-standard"],
+                {
+                  cwd: localCheckout,
+                  timeout: 30000,
+                  maxBuffer: 8 * 1024 * 1024,
+                },
+              );
+              const files = [];
+              for (const path of new Set(result.stdout.split("\0").filter(Boolean))) {
+                if (files.length >= 400) break;
+                if (blockedPath.test(path) || prdPath(path) || (directory && !path.startsWith(`${directory}/`)))
+                  continue;
+                try {
+                  const absolute = await safeWorkspacePath(localCheckout, path);
+                  const info = await lstat(absolute);
+                  if (info.isFile() && info.nlink <= 1) files.push(path);
+                } catch {
+                  // Deleted files and paths outside the permitted checkout are not readable.
+                }
+              }
+              return files;
+            },
+          }),
+          read_local_file: tool({
+            description:
+              "Read a tracked or non-ignored file from the current local checkout, including uncommitted changes. This is read-only and separate from draft files.",
+            inputSchema: pathSchema.extend({
+              startLine: z.number().int().min(1).optional(),
+              lineCount: z.number().int().min(1).max(500).optional(),
+            }),
+            execute: async ({ path, startLine, lineCount }) => {
+              if (prdPath(path)) throw new Error("PRDs are available only from the database store.");
+              const absolute = await safeWorkspacePath(localCheckout, path);
+              const normalized = path.replaceAll("\\", "/");
+              const result = await execFileAsync(
+                "git",
+                ["ls-files", "-z", "--cached", "--others", "--exclude-standard", "--", `:(literal)${normalized}`],
+                {
+                  cwd: localCheckout,
+                  timeout: 30000,
+                  maxBuffer: 1024 * 1024,
+                },
+              );
+              if (!result.stdout.split("\0").includes(normalized))
+                throw new Error("This file is not available from the local checkout.");
+              const info = await lstat(absolute);
+              if (!info.isFile() || info.nlink > 1 || info.size > 2 * 1024 * 1024)
+                throw new Error("The file is unavailable or larger than 2 MB.");
+              const content = await readFile(absolute, "utf8");
+              if (startLine === undefined && lineCount === undefined && info.size <= 64000)
+                return redact(content, variables);
+              const lines = content.split(/\r?\n/);
+              const first = startLine ?? 1;
+              const selected = lines.slice(first - 1, first - 1 + (lineCount ?? 200));
+              const page = selected.join("\n");
+              if (Buffer.byteLength(page) > 64000) throw new Error("This page exceeds 64 KB. Request fewer lines.");
+              return redact(`Lines ${first}-${first + selected.length - 1} of ${lines.length}\n${page}`, variables);
+            },
+          }),
+        }
+      : {}),
     ...(useSkill
       ? {
           use_skill: tool({

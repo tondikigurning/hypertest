@@ -18,6 +18,34 @@ import { requiresPrdReview } from "./prd-review.mjs";
 
 const git = promisify(execFile);
 
+test("local source tools read uncommitted files without exposing ignored files or changing the draft", async (t) => {
+  const checkout = await mkdtemp(join(tmpdir(), "automation-agent-checkout-"));
+  const draft = await mkdtemp(join(tmpdir(), "automation-agent-draft-"));
+  t.after(async () => {
+    await rm(checkout, { recursive: true, force: true });
+    await rm(draft, { recursive: true, force: true });
+  });
+  const options = { cwd: checkout };
+  await git("git", ["init", "--quiet"], options);
+  await writeFile(join(checkout, ".gitignore"), "ignored.txt\n");
+  await writeFile(join(checkout, "tracked.txt"), "before");
+  await git("git", ["add", "tracked.txt", ".gitignore"], options);
+  await writeFile(join(checkout, "tracked.txt"), "uncommitted");
+  await writeFile(join(checkout, "new.txt"), "new source");
+  await writeFile(join(checkout, "ignored.txt"), "private");
+  await writeFile(join(checkout, ".env.local"), "secret");
+  await writeFile(join(draft, "tracked.txt"), "draft content");
+  const tools = createAgentTools({ workspace: draft, localCheckout: checkout });
+  assert.equal(await tools.read_local_file.execute({ path: "tracked.txt" }), "uncommitted");
+  assert.equal(await tools.read_local_file.execute({ path: "new.txt" }), "new source");
+  assert.equal(await tools.read_file.execute({ path: "tracked.txt" }), "draft content");
+  const files = await tools.list_local_files.execute({});
+  assert.ok(files.includes("tracked.txt") && files.includes("new.txt"));
+  assert.ok(!files.includes("ignored.txt") && !files.includes(".env.local"));
+  await assert.rejects(tools.read_local_file.execute({ path: "ignored.txt" }), /not available/);
+  await assert.rejects(tools.read_local_file.execute({ path: ".env.local" }), /allowed workspace/);
+});
+
 test("implementation writes require approval of the current scenario snapshot", async (t) => {
   const workspace = await mkdtemp(join(tmpdir(), "automation-agent-review-"));
   t.after(() => rm(workspace, { recursive: true, force: true }));
