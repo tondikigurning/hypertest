@@ -1,5 +1,5 @@
 /**
- * Resolves the BDD feature path used to organize uploaded evidence in Drive.
+ * Resolves the BDD feature path used to organize uploaded evidence in R2.
  * The returned path is derived from the authored feature source, not a catalog file.
  */
 export interface BddFeatureTarget {
