@@ -2,7 +2,7 @@
 
 What to check, and how to record it, during live exploration (Step 2B). Read this and the shared [playwright-cli exploration](../../write-e2e-scenarios/references/playwright-cli-exploration.md) and [data safety](../../write-e2e-scenarios/references/data-safety.md) references before the first interaction.
 
-Exploration finds possible journeys. It does not prove the PRD is complete. Every result goes into the PRD as `observed`, never as intent.
+Exploration finds possible journeys. It does not prove the PRD is complete. Relevant findings recorded in the PRD are `observed`, never intent without review.
 
 ## Contents
 
@@ -38,7 +38,7 @@ Exploration finds possible journeys. It does not prove the PRD is complete. Ever
 
 ## Checklist by area
 
-Work through each area that exists for this menu. If an area does not exist, record "not present" with how you checked. If it exists but you cannot reach it, record it as unverified (see below).
+Use these areas as exploration prompts, not PRD sections or a requirement quota. Retain findings that define a business outcome, consequential branch, prerequisite or explicit requirement; routine control inventories stay in working notes. If an area does not exist, note how you checked; inaccessible areas remain unverified. Consolidate coverage limits in the PRD instead of copying this checklist into it.
 
 ### 1. Entry and navigation
 
@@ -96,7 +96,7 @@ Only check validation that can be triggered without submitting data you must not
 
 ### 6. Messages and feedback
 
-- [ ] Every success, error, warning and info message seen, copied exactly.
+- [ ] Assertion-relevant success, error, warning and info messages, copied exactly.
 - [ ] For each: trigger, where it appears (toast, banner, inline, dialog), whether it auto-dismisses.
 - [ ] Tooltips and helper text on controls.
 - [ ] Differences between client-side messages and server-side messages, when distinguishable.
@@ -129,7 +129,7 @@ Only check validation that can be triggered without submitting data you must not
 
 ## How to record an observation
 
-For each thing you saw, capture what you will need to write one requirement line:
+For each observation that affects a requirement or coverage gap, capture the relevant context below. Several observations may support one requirement; a control or label does not automatically become a requirement.
 
 | Field | Example |
 | --- | --- |
@@ -142,7 +142,7 @@ For each thing you saw, capture what you will need to write one requirement line
 | Request | POST, path, status (if an action) |
 | Evidence ref | `STL-create-01` |
 
-Then write the PRD line in the format from [prd-template.md](prd-template.md). Keep notes factual: what you saw, not why you think it behaves that way.
+Synthesize relevant findings into condition/action/outcome requirements using [prd-template.md](prd-template.md), with a shared evidence reference where possible. Keep notes factual: what you saw, not why you think it behaves that way. Request/locator details remain exploration evidence rather than PRD content unless explicitly required.
 
 ## Evidence
 
@@ -153,7 +153,7 @@ Then write the PRD line in the format from [prd-template.md](prd-template.md). K
 
 ## Recording what you could not reach
 
-Absence from the current account or data is not evidence that a feature does not exist. Record it under the PRD's Review findings and gaps > Unverified, or the equivalent section in an existing PRD, with a reason:
+Absence from the current account or data is not evidence that a feature does not exist. Record consequential gaps under the PRD's Open issues, or the equivalent section in an existing PRD, with affected requirement IDs or the unexplored journey and a reason:
 
 | Reason | How to write it |
 | --- | --- |

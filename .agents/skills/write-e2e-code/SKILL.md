@@ -13,7 +13,7 @@ Preserve the requested module/menu. Resolve feature candidates by contents and p
 
 ## Step 0 — Resolve approved scope
 
-Identify the exact batch files, scenario/source identities, flow categories and applicable approval, or the existing contract for a technical repair. Read prior answers and reviewed context instead of re-interviewing. Establish environment, prerequisites, owned-data scope, cleanup and unresolved product decisions under the shared contract. Complete and verify this batch before starting the next; when execution is unavailable, produce the concrete handoff below.
+Identify the exact batch files, scenario/source identities, flow categories and applicable approval, or the existing contract for a technical repair. Reuse the reviewed requirement-to-scenario mapping to preserve each promised outcome and branch, including applicable shared rules; when a mapping is unavailable, reconstruct affected links from the available PRD and approved scenarios or existing repair contract, and report uncertainty. A missing mapping or PRD does not create a new scenario-design gate for an intent-preserving repair. If changed PRD context changes the intended behavior, route the affected scope through scenario review before changing its contract. Read prior answers and reviewed context instead of re-interviewing. Establish environment, prerequisites, owned-data scope, cleanup and unresolved product decisions under the shared contract. Complete and verify this batch before starting the next; when execution is unavailable, produce the concrete handoff below.
 
 ## Step 1 — Read before writing
 
@@ -37,7 +37,7 @@ Data eligibility does not grant mutation permission. Preserve exact target ident
 
 - Steps delegate to POMs/COMs: `Given` establishes prerequisites, `When` acts, `Then` asserts. Put assertions in Then steps or POM `expect*` methods; COMs own shared UI interaction. Shared step text belongs in `steps/_shared/`, not `steps/_components/`.
 - Reuse shared/stateful components and register injectable POMs/COMs in `fixtures/base.fixture.ts`. Extend existing classes without breaking their other callers.
-- Implement consumer-visible journeys and consequential branches from the approved scenarios. Do not expand scope into field-by-field/component tests. Route missing journeys or changed intent through `write-e2e-scenarios` with the same scope and prior answers, stopping at its applicable review gate.
+- Implement consumer-visible journeys and consequential branches from the approved scenarios, including any explicitly reviewed field or validation behavior. Route missing journeys or changed intent through `write-e2e-scenarios` with the same scope and prior answers, stopping at its applicable review gate.
 - Use actual request evidence for reviewed `@mock` handlers. Mocks verify the promised UI contract, not real backend integration. Preserve the no-mock smoke rule.
 - Assert the approved observable outcome on the identified target. Feedback/network evidence can supplement it; do not substitute a mocked HTTP status for visible UI feedback or silently strengthen/change an approved assertion. Report a contract gap for scenario review.
 - Keep cleanup and target guards effective after failures wherever feasible. A previous approval comment is not current-session seed authorization.

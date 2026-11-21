@@ -21,7 +21,7 @@ Use validated items according to their recorded review method and unvalidated `s
 
 1. Resolve ownership and target paths using [test organization](../../../docs/automation/test-organization.md). Read the menu's flat feature and all descendant features; inventory IDs and `@flow:` tags, including known retired identities. File boundaries do not create new namespaces.
 2. Rebuild the scoped conversation registry from current features and prior confirmed discovery. Keep unrepresented candidates and limitations visible; existing tags alone do not prove complete journeys.
-3. Read PRD candidates, discrepancies and unverified areas. Read every current `features/_components/` master contract and decide which applies. Inspect scoped steps/POMs so reviewed Gherkin can reuse existing contracts.
+3. Read all active PRD requirements in the requested scope, their journey groups or legacy candidate-flow section, shared rules, discrepancies and unverified areas. Build a coverage baseline from validated items and attributed unvalidated `spec`, excluding retired items and unresolved conflicts. Follow shared rule references into every applicable journey and retain their requirement IDs. Keep unvalidated observations, assumptions and conflicts visible for resolution. For a full pass, account for requirements deferred to later batches; for smoke-only, identify the relevant regression requirements as deferred. Read every current `features/_components/` master contract and decide which applies. Inspect scoped steps/POMs so reviewed Gherkin can reuse existing contracts.
 4. Explore accessible scoped UI before confirming flows: navigation, tabs, menus, dialogs and conditional actions. Reconcile user goals, PRD requirements and UI observations with existing scenarios by outcomes and consequential branches. Record inaccessible roles, data, integrations, unsafe mutations and other gaps with evidence and reasons.
 5. Choose the approach from complexity, breadth, dependencies, roles/data and reviewability; explain the evidence. Flow count is informational, never a threshold. Reassess as exploration expands.
 
@@ -34,11 +34,13 @@ Use validated items according to their recorded review method and unvalidated `s
 
 About 15 scenarios is a planning guide, not a cap. Group by meaningful journeys/outcomes; keep one flow ID when a flow spans files or batches, and record partial scope. Smoke-only writes supported CRUD and other release-gating happy paths; list remaining journeys as deferred. Implement and verify a reviewed batch before the next batch starts under the shared contract.
 
+In registry-only mode, use the requirement mapping in Step 5 for existing scenarios in the inventory report, including gaps and deferred work.
+
 If live exploration is unavailable, retain a draft inventory and the exact blocker. Do not call PRD-only work complete discovery or proceed to authoring. Resume from feature contents, conversation scope and review output; repeat only a gate invalidated by changed artifacts or scope.
 
 ## Step 1b — Confirm the flow list (required for every authoring scope)
 
-Present the discovered flows with IDs, short goals/outcomes, exact feature files, total count, exclusions, relevant PRD IDs and unresolved gaps. For existing features include retained categories and proposed additions/changes/removals. Do not claim completeness beyond available evidence.
+Present the discovered flows with IDs, short goals/outcomes, exact feature files, total count, exclusions, relevant PRD IDs including shared rules, and unresolved gaps. List baseline requirements or branches without a represented flow, with reasons; flow confirmation must not silently remove them. For existing features include retained categories and proposed additions/changes/removals. Do not claim completeness beyond available evidence.
 
 Use the shared contract's **flow confirmation** procedure: Q-Rex calls `confirm_flows` for each affected file with its owning PRD; terminal agents explicitly ask whether the list has missing or extra flows and wait for confirmation. A chat answer is not a replacement for the Q-Rex tool. Confirmation approves only that described inventory, not scenarios or live mutations. Before detailed batch work or authoring, obtain the applicable decision. Reconfirm affected work if later discovery materially changes the inventory; preserve IDs.
 
@@ -61,7 +63,7 @@ Classify each journey by evidence:
 | Obsolete | Retire the journey and permanently reserve its IDs |
 | Reusable match | Reuse the master step text and link its `@ref:TEN_COM_*` contract |
 
-- Group scenarios by meaningful business goals and lifecycle outcomes. Include consequential changes to outcome, permissions, decisions or integration boundaries; do not enumerate every field, button, endpoint or visual variation as E2E.
+- Group scenarios by meaningful business goals and lifecycle outcomes. Design coverage for every baseline requirement, including explicitly requested field or validation behavior; report requirements that cannot yet be covered. Include consequential changes to outcome, permissions, decisions or integration boundaries; do not enumerate incidental fields, buttons, endpoints or visual variations merely because they were observed.
 - Tag supported in-scope CRUD happy paths and other main release-gating business success journeys `@smoke`, honoring explicit exclusions. Use `@regression` for consequential alternatives. Do not invent unsupported CRUD operations or tag every validation/error as smoke. Report blocked baseline operations.
 - For consequential API error/delay/auth-failure cases, use reviewed `@mock` contracts and applicable shared master steps/references. Never put `@mock` on `@smoke`; report mocked coverage separately from real backend behavior. See [mock policy](../write-e2e-code/references/msw-mocking.md) when deciding a mock-dependent scenario.
 - A mutation must assert its data-changing outcome on the identified record, such as an appearing/disappearing row or changed detail/status. A toast may supplement that result; when persistence cannot be observed, explicitly limit the promised outcome rather than claiming it was verified. Preserve existing approved intent until its own review changes it.
@@ -79,7 +81,15 @@ Capture safe trace/screenshot evidence only when the host exposes it. In Q-Rex, 
 
 Use `<module>/<menu>.feature` for small scopes or files beneath `<module>/<menu>/` for child groups, following test organization. All children share the parent PRD and scenario namespace. Preserve inherited tags, backgrounds, examples, safety notes, flow order and existing bindings when splitting files. Register implementation paths during Phase 1 only.
 
-Follow the conventions' header and tag order. Allocate `TEN_<CODE>_<FLG>_E2E_NNN` across all menu files and known retired IDs, with a sequence per flow abbreviation; never restart due to a new file. Record a requirement-to-scenario mapping in the review summary, not a separate registry file.
+Follow the conventions' header and tag order. Allocate `TEN_<CODE>_<FLG>_E2E_NNN` across all menu files and known retired IDs, with a sequence per flow abbreviation; never restart due to a new file.
+
+Before review, reconcile every baseline requirement and its consequential branches against actual scenario preconditions and assertions, including existing coverage and applicable shared rules. Identify the owning PRD and current content or version and the feature snapshot used, so the mapping can be reassessed if either changes. Record the mapping in the review summary, not the PRD or a separate registry file:
+
+| PRD requirement / branch | Exact feature path + scenario identities | Asserted outcome / gap | Coverage |
+| --- | --- | --- | --- |
+| <ID and relevant condition> | <existing/new scenario IDs and source locations, or none> | <what is asserted, or reason and next action> | covered / partial / missing / blocked / deferred / excluded |
+
+Allow many-to-many mappings; a matching title, setup step or `@ref:` alone does not cover an outcome. Distinguish scenarios by source location when IDs are missing or duplicated; do not silently choose an ambiguous match. A shared master counts only where the consuming menu scenario exercises the required contract. `covered` describes authored assertions, not implementation or a test pass. Report `@mock`, `@fixme` and quarantine limitations on affected rows; a mock cannot establish a required real integration outcome. Every non-covered row needs a reason and next action; exclusions need an established scope decision. Keep unresolved product intent visible separately. Reassess affected mappings when PRD content or feature snapshots change, following the existing review gates. Do not claim full coverage while any required branch is unresolved or lacks matching assertions; a reviewed batch can be complete while the menu still has gaps.
 
 ## Step 6 — Output and stop
 

@@ -77,7 +77,7 @@ Accept PDF, DOCX, Markdown, plain text or pasted content.
 
 1. Extract the text and structure faithfully. Check tables, images and headers; if a part cannot be read, say so rather than guessing.
 2. Map the content onto the template in [references/prd-template.md](references/prd-template.md). Label every mapped statement `spec`.
-3. Put content that does not fit elsewhere under "Gaps and questions" or "Sources and exploration" instead of dropping or rewording it.
+3. Preserve relevant unmapped requirements as open issues with source references; retain the original source for detail. Keep unrelated background in the source instead of copying it. Surface proposed scope or test-level exclusions for review rather than silently discarding requirements.
 4. Never add behavior the document does not state. Flag contradictions and gaps inside the document as open questions.
 5. Record the source briefly in the document (type, original file name and date).
 6. Continue to Step 2B. Record any additional observed behavior as observed, not as a requirement.
@@ -113,9 +113,9 @@ Compare the sources: the spec (interview answers and document) against what you 
 Follow [references/prd-template.md](references/prd-template.md) for new documents. Preserve the existing structure of a PRD during a scoped review or refresh; do not reorganize it solely to match the new template. Write in English, because the repository content is English.
 
 - Give every behavioral statement a stable ID `PRD_<CODE>_<NNN>` and a provenance tag. IDs are never renumbered or reused; retire an obsolete item instead of deleting its ID.
-- Quote UI messages exactly as seen and say where you saw them (screen, environment, date). They feed later scenario assertions, so paraphrasing them is a defect.
+- Quote assertion-relevant UI messages exactly and cite where they were stated or observed. Keep routine labels and helper text out unless explicitly required.
 - Describe consumer-visible behavior, not implementation. Do not name internal components, files or libraries you cannot verify.
-- List candidate business flows (name, description, priority, smoke candidate, provenance) as input for the flow-list confirmation in `write-e2e-scenarios`. Do not assign flow or scenario IDs here.
+- For new PRDs, group requirements by business journey using the template's condition/action/outcome format. The groups supply candidate flows for `write-e2e-scenarios`; retain established priorities and consequential prerequisites, rules and integration boundaries. Do not assign flow or scenario IDs here.
 - Cover the menu and its known child groups in the same document. Identify which groups or journeys were actually explored and which remain unverified. For a scoped refresh, update the affected requirements in place and retain unrelated requirements and their prior review state.
 
 ## Step 5 — Quality checks before review
@@ -123,11 +123,13 @@ Follow [references/prd-template.md](references/prd-template.md) for new document
 Check the PRD against this list and fix what fails:
 
 - Every behavioral statement has an ID, a provenance tag and, if observed, an evidence reference.
+- Each requirement has a checkable outcome and enough actor/state/input context to derive its consequential branches. A success message alone does not establish a mutation's data outcome. Shared rules and sources are referenced rather than repeated.
 - No credentials, tokens, personal data or real customer records appear anywhere.
-- Messages are exact, and each states where it was observed.
+- Assertion-relevant messages are exact and source-referenced; incidental UI inventories and implementation details are omitted unless explicitly required.
 - Discrepancies, candidate defects, unverified branches and open questions are listed, not buried.
 - New or changed items have no `[validated]` tag; preserve earlier validations for unchanged items. Only the review gate validates items.
 - The exploration log states the environment, date, role used, and what was not covered.
+- Every active in-scope requirement can feed scenario coverage, or has an explicit unresolved issue or proposed test-level boundary for review. No stated requirement disappears because it was inaccessible or inconvenient to test. Scenario mappings and run status remain in downstream review output.
 
 ## Step 6 — Review gate and stop
 
@@ -148,6 +150,7 @@ Use it when the app may have changed or the user wants to extend a PRD.
 - Re-explore only the affected areas and compare with the existing items.
 - Include prior reviewer/date/method, when known, in the review summary.
 - Keep IDs. Remove `[validated]` from changed or conflicting items and identify those items and their changes in the review summary. Never overwrite a `validated` item silently.
+- A change to shared prerequisites, referenced rules or source meaning also invalidates affected validations, even when the requirement line itself is unchanged.
 - Add new items with new IDs. Retire removed behavior instead of deleting it.
 - Update exploration notes for the areas you actually re-checked, not for the whole PRD.
 - Run the review gate again, scoped to the changed items.
