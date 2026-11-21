@@ -61,6 +61,14 @@ The default workflow uses the review gates below. When an approval is pending, *
 3. `write-e2e-scenarios` reads the active matching PRD and explores the tenant. The active document is usable as context even with unvalidated items, open questions or incomplete coverage; there is no document-level review status. The agent records gaps and follows the separate review rules for PRD changes. `confirm_flows`
    presents the described flow list for confirmation before scenario-intent changes. Confirmation
    is tied to the current PRD and feature contents and does not approve the scenarios.
+   Confirmed flows and discovery gaps are recorded in one `e2e/tests/bdd/features/<module>/<menu>.flows.md`
+   file. Its `pending` and `written` statuses describe scenario authoring, not review or execution.
+   Resume by reading this file, the active database PRD and the relevant features; recheck changed or
+   unverified scope and obtain any host-required flow confirmation. The file is available only in the
+   workspace or committed source that contains it; a separate draft does not automatically inherit it.
+   A full pass plans supported, important smoke and regression branches for each flow. Batches are
+   grouped by related outcomes and review/verification effort; deferred or blocked branches stay in
+   the registry's gaps so later batches can resume them.
 4. Q-Rex writes one scenario batch and stops for review. Open **Changes**, inspect its preview and
    diff, then **Approve scenarios**. Chat answers, PRD review and flow confirmation do not replace
    this approval. A changed scenario snapshot invalidates approval for implementation and execution.
@@ -74,7 +82,9 @@ The default workflow uses the review gates below. When an approval is pending, *
    verification; arbitrary browser JavaScript is unavailable.
 6. Agent workspace scenarios cannot be executed in this preview. The explorer runner runs the current checkout only and does not verify unmerged agent changes.
 
-When Q-Rex finishes code without collection/type/execution tools, it reports an **implementation draft; checks pending** and retains the registry's `approved` state. This is a completed drafting handoff, not a verified batch. The handoff identifies branch/base, current source revision and full Changes snapshot/patch, exact files and scenario IDs, locator gaps and pending commands. External verification must identify that same source and complete selection, actual commands/results and intended environment before advancing `implemented` or `verified`. Changed source invalidates affected evidence. The next batch waits for the previous batch's required verification; another turn alone does not satisfy it. A later user turn may resume in the same persisted draft when its gates are complete.
+When Q-Rex finishes code without collection/type/execution tools, it reports an **implementation draft; checks pending** and retains the batch's `approved` evidence state. The flow registry remains `written`. This is a completed drafting handoff, not a verified batch. The handoff identifies branch/base, current source revision and full Changes snapshot/patch, exact files and scenario IDs, locator gaps and pending commands. External verification must identify that same source and complete selection, actual commands/results and intended environment before advancing `implemented` or `verified`. Changed source invalidates affected evidence.
+
+After a scenario batch is approved, another scenario-only batch may be written on a later turn without waiting for implementation or verification. Q-Rex reviews the cumulative changed feature snapshot, so each new scenario edit requires a fresh review of the current snapshot. Plan and review the scenario batches before adding implementation changes: the current Q-Rex review blocks approval of changed scenarios while implementation edits are present. Preserve any existing implementation changes and use a properly based scenario-only draft if more scenario review is needed; never reset another draft implicitly.
 
 The shared skill contract is [workflow-contract.md](../../.agents/skills/ask-qa/references/workflow-contract.md). PRD versions record `review_method: manual` or `automatic`; automatic acceptance is not human product confirmation. New documents use the appropriate reviewer label, while older review metadata remains historical. Questions resolve consequential item choices; the native PRD write review handles approval of the complete proposed version, without a competing blanket chat approval.
 

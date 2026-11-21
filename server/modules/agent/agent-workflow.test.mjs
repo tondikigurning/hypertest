@@ -272,6 +272,31 @@ test("chat hands off skills and reviews artifacts without running workspace scen
   );
 });
 
+test("scenario-only batches can be reviewed cumulatively before implementation changes", async (t) => {
+  const { session, workspace } = await workflow(t, [{ text: "Ready." }]);
+  await session.send("Prepare scenario batches.");
+  await waitFor(session, (state) => !state.busy);
+  const featureFile = join(workspace, featurePath);
+  await mkdir(join(featureFile, ".."), { recursive: true });
+  const first = "Feature: Orders\n  Scenario: Create\n    Given an order\n";
+  const second = `${first}  Scenario: Cancel\n    Given an order\n`;
+  await writeFile(featureFile, first);
+  await session.approveScenarios((await session.diff()).digest);
+  assert.equal((await session.diff()).scenarioApproved, true);
+
+  await writeFile(featureFile, second);
+  assert.equal((await session.diff()).scenarioApproved, false);
+  await session.approveScenarios((await session.diff()).digest);
+  assert.equal((await session.diff()).scenarioApproved, true);
+
+  const implementation = join(workspace, "e2e/tests/bdd/steps/example/orders.steps.ts");
+  await mkdir(join(implementation, ".."), { recursive: true });
+  await writeFile(implementation, "// implementation\n");
+  await writeFile(featureFile, `${second}  Scenario: Duplicate\n    Given an order\n`);
+  await assert.rejects(session.approveScenarios((await session.diff()).digest), /already contains E2E implementation/);
+  assert.equal(await readFile(implementation, "utf8"), "// implementation\n");
+});
+
 test("allow all resolves pending review and permits subsequent flow and implementation without manual approval", async (t) => {
   const prd = "---\nstatus: reviewed\n---\n# Orders\n- [validated] Users can list orders.\n";
   const feature = `Feature: Orders\n  @${scenarioId} @flow:LIST\n  Scenario: List orders\n    Given the orders page is open\n`;

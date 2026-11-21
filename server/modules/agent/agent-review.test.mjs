@@ -40,6 +40,7 @@ test("implementation writes require approval of the current scenario snapshot", 
     options,
   );
   const feature = "e2e/tests/bdd/features/example.feature";
+  const registry = "e2e/tests/bdd/features/example.flows.md";
   const implementation = "e2e/tests/bdd/steps/example.ts";
   await mkdir(join(workspace, "e2e/tests/bdd/features"), { recursive: true });
   await mkdir(join(workspace, "e2e/tests/bdd/steps"), { recursive: true });
@@ -49,6 +50,8 @@ test("implementation writes require approval of the current scenario snapshot", 
     workspace,
     authorizeFileWrite: (path) => authorizeScenarioImplementationWrite(workspace, "HEAD", path, approvedDigest),
   });
+  await tools.write_file.execute({ path: registry, content: "# Example flows\n" });
+  assert.equal((await scenarioChanges(workspace)).scenarioDigest, undefined);
   await tools.write_file.execute({ path: feature, content: "Feature: Example\n  Scenario: First\n    Given a step\n" });
   await assert.rejects(
     tools.write_file.execute({ path: implementation, content: "blocked" }),
@@ -60,6 +63,8 @@ test("implementation writes require approval of the current scenario snapshot", 
   );
   assert.equal(await readFile(join(workspace, implementation), "utf8"), "original");
   approvedDigest = (await scenarioChanges(workspace)).scenarioDigest;
+  await tools.write_file.execute({ path: registry, content: "# Example flows\n\nUpdated gaps.\n" });
+  assert.equal((await scenarioChanges(workspace)).scenarioDigest, approvedDigest);
   await tools.edit_file.execute({ path: implementation, oldText: "original", newText: "approved" });
   assert.equal(await readFile(join(workspace, implementation), "utf8"), "approved");
   await tools.write_file.execute({

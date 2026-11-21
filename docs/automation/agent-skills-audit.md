@@ -104,7 +104,7 @@ Acceptance: the cases below have recorded model outputs and explicit pass/fail j
 
 - Consolidate shared scope/question rules, ID allocation, data-safety details and host mechanics behind clear conditional references. The main scenario skill is 26,791 characters and the router is 16,253; both contain repeated policy. Length alone is not a failure, but each primary workflow should make its next step and completion condition easy to find. Keep critical gates visible.
 - Put the Converge entity default in a shared browser-context rule reached by all tenant workflows. It currently appears in `ask-qa`, scenario authoring and code authoring, but not direct PRD authoring. Preserve explicit user overrides.
-- In each review summary, connect relevant PRD requirement IDs to exact scenario IDs, outcome assertions and unverified branches. The PRD and flow review already supply much of this context. Keep it in the existing review/conversation artifacts; no separate `.flows.md` file is needed.
+- In each review summary, connect relevant PRD requirement IDs to exact scenario IDs, outcome assertions and unverified branches. Keep the mapping in review output; the menu `.flows.md` registry tracks confirmed flows and discovery gaps.
 - Treat a success toast as feedback evidence. For journeys promising saved/changed data, prefer an assertion on the identified record's resulting visible state where the reviewed contract supports it. Strengthening an existing scenario's promised outcome still needs the scenario workflow when its intent changes.
 
 ## Evaluation cases

@@ -42,6 +42,11 @@ Existing flat paths remain supported. If a flat file temporarily coexists with a
 appears once and its total includes both. Prefer the folder layout for new multi-file coverage.
 `_components/` remains the separate inventory of reusable component master contracts.
 
+Keep one confirmed-flow registry beside each menu's flat feature or folder at
+`<module>/<menu>.flows.md`. The registry records scenario authoring progress and discovery gaps;
+its format and resume rules are in the [flow registry reference](../../.agents/skills/write-e2e-scenarios/references/flow-registry.md).
+The explorer continues to derive flow categories from feature tags.
+
 ## Integration ownership and identity
 
 Keep an E2E journey crossing menus, modules or external platforms under the **menu that owns its business

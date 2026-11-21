@@ -322,9 +322,7 @@ export async function scenarioChanges(workspace, baseline = "HEAD") {
   const tracked = await execFileAsync("git", ["diff", "--name-only", "-z", baseline, "--"], options);
   const untracked = await execFileAsync("git", ["ls-files", "--others", "--exclude-standard", "-z"], options);
   const paths = [...new Set(`${tracked.stdout}\0${untracked.stdout}`.split("\0").filter(Boolean))].sort();
-  const featureFiles = paths.filter(
-    (file) => file.startsWith("e2e/tests/bdd/features/") && (file.endsWith(".feature") || file.endsWith(".flows.md")),
-  );
+  const featureFiles = paths.filter((file) => file.startsWith("e2e/tests/bdd/features/") && file.endsWith(".feature"));
   const hasImplementation = paths.some(
     (file) => file.startsWith("e2e/tests/bdd/") && !file.startsWith("e2e/tests/bdd/features/"),
   );

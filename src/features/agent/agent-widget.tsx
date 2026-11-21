@@ -742,20 +742,12 @@ export function AgentWidget({
       label: item.category,
     });
 
-  const addFlowContext = (registryPath?: string) => {
-    const selected = scenario ? { module: scenario.module, file: scenario.file } : feature;
-    const flowFile = registryPath
-      ? registryPath.replace(/^e2e\/tests\/bdd\/features\//, "").replace(/\.flows\.md$/, ".feature")
-      : selected?.file;
-    if (!flowFile) return;
-    const module =
-      contextScenarios.find((item) => item.file === flowFile)?.module ?? selected?.module ?? flowFile.split("/")[0];
+  const addFlowContext = (registryPath: string) => {
     addContext({
       id: contextId(),
-      kind: "flow",
-      ref: flowFile,
-      module,
-      label: `Flow registry · ${flowFile.replace(/\.feature$/, "")}`,
+      kind: "file",
+      ref: registryPath,
+      label: `Flow registry · ${registryPath.replace(/^e2e\/tests\/bdd\/features\//, "").replace(/\.flows\.md$/, "")}`,
     });
   };
 
@@ -2340,7 +2332,7 @@ export function AgentWidget({
                       <>
                         <AgentContextSearch
                           value={contextSearch}
-                          placeholder="Search flow registries by feature"
+                          placeholder="Search flow registries by menu"
                           label="Search flow registries"
                           onChange={setContextSearch}
                         />

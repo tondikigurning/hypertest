@@ -33,3 +33,11 @@ The previous batch is externally verified against its exact current source and p
 ## Case 8
 Host: Q-Rex. User: Refresh the PRD for the integration child of Cases.
 The owner is case-management/cases, which already has one reviewed parent PRD and stable validated IDs. Only the new integration scope lacks coverage. Separate-platform access is unavailable; same-origin read-only discovery is available. Allow-all is enabled for this draft session. No additional human review decision has been made.
+
+## Case 9
+Host: Q-Rex. User: Continue writing scenarios for the confirmed Orders create flow.
+The active PRD and current safe browser evidence establish successful creation, duplicate-name rejection and cancellation without creating a record. A separate role is documented as denied creation, but this role is unavailable. An existing scenario asserts successful creation only. The menu registry says the flow is pending; no scenario-only changes have been written in this turn. Describe the meaningful coverage and gap, without inventing the unavailable role's observed UI.
+
+## Case 10
+Host: Q-Rex. User: Prepare the next scenario batch.
+An earlier scenario batch was approved in Changes. Its implementation and execution are pending, and the draft contains no implementation changes. The current PRD, flow confirmation and browser evidence cover the next batch. Explain whether authoring can continue and what snapshot must be reviewed. Then state how the answer changes if implementation edits are already present in this draft.
