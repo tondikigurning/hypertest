@@ -197,7 +197,7 @@ test("agent file and browser output redacts the configured provider key", async 
   assert.equal(await tools.playwright_cli.execute({ action: "snapshot" }), "[redacted]");
 });
 
-test("scenario intent changes require scoped flow confirmation against a current reviewed PRD", async (t) => {
+test("scenario intent changes require scoped flow confirmation against the current PRD", async (t) => {
   const workspace = await mkdtemp(join(tmpdir(), "automation-agent-flows-"));
   t.after(() => rm(workspace, { recursive: true, force: true }));
   const featurePath = "e2e/tests/bdd/features/module/example.feature";
@@ -287,6 +287,13 @@ test("flow confirmation requires a PRD but does not require a document status", 
   await assert.rejects(confirmFlowReview(options), /matching PRD is required/);
   assert.ok(await confirmFlowReview({ ...options, readPrd: async () => "# Requirements\nA flow" }));
   assert.ok(await confirmFlowReview({ ...options, readPrd: async () => "---\nstatus: draft\n---\nA flow" }));
+  assert.ok(
+    await confirmFlowReview({
+      ...options,
+      readPrd: async () => "# Requirements\n- [observed] A flow\n## Open issues\n- Outcome unverified",
+    }),
+    "an active PRD with unvalidated items and unresolved questions remains usable",
+  );
 });
 
 test("flow confirmation is rejected if the PRD changes while the user reviews it", async (t) => {

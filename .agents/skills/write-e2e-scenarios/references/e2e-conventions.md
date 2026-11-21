@@ -118,6 +118,7 @@ Component masters, optional `@flow` (coverage only, not encoded in the ID):
 #   @smoke / @regression        cross-cutting labels
 #   @mock                       MSW interception (never on @smoke)
 #   @quarantine                 flaky test (runner-specific execution policy)
+#   @production-restricted      forbidden production mutation; requires safe treatment
 #   @flow:TEN_DASHBOARD_FLOW    journey identifier for coverage
 #   @priority:P0|P1|P2          optional
 #   @type:positive              positive | negative | ui-interaction | edge-case
@@ -136,11 +137,12 @@ Feature: Dashboard Access
     Then the dashboard page is visible
 ```
 
-Tag order: ID → cross-cutting (`@smoke`/`@regression`) → `@mock` → `@quarantine` → `@flow` → `@type` → `@ref`.
+Tag order: ID, cross-cutting (`@smoke`/`@regression`), `@mock`, `@quarantine`, `@production-restricted`, `@flow`, `@type`, `@ref`.
 
 ## Tag policy
 
 - `@smoke`: business-critical, release-gating success journeys. For menu E2E, the baseline includes at least the happy path of each supported, in-scope create, read, update and delete operation, unless the user explicitly excludes one. CRUD is a minimum: identify and recommend happy paths for other main business functions as smoke too, using requirements, discovery and user context. Do not invent unsupported operations or classify all error and validation variants as smoke. Document blocked or unavailable operations, and preserve the no-`@mock` and data-safety rules.
+- `@production-restricted`: user-identified forbidden production mutation. Record the affected operation and restriction; exclude from production until an approved safe treatment exists. This tag alone has no runtime enforcement.
 - `@regression`: non-smoke scenarios selected for E2E, including consequential negative paths or bug guards. The tag does not by itself justify adding isolated component checks to E2E.
 - `@mock`: see the rule in `write-e2e-code/references/msw-mocking.md`.
 - `@fixme`: real application defect, paired with `@ref:<JIRA-ID>`. Playwright marks it skipped, so a normal run cannot demonstrate recovery. To verify a fix, temporarily run the specific scenario without the skip in a controlled local selection, restore the tag if it still fails, and clear it only after an observed pass; preserve review requirements for any scenario-intent change.

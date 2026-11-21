@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -59,6 +59,52 @@ test("terminal PRD access shares the selected database identity and rejects stal
   });
   assert.notEqual(review.code, 0);
   assert.equal(await createPrdDatabase(userId).read(path), draft);
+  const updated = `${draft}Updated content.\n`;
+  assert.equal((await runCli(userId, ["write", path], { content: updated, expected: draft })).code, 0);
+  assert.equal((await runCli(userId, ["read", path])).output, updated);
+  assert.equal(JSON.parse((await runCli(userId, ["list"])).output)[0].content, updated);
+  assert.notEqual((await runCli(randomUUID(), ["read", path])).code, 0, "other identities cannot read this PRD");
+
+  const accepted = "# Cases\n- [validated] Read cases\n";
+  assert.equal(
+    (
+      await runCli(userId, ["write", path], {
+        content: accepted,
+        expected: updated,
+        approvedSha256: createHash("sha256").update(accepted).digest("hex"),
+      })
+    ).code,
+    0,
+  );
+  assert.notEqual((await runCli(userId, ["write", path], { content: "replacement", expected: accepted })).code, 0);
+  assert.equal((await runCli(userId, ["read", path])).output, accepted);
+
+  const store = createPrdDatabase(userId);
+  await store.mutate("create", { module: "example", menu: "cases", name: "Second" });
+  const versions = JSON.parse((await runCli(userId, ["versions", path])).output);
+  assert.equal(versions.items.length, 2);
+  const active = versions.items.find((item) => item.active);
+  const previous = versions.items.find((item) => !item.active);
+  const staleDelete = await runCli(userId, ["delete", path], { versionId: previous.id, expectedContent: "stale" });
+  assert.notEqual(staleDelete.code, 0);
+  assert.match(staleDelete.error, /changed/);
+  const activeDelete = await runCli(userId, ["delete", path], {
+    versionId: active.id,
+    expectedContent: active.content,
+  });
+  assert.notEqual(activeDelete.code, 0);
+  assert.match(activeDelete.error, /another version active/);
+  assert.equal(
+    (await runCli(userId, ["delete", path], { versionId: previous.id, expectedContent: previous.content })).code,
+    0,
+  );
+  assert.equal((await store.versions("example", "cases")).items.length, 1);
+  assert.equal(
+    (await runCli(userId, ["delete", path], { versionId: active.id, expectedContent: active.content })).code,
+    0,
+  );
+  assert.notEqual((await runCli(userId, ["read", path])).code, 0);
+  assert.deepEqual(JSON.parse((await runCli(userId, ["list"])).output), []);
 });
 
 test("PRDs and versions persist in the database without writing a repository file", async (t) => {

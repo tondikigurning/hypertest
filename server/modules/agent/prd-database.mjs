@@ -107,6 +107,8 @@ export function createPrdDatabase(userId) {
       } else {
         if (!selected) throw new Error("Choose a version that exists.");
         if (action === "delete") {
+          if (input.expectedContent !== undefined && input.expectedContent !== selected.content)
+            throw new Error("The PRD changed. Reload and try again.");
           if (selected === active && state.versions.length > 1)
             throw new Error("Set another version active before deleting this one.");
           state.versions = state.versions.filter((item) => item !== selected);

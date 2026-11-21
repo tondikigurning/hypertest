@@ -16,7 +16,7 @@ For this repo's tenant E2E work, [write-e2e-scenarios](../write-e2e-scenarios/SK
 
 ## Work with a terminal session
 
-Choose the target environment from the request and configuration. Use a named session you own and inspect an up-to-date snapshot before each interaction that needs a new ref:
+Use the target and tenant variables from the shared contract. Use a named session you own and inspect an up-to-date snapshot before each interaction that needs a new ref:
 
 ```bash
 playwright-cli -s=qa-task open <url>

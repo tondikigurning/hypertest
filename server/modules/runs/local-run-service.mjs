@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process";
-import { createHash, randomUUID } from "node:crypto";
+import { randomUUID } from "node:crypto";
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
@@ -16,35 +16,15 @@ const repoRoot = resolve(e2eWorkspace, "..");
 const require = createRequire(join(e2eWorkspace, "package.json"));
 const envFile = join(e2eWorkspace, ".env.local");
 const configured = existsSync(envFile) ? require("dotenv").parse(readFileSync(envFile)) : {};
-const configuredTarget = process.env.BASE_URL || configured.BASE_URL;
-const environments = [
-  { id: "dev", label: "DEV", target: "https://converge.dev.hyperscal.com/" },
-  { id: "stt", label: "STT", target: "https://converge.stt.hyperscal.com/" },
-  { id: "stt1", label: "STT1", target: "https://converge.stt1.hyperscal.com/" },
-  { id: "pp", label: "PP", target: "https://converge.pp.hyperscal.com/" },
-];
-const defaultEnvironment = "stt1";
-if (configuredTarget) {
-  const match = environments.find((item) => {
-    try {
-      return new URL(item.target).origin === new URL(configuredTarget).origin;
-    } catch {
-      return false;
-    }
-  });
-  if (match) {
-    match.target = configuredTarget;
-  } else {
-    let identity = configuredTarget;
-    try {
-      identity = new URL(configuredTarget).origin;
-    } catch {
-      /* Validation happens before execution. */
-    }
-    const id = `configured-${createHash("sha256").update(identity).digest("hex").slice(0, 12)}`;
-    environments.push({ id, label: "Configured", target: configuredTarget });
-  }
-}
+const configuredEnvironment = configured.ENV || "stt1";
+if (!/^[a-z0-9-]+$/.test(configuredEnvironment)) throw new Error("Invalid ENV in e2e/.env.local.");
+const environmentIds = [...new Set(["dev", "stt", "stt1", "pp", configuredEnvironment])];
+const environments = environmentIds.map((id) => ({
+  id,
+  label: id.toUpperCase(),
+  target: `https://converge.${id}.hyperscal.com/`,
+}));
+const defaultEnvironment = configuredEnvironment;
 const bddgen = join(dirname(require.resolve("playwright-bdd/package.json")), "dist/cli/index.js");
 const playwright = join(dirname(require.resolve("@playwright/test")), "cli.js");
 const tsx = require.resolve("tsx/cli");
@@ -171,8 +151,9 @@ export function createLocalRunService({
     const auth = join(run.dir, "auth.json");
     const env = {
       ...(safeProcessEnvironment ? runnerBaseEnvironment() : process.env),
-      BASE_URL: run.target,
       ...environment,
+      AUTOMATION_SELECTED_ENV: environments.find((item) => item.target === run.target)?.id || "",
+      AUTOMATION_RUN_TARGET: run.target,
       AUTOMATION_SETUP_AUTH_FILE: auth,
       AUTOMATION_OUTPUT_DIR: join(run.dir, "output"),
       AUTOMATION_REPORT_DIR: join(run.dir, "report"),

@@ -29,10 +29,17 @@
  */
 import { defineConfig, devices } from "@playwright/test";
 import dotenv from "dotenv";
+import { existsSync, readFileSync } from "node:fs";
 import path from "path";
 import { defineBddProject } from "playwright-bdd";
 
-dotenv.config({ path: path.resolve(import.meta.dirname, ".env.local") });
+const ENV_FILE = path.resolve(import.meta.dirname, ".env.local");
+dotenv.config({ path: ENV_FILE });
+
+const fileEnvironment = existsSync(ENV_FILE) ? dotenv.parse(readFileSync(ENV_FILE)) : {};
+const ENV = process.env.AUTOMATION_SELECTED_ENV || fileEnvironment.ENV;
+if (!ENV || !/^[a-z0-9-]+$/.test(ENV)) throw new Error("Set a valid ENV in e2e/.env.local.");
+const TARGET_URL = `https://converge.${ENV}.hyperscal.com/`;
 
 // A hosted worker may supply an isolated Playwright storage-state file. Ordinary
 // local/CI runs continue to use the existing credential-based setup project.
@@ -73,7 +80,7 @@ export default defineConfig({
             : []),
     ],
     use: {
-        baseURL: process.env.BASE_URL || "https://converge.stt.hyperscal.com/",
+        baseURL: TARGET_URL,
         ...(process.env.AUTOMATION_AGENT_PROXY ? { proxy: { server: process.env.AUTOMATION_AGENT_PROXY } } : {}),
         headless: true,
         screenshot: "on",

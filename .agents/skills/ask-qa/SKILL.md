@@ -30,7 +30,7 @@ For scoped work, read the [shared workflow contract](references/workflow-contrac
 | Automation app UI, explorer, evidence, runner or services | Own the app work directly, tracing relevant producers/consumers and repository instructions |
 | Testing quality, CI/config, reporting/export, Storybook, docs/skills or another testing concern | Own the work using testing operations and relevant source evidence; use specialists for overlapping portions |
 
-Do not replace the agreed testing strategy or introduce unsupported capabilities merely because a request is unfamiliar. When requirements and implementation conflict, explain the discrepancy and resolve consequential unknown intent; generic browser examples do not supersede project authoring or data-safety rules.
+Do not replace the agreed testing strategy or introduce unsupported capabilities merely because a request is unfamiliar. When tenant PRD sources and live behavior conflict, follow `write-prd`'s provisional actual baseline and record the unresolved product decision; generic browser examples do not supersede project authoring or data-safety rules.
 
 ## Teach with project evidence
 

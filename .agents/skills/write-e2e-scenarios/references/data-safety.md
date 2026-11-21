@@ -11,11 +11,11 @@ approval process below has been completed.
 
 ## Authorization before choosing data
 
-Establish the task, environment and permitted operations from the current request and prior answers. A request to write tests does not itself authorize live create/delete exploration. Reuse explicit authorization for E2E-owned operations in that scope instead of asking the same business question again; ask once if that consequential permission is missing. Ownership eligibility, scenario/flow review and native file/browser approvals remain separate. Q-Rex may request approval even for a read-only click or fill; describe it truthfully and use the host's configured approval mode under the [shared contract](../../ask-qa/references/workflow-contract.md#hosts-and-review-gates).
+PRD and scenario discovery are authorized to create and mutate E2E-owned records in the configured safe environment within the requested scope. Discover required data and provision it through supported flows when needed; no routine interview question is needed for owned-data operations. Honor any explicit restriction or production prohibition, and preserve host-native browser approvals. Ownership eligibility, scenario/flow review and native file/browser approvals remain separate. Q-Rex may request approval even for a read-only click or fill; describe it truthfully and use the host's configured approval mode under the [shared contract](../../ask-qa/references/workflow-contract.md#hosts-and-review-gates).
 
 ## Three-tier strategy (within authorized scope)
 
-Once owned-data operations are authorized, these tiers need no additional **seed-data exception**. They still honor the operation scope and host approvals.
+Within the requested discovery scope, these tiers need no additional **seed-data exception**. They still honor the operation scope and host approvals.
 
 ```
 Tier 1: search for the "E2E" prefix  -> reuse an E2E entity from a previous run, mutate it

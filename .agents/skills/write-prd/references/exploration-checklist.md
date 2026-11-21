@@ -18,16 +18,16 @@ Exploration finds possible journeys. It does not prove the PRD is complete. Rele
 ## Before you start
 
 - [ ] Scope is settled: module, menu, environment (Step 0).
-- [ ] Available context for roles, accounts, data, mutation permission and known issues has been gathered; gaps are recorded (Step 0b).
+- [ ] Available context for roles, accounts, production restrictions and known issues has been gathered; gaps are recorded (Step 0b). Discover required data during exploration.
 - [ ] Credentials come from the environment's configured variables. Never print or echo them.
-- [ ] You know whether E2E-owned records may be created or deleted here. If unknown, stay read-only.
+- [ ] E2E-owned operations are within the requested task and host approval rules; seed/shared data remains read-only without a scoped exception.
 - [ ] The host's managed Q-Rex browser or an owned terminal CLI session is ready. Identify it accurately in the log; do not invent an unavailable session name.
 - [ ] If reference material was supplied, list its statements so you can compare them with the live app.
 
 ## Ground rules
 
-1. Read-only by default. Open pages, dialogs and forms; do not submit.
-2. Mutate only E2E-owned records, named `E2E <relevant words> <DDMMYYYYHHmm>`, and only where the data-safety rules and the user's answer allow it. Seed data and shared settings are read-only.
+1. Explore E2E-owned records within task scope and host approvals; follow data safety for every mutation.
+2. Mutate E2E-owned records, named `E2E <relevant words> <DDMMYYYYHHmm>`, where data safety permits. Seed data and shared settings are read-only unless the specific record and operation receive the applicable scoped exception under data safety.
 3. If you cannot find or create the E2E data you need, stop and ask for explicit, scoped permission. Restoring state afterward is not permission.
 4. Navigate from the app's own navigation, not by guessing URLs.
 5. Snapshot first, then search the saved snapshot for the element you need. Do not read the whole tree.
@@ -39,6 +39,8 @@ Exploration finds possible journeys. It does not prove the PRD is complete. Rele
 ## Checklist by area
 
 Use these areas as exploration prompts, not PRD sections or a requirement quota. Retain findings that define a business outcome, consequential branch, prerequisite or explicit requirement; routine control inventories stay in working notes. If an area does not exist, note how you checked; inaccessible areas remain unverified. Consolidate coverage limits in the PRD instead of copying this checklist into it.
+
+Before exploring, inventory all in-scope functions, actions and behavioral branches from every readable source, referencing the source. During exploration, add every in-scope action found in navigation, menus, tabs, dialogs, record states and available roles. Attempt each item and relevant reachable branch through its outcome, including permitted E2E-owned mutations. For each record the attempt and evidence or its specific blocker, pending user answer or explicit exclusion and next step. Revisit the inventory as new controls and dependencies appear. Account for every item before review; do not mark blocked or untried actions as explored. This inventory is working evidence and does not turn every control into a PRD requirement or E2E scenario.
 
 ### 1. Entry and navigation
 
@@ -124,7 +126,7 @@ Only check validation that can be triggered without submitting data you must not
 ### 10. Cross-menu and platform journeys
 
 - [ ] Identify journeys owned by this menu that hand off to or receive results from another menu, module or platform, using the PRD sources, existing scenarios and reachable UI.
-- [ ] Record the participating areas, entry point, prerequisites, observable outcome, dependencies and relevant supporting PRDs in the owning menu's PRD. Follow accessible read-only steps within the established scope and data-safety rules.
+- [ ] Record the participating areas, entry point, prerequisites, observable outcome, dependencies and relevant supporting PRDs in the owning menu's PRD. Follow accessible steps, including permitted E2E-owned mutations, within the established scope and data-safety rules.
 - [ ] Mark any inaccessible or unverified handoff, upstream behavior or external outcome with its reason and what is needed to verify it. A mocked response does not verify the real integration.
 
 ## How to record an observation
@@ -169,10 +171,12 @@ Add what would be needed to verify it: an account, data, or explicit permission.
 
 Pause the affected interaction and ask the user when:
 
+- An item described in a PRD or source cannot be found or reached after checking available navigation, roles and data: explain what was tried and ask how to access it.
+- A required form value for a permitted mutation cannot be determined safely from the UI, sources or E2E data conventions: ask for a suitable value or how to obtain one without requesting secrets in chat.
 - A step would change data you are not sure you may change.
 - You need E2E data you cannot find or create within scope.
 - The UI shows real customer data and you are unsure how to handle it.
-- Live behavior contradicts the spec in a way that may be a real defect and you need a ticket ID. Never invent one.
+- A discrepancy is confirmed as a product defect but its ticket ID is missing. Never invent one.
 - You hit a login wall, MFA or a protected environment you were not cleared to use.
 - The product menu that owns the requested journey remains ambiguous after checking the request, navigation, PRDs and feature sources. A journey crossing another menu or platform is not by itself a change of ownership or a reason to stop documenting it in the owner's PRD.
 
@@ -181,5 +185,5 @@ Pause the affected interaction and ask the user when:
 End every exploration pass with a short statement for the PRD's exploration log:
 
 - Covered: the areas and actions you exercised, per this checklist.
-- Not covered: the areas, roles, states and mutations you skipped, and why.
+- Not covered: each source item or discovered action not exercised, including the affected role, state or mutation, reason and next step.
 - Coverage is not exhaustive: it reflects the account, data and environment you used on that date.
