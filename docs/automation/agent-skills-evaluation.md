@@ -8,7 +8,7 @@ This exercises model decisions using actual skill text. It does not execute thos
 
 ## Inputs and reproducibility
 
-Cases 9–10 were added after the comparison below to exercise scenario branch coverage and cumulative scenario-batch review. They were not included in the recorded eight-case results and have not been independently evaluated here.
+Cases 9–17 were added after the comparison below to exercise scenario branch coverage, cumulative scenario-batch review, and reuse and reconciliation of scenario exploration and terminal review decisions, including in a new session. They were not included in the recorded eight-case results and have not been independently evaluated here.
 
 - [Requests and host facts](skill-evaluation/cases.md)
 - [Baseline responses](skill-evaluation/baseline-responses.md)

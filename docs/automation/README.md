@@ -62,7 +62,9 @@ The default workflow uses the review gates below. When an approval is pending, *
    presents the described flow list for confirmation before scenario-intent changes. Confirmation
    is tied to the current PRD and feature contents and does not approve the scenarios.
    Confirmed flows and discovery gaps are recorded in one `e2e/tests/bdd/features/<module>/<menu>.flows.md`
-   file. Its `pending` and `written` statuses describe scenario authoring, not review or execution.
+   file, with a sanitized implementation handoff and requirement-to-scenario mapping for each authored batch.
+   The handoff includes a comparable scenario contract or an exact snapshot identity where available. Its
+   `pending` and `written` statuses describe scenario authoring, not review or execution.
    Resume by reading this file, the active database PRD and the relevant features; recheck changed or
    unverified scope and obtain any host-required flow confirmation. The file is available only in the
    workspace or committed source that contains it; a separate draft does not automatically inherit it.
@@ -77,10 +79,17 @@ The default workflow uses the review gates below. When an approval is pending, *
    chat and PR history remain. The action requires a fresh review and confirmation. After a PR publication
    attempt, retry finalization to reconcile its history instead of resetting the draft.
 5. On a subsequent turn, `write-e2e-code` implements the approved batch and preserves its IDs and
-   intent. Existing implemented scenarios may receive intent-preserving technical repairs without
-   creating a new scenario-design gate. Browser snapshots and `generate-locator` support locator
-   verification; arbitrary browser JavaScript is unavailable.
+   intent. It reuses applicable scenario-phase context, verified locators and observations, including the
+   registry handoff when a new session lacks earlier chat. It compares that handoff with current scenario and
+   PRD sources and explores only evidence gaps or changed scope. A registry edit does not invalidate Q-Rex's
+   feature-only scenario approval; the agent must reconcile its contents separately.
+   Snapshot element refs are temporary; fresh refs are needed for
+   further browser interaction. Existing implemented scenarios may receive intent-preserving technical
+   repairs without a new scenario-design gate. `generate-locator` supports locator verification;
+   arbitrary browser JavaScript is unavailable.
 6. Agent workspace scenarios cannot be executed in this preview. The explorer runner runs the current checkout only and does not verify unmerged agent changes.
+
+For terminal agents, the [scenario review record](../../.agents/skills/write-e2e-scenarios/references/flow-registry.md#terminal-scenario-review-record) preserves an explicit manual decision tied to the exact feature bytes and batch. The agent records an acceptance on the next turn, after the user actually approves; if the decision is lost before it is recorded, it must obtain a new review. A missing PRD comparison does not by itself invalidate independently applicable locator evidence.
 
 When Q-Rex finishes code without collection/type/execution tools, it reports an **implementation draft; checks pending** and retains the batch's `approved` evidence state. The flow registry remains `written`. This is a completed drafting handoff, not a verified batch. The handoff identifies branch/base, current source revision and full Changes snapshot/patch, exact files and scenario IDs, locator gaps and pending commands. External verification must identify that same source and complete selection, actual commands/results and intended environment before advancing `implemented` or `verified`. Changed source invalidates affected evidence.
 
