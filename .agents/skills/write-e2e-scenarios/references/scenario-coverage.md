@@ -23,7 +23,7 @@ For example, if a create flow's sources and exploration establish successful cre
 
 ## Choose a batch
 
-First enumerate the known important candidates and existing coverage for the selected batch; record unexplored areas of the wider scope and revisit them in later batches. Choose the largest coherent batch that can realistically be explored, authored and reviewed with clear evidence and requirement mapping, and has a practical implementation and verification scope. Size by complexity and review effort rather than a default scenario count. Include the whole confirmed scope in one batch when it meets these conditions.
+For both terminal agents and Q-Rex, first enumerate the known important candidates and existing coverage for the selected batch; record unexplored areas of the wider scope and revisit them in later batches. Choose the largest coherent batch that can realistically be explored, authored and reviewed with clear evidence and requirement mapping, and has a practical implementation and verification scope. Size by complexity and review effort rather than a default scenario count. Include the whole confirmed scope in one batch when it meets these conditions.
 
 Prioritize business risk, main lifecycle outcomes and consequential regression branches, then expand with related supported scenarios that share prerequisites, roles, data or contracts. Prefer complete related journeys and combine compatible small flows to reduce review cycles. Continue adding meaningful coverage while evidence quality and reviewability remain manageable; every scenario needs a distinct E2E purpose. Keep important regression alongside its happy paths, and reuse existing coverage for equivalent outcomes.
 
