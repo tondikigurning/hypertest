@@ -9,6 +9,8 @@ Discover the requested business journeys, reconcile existing coverage and produc
 
 Read the [shared workflow contract](../ask-qa/references/workflow-contract.md) for scope reuse, host-specific approvals, states and batch boundaries. Read [flow discovery](references/flow-discovery.md) and [scenario coverage and batching](references/scenario-coverage.md) in every mode, [E2E conventions](references/e2e-conventions.md) before assigning IDs/tags, and [data safety](references/data-safety.md) plus [browser capabilities](references/playwright-cli-exploration.md) before exploration.
 
+For terminal discovery, read the current `ENV` from `e2e/.env.local` before choosing the browser target. Treat `.exploration.md` and `.flows.md` target notes as historical evidence, not current configuration; if they conflict with the file, use its valid `ENV` and correct the stale note without asking the user to reconfirm that environment. Ask about the target only when the file or `ENV` is missing/invalid, or the user explicitly requests a different one.
+
 ## Step 0 — Interview for scope (required)
 
 Resolve module/menu and consequential context gaps using the shared contract, prior answers, supplied documents and existing artifacts. If the parent is unclear, investigate PRDs, features and navigation before asking one combined scope question. Derive routes and file names; do not ask the user to supply discoverable paths. Default to a full pass covering all supported, important E2E scenarios in scope, including regression; use smoke-only when explicitly requested or established by the user.
@@ -78,7 +80,7 @@ Classify each journey by evidence:
 
 ## Step 4 — Record product defects
 
-Describe expected versus actual behavior with the requirement source. Use `@fixme @ref:<real-ticket>` for a confirmed product defect, not the broken behavior as an assertion. If the ticket is missing, ask for it and leave the affected scenario as a documented candidate until it can carry a valid reference; continue independent work. Never invent a ticket or use quarantine as a substitute.
+Describe expected versus actual behavior with the requirement source. Use `@fixme @ref:<real-ticket>` for a confirmed product defect, not the broken behavior as an assertion. If the ticket is missing, ask for it under the shared question boundary and leave the affected scenario as a documented candidate until it can carry a valid reference. Never invent a ticket or use quarantine as a substitute.
 
 Capture safe trace/screenshot evidence only when the host exposes it. In Q-Rex, use a dated sanitized observation with available snapshot/network context and state that no trace/image was captured. Record evidence limitations under [browser capabilities](references/playwright-cli-exploration.md). Quarantine remains for demonstrated test unreliability.
 

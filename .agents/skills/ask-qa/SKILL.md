@@ -15,7 +15,7 @@ For scoped work, read the [shared workflow contract](references/workflow-contrac
 1. Identify the outcome: explanation, lesson, review, execution, changes or a combination. “How do I run this?” asks for guidance; “run this” asks for execution. Preserve the user's scope and existing work.
 2. Investigate the named artifacts yourself. For Automation/test-code behavior, inspect implementation, callers, configuration and affected tests. Tenant frontend source is unavailable: use the active menu PRD and applicable live browser evidence for tenant behavior, preserving each item's provenance and review state. Distinguish documented policy, observed implementation, recommendations and unknown intent.
 3. Apply the matching specialist below in this conversation; Q-Rex uses `use_skill`. Applying a skill does not mean spawning an agent. Preserve responsibility across handoffs. A missing specialist for an unfamiliar testing concern is a discovery problem: inspect existing support, establish success criteria, complete what is feasible and identify concrete limits.
-4. State the intended action and material assumptions briefly, then work until the requested result is verified or an actual prerequisite/review boundary prevents dependent work. Reuse answered questions and continue independent work while an answer is pending.
+4. State the intended action and material assumptions briefly, then work until the requested result is verified or a question or review boundary requires a response. Reuse answered questions and follow the shared contract's question boundary.
 
 ## Choose the workflow
 
