@@ -13,7 +13,7 @@ An unchanged scenario already present in the workspace's committed baseline can 
 
 Preserve the requested module/menu. Resolve feature candidates by contents and product evidence, not sibling proximity. If the target has no matching scenario, or its intent needs to change, apply [write-e2e-scenarios](../write-e2e-scenarios/SKILL.md) yourself for that target, including its PRD/discovery/review prerequisites. A host write block alone does not mean the scenario is missing. Reuse context; ask only when target or approval remains materially ambiguous. Do not ask the user to pick an unrelated feature or invoke the handoff again.
 
-## Step 0 — Resolve approved scope
+## Step 0 — Resolve eligible scope
 
 Before any browser call, apply [exploration reuse](../ask-qa/references/exploration-context.md) when that reference exists in the current workspace. Recover the menu's shared `.exploration.md`, including PRD-phase evidence, and the available conversation and scenario handoff. Use the shared record for detailed browser facts and the flow registry for scenario mappings and reviews; missing registry evidence need not mean the browser fact is missing. If the reference or record is unavailable, report it, reuse applicable evidence from accessible context and investigate only remaining gaps; do not claim the missing material was read.
 
@@ -41,7 +41,7 @@ Apply the single [test-data convention](../write-e2e-scenarios/references/data-s
 
 Data eligibility does not grant mutation permission. Preserve exact target identity through each action; a successful generic search or arbitrary first row does not establish ownership. Missing owned data follows search → supported provisioning → scoped exception review → skip without approval. Inspect notification/downstream effects and restoration limits before any approved exception.
 
-## Step 4 — Implement the reviewed contract
+## Step 4 — Implement the existing or reviewed contract
 
 - Steps delegate to POMs/COMs: `Given` establishes prerequisites, `When` acts, `Then` asserts. Put assertions in Then steps or POM `expect*` methods; COMs own shared UI interaction. Shared step text belongs in `steps/_shared/`, not `steps/_components/`.
 - Reuse shared/stateful components and register injectable POMs/COMs in `fixtures/base.fixture.ts`. Extend existing classes without breaking their other callers.
@@ -54,7 +54,7 @@ Data eligibility does not grant mutation permission. Preserve exact target ident
 
 **Terminal host:** inspect `e2e/package.json`, invoked runner and config before choosing commands. Check affected bindings, collection and types. Register required implementation paths, including split/nested paths, and check collection for the exact eligible scenario selection, including every moved ID. Before live execution inspect selected setup/steps/POMs/tags, establish the intended environment and follow data safety. Verify the exact selection; an unfiltered `pnpm test:bdd` runs the suite and may sync catalog, import results and upload evidence. Do not generate BDD concurrently with the Automation runner, which shares generated files.
 
-**Q-Rex:** inspect source/bindings and finish feasible code, then use the shared contract's implementation handoff. Collection, standalone types and draft BDD execution are unavailable. Keep `approved` with an “implementation draft; checks pending” progress note until external evidence validates this exact source. Identify branch/base, current full Changes snapshot or supplied source revision/diff, files/scenario IDs, supported commands for a terminal reviewer, intended selection/environment and all pending checks. This is a useful completed drafting deliverable, not a claim that the batch is implemented/verified. The explorer checkout runner cannot validate it.
+**Q-Rex:** inspect source/bindings and finish feasible code, then use the shared contract's implementation handoff. Collection, standalone types and draft BDD execution are unavailable. Keep an approved changed batch `approved` with an “implementation draft; checks pending” progress note until external evidence validates this exact source. An unchanged eligible baseline scenario with unknown historical review stays historically unknown; do not invent an `approved` decision. Identify branch/base, current full Changes snapshot or supplied source revision/diff, files/scenario IDs and their baseline or approval evidence, supported commands for a terminal reviewer, intended selection/environment and all pending checks. This is a useful completed drafting deliverable, not a claim that the batch is implemented/verified. The explorer checkout runner cannot validate it.
 
 External results may advance only the matching current source and complete reviewed scope under the shared contract. If live execution is unsafe/unavailable, do feasible non-live work and record the exact unverified branches. No host may treat generation, an empty/partial selection or a successful process alone as a complete pass.
 

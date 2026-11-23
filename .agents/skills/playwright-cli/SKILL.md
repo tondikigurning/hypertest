@@ -10,11 +10,13 @@ Read the [shared workflow contract](../ask-qa/references/workflow-contract.md) f
 
 **Q-Rex:** use only the managed `playwright_cli` actions in that profile. Its browser is already configured by the runtime; `generate-locator` replaces arbitrary DOM inspection. The terminal examples and references below do not add tools to Q-Rex. Report unsupported trace/image/request detail accurately.
 
-**Terminal host:** confirm the installed `playwright-cli --help` and command-specific help: supported commands depend on the installed version. In PowerShell, use the `.cmd` shim if `.ps1` is blocked. Do not install or upgrade merely because a documented feature is unavailable; first use a supported local alternative.
+**Terminal host:** reuse command support already checked in this context; consult installed `playwright-cli --help` and command-specific help when support is unknown, changed or a command fails. In PowerShell, use the `.cmd` shim if `.ps1` is blocked. Do not install or upgrade merely because a documented feature is unavailable; first use a supported local alternative.
 
 For this repo's tenant E2E work, [write-e2e-scenarios](../write-e2e-scenarios/SKILL.md) owns flow discovery and reviewed Gherkin; [write-e2e-code](../write-e2e-code/SKILL.md) owns implementation of approved scenarios. Read [data-safety.md](../write-e2e-scenarios/references/data-safety.md) before live mutations. A browser recording or generated snippet does not establish intended behavior or approve a scenario.
 
 ## Work with a terminal session
+
+For PRD/scenario/code work, apply [exploration reuse](../ask-qa/references/exploration-context.md) before browser calls. Continue from prior observations and the menu's `.exploration.md`, and browse only for an identified gap or affected change. Reuse command support already checked in this context and the applicable task-owned session across skills; a handoff needs neither a new login nor a replay. Save newly learned facts in the shared record before stopping.
 
 Use the target and tenant variables from the shared contract. Use a named session you own and inspect an up-to-date snapshot before each interaction that needs a new ref:
 

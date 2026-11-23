@@ -32,6 +32,7 @@ Use this template for new menu PRDs. Keep content that defines scope, prerequisi
 
 - S1: <Document name and section or user statement; date.>
 - E1: <Environment, date, role, explored screen/journey and sanitized observation or actual artifact reference; evidence limitations.>
+- Exploration record: <relative path to the menu's shared .exploration.md, with relevant evidence IDs>.
 - <Review proposal/acceptance metadata: reviewer, date and review_method.>
 ```
 
@@ -49,6 +50,8 @@ Every behavioral statement has a stable `PRD_<CODE>_<NNN>` ID and one provenance
 ## Sources, review and handoff
 
 Resolve each source/evidence reference in Sources and review; several requirements may share a reference. An observation is not product intent. Give each observation an actual safe artifact or a dated sanitized note with environment, role and explored scope; record evidence limits and unverified areas without duplicating the log. List candidate defects with expected/actual behavior, evidence and a real ticket if provided. Retain relevant unmapped source content as an open issue with a source reference. Never include secrets or personal/customer data.
+
+Keep the detailed inventory, attempts, verified locators and supported request facts in the [shared exploration record](../../ask-qa/references/exploration-context.md). Cite its evidence IDs here so scenario discovery and implementation can recover PRD-phase knowledge without chat or repeated browser exploration. Retain original observation dates when reusing evidence.
 
 When no source document or business explanation is supplied, create the PRD from explored consumer-visible behavior: give each consequential behavior an `[observed]` requirement ID and evidence reference, record the absence of a source and any unknown purpose, role or branch, and present the complete proposal through the normal review gate. Do not invent intended behavior or a source citation. The lack of a source alone does not prevent a reviewable PRD.
 

@@ -62,3 +62,27 @@ Host: terminal agent. User: Continue with the Orders scenarios. A review record 
 
 ## Case 17
 Host: terminal agent. User: Finish the reviewed Orders scenario batch and implement it. The scenarios and handoff have been prepared but the user has not yet reviewed them; the feature includes uncommitted edits. Explain what to record and present before stopping. On the next turn the user explicitly accepts the exact presented batch: explain what to check and record before implementing. Contrast a changed feature file or an ambiguous answer, and a session ending before the decision is saved.
+
+## Case 18
+
+Host: terminal agent, same conversation. User: Continue from the Orders PRD into scenarios. The active database PRD for example/orders references E1–E4. Earlier in this conversation, PRD exploration established navigation, list, successful E2E-owned create with a saved row, duplicate rejection and cancellation without creating data. Each observation has its date, target, role/state and verified locator expressions. No relevant UI or target change is known. The same task-owned CLI browser is open, its supported commands were already checked, and no flow registry exists yet. The shared exploration file has not been saved. Flow confirmation and scenario review have not occurred. Explain the next actions and any browser work needed.
+
+## Case 19
+
+Host: Q-Rex, new conversation in the same persisted workspace. User: Write the Orders create scenarios. The active PRD and menu's `.exploration.md` are accessible; the record contains the observations and branches from Case 18 with source references matching the current artifacts. The former chat is unavailable; no `.flows.md` or host flow/scenario decision exists. Browser Variables are not set and the browser cannot start. The target and role are unchanged, no relevant UI change is known, and all required observed outcomes and locators are recorded. Use the managed tool surface from Case 1. Explain what can proceed, what needs a decision and what evidence should be saved.
+
+## Case 20
+
+Host: terminal agent. User: Review this imported Orders PRD proposal. The same session previously explored its complete requested scope and saved the menu record with actual dated observations, outcomes and gaps. The imported source adds citations but no new behavior, role or state. The proposed PRD is saved with new items unvalidated; explicit review is still pending. The browser is now unavailable. Explain whether additional exploration is required, the review procedure and handoff. Then explain how the answer changes if the user instead asks to re-verify only the delete behavior after a UI deployment.
+
+## Case 21
+
+Host: Q-Rex. User: Continue the confirmed Orders edit batch using the PRD discoveries. The shared record establishes navigation, list and the edit outcome for the selected target/role/state, with applicable locators for every required control except Save. Save has only an old `e17` ref. Flow confirmation covers the current files and PRD. A separate role branch remains blocked because no account is available; nothing about that prerequisite changed. Browser access is now available with the restricted actions from Case 1. Explain the exploration scope, persisted evidence and review boundaries. Then explain what changes if the only saved locator expression contains a redacted dynamic record identity that cannot be reconstructed safely.
+
+## Case 22
+
+Host: terminal agent, new session. User: Implement the approved Orders batch. Its current feature bytes and exact batch match a recorded explicit manual scenario acceptance. The shared exploration file and old flow handoff are accessible. The PRD has changed one shared business rule since the handoff; its effect on the mapping is not yet checked. Independent locator evidence still identifies the same environment, page, role and UI state; no relevant UI change is known, but the UI build version was never recorded. The browser is unavailable. Explain how to assess the changed source and locator separately, and where any new implementation-phase browser findings should be saved later.
+
+## Case 23
+
+Host: Q-Rex, new draft based on committed HEAD. User: Continue my earlier Orders discovery. The database PRD is accessible. The earlier draft's exploration and flow records were never committed and are absent from this workspace; its chat is unavailable here. The accessible PRD has three dated factual observations with environment/role/outcome and one unverified deletion requirement, but no locator expressions. The current selected environment differs from the observed one. No evidence establishes that the same tenant/configuration/UI applies. Browser access to the new target is available. Explain what can be recovered, what needs investigation and what workspace actions are appropriate. Do not claim access to files outside this exercise.

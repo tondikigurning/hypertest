@@ -8,6 +8,7 @@ Paths are relative to the repository root. Follow callers and imports when the r
 | --- | --- |
 | Local preview, setup, secrets and runner limits | `README.md`, `docs/automation/README.md`; `docs/SPEC.md` describes the hosted draft |
 | Shared scope, host capabilities, approvals and batch completion | `.agents/skills/ask-qa/references/workflow-contract.md` |
+| Reusing PRD/scenario/code exploration across skills and sessions | `.agents/skills/ask-qa/references/exploration-context.md`; owning menu's `.exploration.md` and `.flows.md` beside its features |
 | Contributor rules | `AGENTS.md`, `CLAUDE.md` |
 | E2E business-flow discovery and review gates | `.agents/skills/write-e2e-scenarios/SKILL.md`, its `references/flow-discovery.md`, matching `docs/prd/` PRD and scoped `.feature` files |
 | Menu PRD authoring and product context | `.agents/skills/write-prd/SKILL.md`, `.agents/skills/ask-qa/references/prd-database-access.md` |

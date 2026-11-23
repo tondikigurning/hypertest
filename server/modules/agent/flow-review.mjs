@@ -23,6 +23,16 @@ export function featureReviewPath(path) {
   return lower.startsWith(featurePrefix) && lower.endsWith(".feature") ? normalized : undefined;
 }
 
+/** Only menu-level workflow records may accompany feature authoring without implementation approval. */
+export function menuDocumentationPath(path) {
+  const normalized = path.replaceAll("\\", "/");
+  return /^e2e\/tests\/bdd\/features\/[a-z0-9][a-z0-9-]*\/[a-z0-9][a-z0-9-]*\.(?:exploration|flows)\.md$/i.test(
+    normalized,
+  )
+    ? normalized
+    : undefined;
+}
+
 export function contentDigest(content) {
   return createHash("sha256").update(content).digest("hex");
 }

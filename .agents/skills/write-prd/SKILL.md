@@ -17,7 +17,7 @@ whole menu was explored or validated. Never create a separate PRD for a child gr
 
 That path is a virtual database PRD identifier for both hosts. Q-Rex uses its file tools and native PRD review. Terminal hosts use the [database access procedure](../ask-qa/references/prd-database-access.md) and the shared contract's explicit review procedure. Terminal hosts present the concrete proposal for review and mark only accepted requirements validated. If the host cannot load project skills by name, read this skill and its linked references directly before working.
 
-This skill writes documentation only. It does not write `.feature` files, flow registries, scenario or flow IDs, steps, POMs or mocks. Those belong to `write-e2e-scenarios` and `write-e2e-code`.
+This skill writes the database PRD and the menu's shared `.exploration.md` record only. It does not write `.feature` files, flow registries, scenario or flow IDs, steps, POMs or mocks. Those belong to `write-e2e-scenarios` and `write-e2e-code`.
 
 References (read only when the step says so):
 
@@ -51,7 +51,7 @@ Apply the shared contract's scope and context checklist. Reuse supplied document
 2. **Reference material**: reuse any document or explanation already supplied. Neither a source document nor a business explanation is required: if none is available, proceed directly from existing artifacts and live exploration, and record that no source was provided. Use supplied material as a source of stated requirements and a guide for exploration; do not wait for a document or ask the user to explain behavior that can be discovered in the app.
 3. **Environment**: use the host-specific configuration in the shared contract. Report missing access precisely without requesting secrets in chat.
 
-Live exploration with `playwright-cli` is required for every PRD create, import, review or refresh. If it is unavailable, preserve any draft and report the blocker; do not present the PRD as fully explored or ready for review until exploration is completed.
+Every PRD create, import, review or refresh needs live-observation evidence for its requested scope. Apply [exploration reuse](../ask-qa/references/exploration-context.md) first: applicable prior observations satisfy this prerequisite without repeating browser work. Importing a source or reviewing a proposal does not itself invalidate earlier evidence; explore added requirements or unresolved differences only. An explicit refresh/re-verification request needs fresh evidence for the affected scope. If required evidence is missing and browsing is unavailable, preserve the draft and report that specific blocker; do not claim the missing scope was explored.
 
 Derive the output path, menu code and artifact locations from available evidence. Use the configured base URL and credentials without printing their values. If configuration or access is unavailable, explain the missing prerequisite without requesting secrets in chat. State whether a PRD or `.feature` already exists.
 
@@ -68,10 +68,11 @@ If the user provides no business information or declines to answer, continue ind
 1. Resolve the owning product menu, then read its existing database PRD through the virtual identifier `docs/prd/<module>/<menu>.md`, plus the flat `.feature` and all files beneath its feature folder. Q-Rex uses file tools; terminal hosts follow the [database access procedure](../ask-qa/references/prd-database-access.md). Follow [test organization](../../../docs/automation/test-organization.md). Inventory known child groups and check which areas the existing PRD covers. Record requirements, cross-menu/platform dependencies, outcomes and unverified gaps in that single document; reference other database PRDs as supporting context. Reuse the existing document and its IDs for child-scoped work.
 2. Choose the mode:
    - **Create**: no PRD exists. A source document or prior business explanation is optional; use live exploration and any existing artifacts to build the PRD.
-   - **Import**: the user supplied a document. Normalize it (Step 2A), then explore the entire requested menu scope (Step 2B), including journeys and actions absent from the document. A source describes known behavior; it does not limit menu coverage unless the user explicitly limits the scope.
-   - **Review**: a matching proposal exists and needs review. Check its sources, gaps and provenance, and explore the requested scope before the review gate.
+   - **Import**: the user supplied a document. Normalize it (Step 2A), then establish live-evidence coverage of the entire requested menu scope (Step 2B), reusing applicable observations and investigating gaps, including journeys and actions absent from the document. A source does not limit menu coverage unless the user explicitly limits the scope.
+   - **Review**: a matching proposal exists and needs review. Check its sources, gaps and provenance against prior live evidence; investigate remaining questions before the review gate.
    - **Refresh**: a PRD exists and the user wants it updated or re-verified, or its coverage is insufficient for the requested scenario scope. Follow "Refresh mode" below and never overwrite validated items silently.
 3. If the menu already has scenarios, read them. Their `@flow:` categories and IDs show existing coverage; the PRD must not contradict them without recording a discrepancy.
+4. Recover the menu's shared exploration record and applicable prior notes before scheduling live work. Build an item-level list of reusable evidence, unresolved blockers and new or changed questions. Backfill available conversation evidence into `.exploration.md` when needed, instead of reopening the browser to reconstruct it.
 
 ## Step 2A — Import a supplied document
 
@@ -88,6 +89,8 @@ Accept PDF, DOCX, Markdown, plain text or pasted content.
 
 Read [references/exploration-checklist.md](references/exploration-checklist.md) and the shared playwright-cli reference before the first interaction.
 
+Apply the checklist to the combined reused and new evidence. Run the browser steps below only for the outstanding questions identified in Step 1; skip live interaction when applicable evidence already covers the requested scope. Preserve the original observation dates and record why any item needs rechecking.
+
 Use the shared [browser capability profile](../write-e2e-scenarios/references/playwright-cli-exploration.md) for the active host:
 
 1. In Q-Rex use the managed authenticated browser; terminal hosts use one owned named session and configured credentials. Verify the target and available browser commands before interacting. Do not print secrets.
@@ -95,9 +98,9 @@ Use the shared [browser capability profile](../write-e2e-scenarios/references/pl
 3. Drive interactions with the `eNN` refs from the latest snapshot. Record method/path/status only when available from supported request evidence; Q-Rex exposes listings, not full request/response inspection.
 4. Capture safe screenshots/traces only when the host supports them; Q-Rex records dated sanitized observations with available snapshot/network context instead. Reference actual evidence and record its limits under the exploration checklist. Never use screenshots as locator sources or imply an unavailable artifact was captured.
 5. Inventory every in-scope function, action, journey and behavioral branch stated in all readable source documents and prior user explanations, with source references. Also discover and inventory every in-scope function and action reachable through the menu, including its tabs, menus, details, dialogs, conditional controls and linked journeys, even when absent from the sources. Work through the exploration checklist, including list behavior, create/edit/delete and other actions, validations, roles and states. Add newly revealed actions to the inventory as exploration proceeds.
-6. Attempt each inventory item with `playwright-cli` through its available outcome and meaningful branches, including allowed E2E-owned mutations. For each item record what was attempted, the observed outcome and evidence, or the exact blocker and next step. Reconcile every source item and discovered action before review; a generic coverage summary is not a substitute. Track details in working notes or the exploration log, and carry consequential behavior and unresolved gaps into the PRD without copying a routine control inventory into requirements.
+6. For each inventory item, reuse an applicable evidenced attempt or investigate its missing outcome and meaningful branches with `playwright-cli`, including allowed E2E-owned mutations. Record the observation or exact blocker and next step in the shared `.exploration.md` record. Save meaningful chunks as you go, including useful verified locators and supported request facts under the exploration-reuse contract. Reconcile every source item and discovered action before review; a generic coverage summary is not a substitute. Carry consequential behavior and unresolved gaps into the PRD without copying routine controls or technical browser details into requirements.
 
-Continue discovering across the requested menu after all documented items have been explored. For each additional journey, action, rule or consequential branch, inspect reachable outcomes and dependencies and include supported findings in the same PRD as evidenced `[observed]` requirements. Do not stop at, discard, or omit a finding because the supplied document does not mention it. Honor an explicit narrower scope and record inaccessible areas as unverified.
+Account for discovery across the requested menu beyond the documented items, using prior inventory and new exploration where it has gaps. For each additional journey, action, rule or consequential branch, inspect missing reachable outcomes and dependencies and include supported findings in the same PRD as evidenced `[observed]` requirements. Do not stop at, discard, or omit a finding because the supplied document does not mention it. Honor an explicit narrower scope and record inaccessible areas as unverified.
 
 For a source or PRD item that cannot be found or reached after checking available navigation, roles and data, ask the user how to access it, explaining what was tried. If a required form value cannot be determined safely from the UI, sources or E2E data conventions, ask for a suitable value or how to obtain one; do not request secrets in chat. Continue independent exploration while waiting. Record unresolved access, data or forbidden mutations as **unverified with the reason**. Absence from the current account or data is not evidence that a feature does not exist.
 
@@ -134,7 +137,7 @@ Check the PRD against this list and fix what fails:
 - Assertion-relevant messages are exact and source-referenced; incidental UI inventories and implementation details are omitted unless explicitly required.
 - Active source-versus-actual discrepancies have their own section with source, actual, evidence and affected IDs; candidate defects, unverified branches and open questions are listed, not buried.
 - New or changed items have no `[validated]` tag; preserve earlier validations for unchanged items. Only the review gate validates items.
-- The exploration log states the environment, date, role used, and what was not covered.
+- The shared exploration record preserves the environment, actual observation dates, role, attempts, reusable browser facts and remaining gaps; the PRD links it and cites evidence IDs. Applicable reused observations are distinguished from newly checked items.
 - Every in-scope source item and discovered function/action is accounted for in the exploration inventory, with an actual attempt and evidence or a specific blocker, pending answer or explicit exclusion and next step.
 - Consequential in-scope behavior found outside the source is represented in the PRD with observed provenance and evidence, or has a specific documented gap; the source's coverage alone does not define the PRD's coverage.
 - Every active in-scope requirement can feed scenario coverage, or has an explicit unresolved issue or proposed test-level boundary for review. No stated requirement disappears because it was inaccessible or inconvenient to test. Scenario mappings and run status remain in downstream review output.
@@ -142,6 +145,10 @@ Check the PRD against this list and fix what fails:
 ## Step 6 — Review gate and stop
 
 Present a short summary table (area, number of items by provenance, discrepancies, candidate defects, open questions) and make the exact proposed PRD available for review. Identify the active saved version separately from any unsaved proposal. In Q-Rex, direct the user to its PRD view. In a terminal host, save the complete proposal in the database with new/changed items unvalidated and prior accepted content preserved. Make the complete saved content inspectable and identify the database PRD.
+
+For terminal changes to an already validated line, the [database access procedure](../ask-qa/references/prd-database-access.md) requires review before saving even an unvalidated replacement; present that exact proposal first and preserve the active content until accepted. For other proposals, make the intended accepted representation, including proposed validations and review metadata, inspectable alongside the saved unvalidated version in the same review request.
+
+Before requesting review or stopping, persist the shared `.exploration.md` record, including partial or blocked work. Report its path, reused/new evidence and outstanding questions for scenario discovery. The durable record is separate from PRD approval and remains useful if a proposal is pending or rejected; it does not turn that proposal into the active PRD.
 
 Follow the shared contract's **PRD review** procedure. In Q-Rex propose the complete version through the file tool: include the intended validated items, reviewer/date and `review_method`; the native approval request displays that exact proposal and prevents saving until accepted. Keep unresolved conflicts unvalidated. Do not first collect a competing blanket approval with `ask_user`; use questions only for consequential item decisions. If rejected, preserve the draft, revise the proposal and request native review again. In automatic mode record automatic acceptance and continue under the contract rather than pausing for a manual review.
 
@@ -157,7 +164,7 @@ Explain that the active PRD is usable as input for `write-e2e-scenarios` even wi
 
 Use it when the app may have changed or the user wants to extend a PRD.
 
-- Re-explore only the affected areas and compare with the existing items.
+- Recover earlier evidence, then freshly check only the requested re-verification scope or affected evidence gaps; reuse unaffected areas and compare findings with existing items.
 - Include prior reviewer/date/method, when known, in the review summary.
 - Keep IDs. Remove `[validated]` from changed or conflicting items and identify those items and their changes in the review summary. Never overwrite a `validated` item silently.
 - A change to shared prerequisites, referenced rules or source meaning also invalidates affected validations, even when the requirement line itself is unchanged.
@@ -167,7 +174,7 @@ Use it when the app may have changed or the user wants to extend a PRD.
 
 ## Boundaries
 
-- This skill does not write `.feature` files, registries, steps, POMs or mocks, and does not assign scenario or flow IDs.
+- This skill writes only the PRD and shared exploration record, not `.feature` files, flow registries, steps, POMs or mocks, and does not assign scenario or flow IDs.
 - It does not decide product intent. When intent is unknown, it records an open question.
 - It does not change other skills or project configuration.
 - Running an exploration against a protected or shared environment follows the project's environment settings and the data-safety rules; when in doubt, stay read-only.

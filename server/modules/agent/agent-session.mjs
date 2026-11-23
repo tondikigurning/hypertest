@@ -30,6 +30,7 @@ import {
   contentDigest,
   featureReviewPath,
   flowReviewKey,
+  menuDocumentationPath,
 } from "./flow-review.mjs";
 import { prdIdentity } from "./prd-database.mjs";
 import { publishDraft } from "./publish-draft.mjs";
@@ -1463,7 +1464,7 @@ export function createSession({
           "\nAn authenticated exploration browser can be started when needed using the provided playwright_cli tool. Verify the session is authenticated and report a failure if it has expired.";
       else
         context +=
-          "\nThe exploration browser has not been authenticated. If this workflow needs live exploration, ask the user to select an environment and set E2E_USERNAME and E2E_PASSWORD in Variables, then send a follow-up; never request their values in chat. PRD import text can be drafted without credentials, but review-ready PRDs and scenario discovery still require scoped live exploration.";
+          "\nThe exploration browser has not been authenticated. Recover applicable prior live evidence from conversation and the menu's .exploration.md/flow handoff first; reuse it without browser calls. Only if required evidence is missing, ask the user to select an environment and set E2E_USERNAME and E2E_PASSWORD in Variables, then send a follow-up; never request their values in chat. PRD text alone does not establish live observations.";
       if (skill === "write-e2e-scenarios")
         context +=
           "\nBefore asking product-context questions, search database PRDs for the current module and menu and read the matching virtual docs/prd/<module>/<menu>.md identifier. Reuse its answered context. Treat validated items according to their recorded review method; keep unvalidated observed items and assumptions visibly unconfirmed. Ask only for context the PRD and conversation do not answer.";
@@ -1570,11 +1571,21 @@ export function createSession({
         },
         authorizeFileWrite: async (path, content) => {
           const normalized = path.replaceAll("\\", "/").toLowerCase();
-          if (activeSkill === "write-prd" && !/^docs\/prd\/.+\.md$/.test(normalized))
+          const menuDocument = menuDocumentationPath(path);
+          if (
+            activeSkill === "write-prd" &&
+            !/^docs\/prd\/.+\.md$/.test(normalized) &&
+            !(menuDocument && normalized.endsWith(".exploration.md"))
+          )
             throw new Error(
-              "The PRD workflow writes documentation only. Stop after PRD review; resume scenario discovery on a subsequent turn.",
+              "The PRD workflow writes only the database PRD and menu exploration record. Stop after PRD review; resume scenario discovery on a subsequent turn.",
             );
-          if (activeSkill === "write-e2e-scenarios" && normalized.startsWith("e2e/") && !featureReviewPath(path))
+          if (
+            activeSkill === "write-e2e-scenarios" &&
+            normalized.startsWith("e2e/") &&
+            !featureReviewPath(path) &&
+            !menuDocument
+          )
             throw new Error(
               "The scenario workflow cannot write E2E implementation. Stop for scenario review before activating write-e2e-code.",
             );
@@ -1779,13 +1790,15 @@ export function createSession({
         cause.message?.startsWith("Could not link installed") ||
         cause.message?.startsWith("The workspace") ||
         cause.message?.startsWith("Attach up to") ||
+        cause.message?.startsWith("Attach the consuming menu's flow registry") ||
         cause.message?.startsWith("Attached files") ||
         cause.message?.startsWith("A context") ||
         cause.message?.startsWith("This type of context") ||
         cause.message?.startsWith("The same context") ||
         cause.message?.startsWith("The attached") ||
         cause.message?.startsWith("This feature") ||
-        cause.message?.startsWith("This file")
+        cause.message?.startsWith("This file") ||
+        cause.message?.startsWith("This menu has no attachable flow registry")
           ? cause.message
           : "Unable to start the agent. Check the provider settings, database, and local Git workspace.";
       save();
@@ -1857,13 +1870,18 @@ export function createSession({
       } else if (item.kind === "flow") {
         const feature = catalog.find((scenario) => scenario.file === item.ref && scenario.module === item.module);
         if (!feature) throw new Error("The attached feature is unavailable in this workspace.");
-        const relativePath = `e2e/tests/bdd/features/${feature.file.replace(/\.feature$/, ".flows.md")}`;
-        const absolutePath = resolve(workspace, relativePath);
+        const segments = feature.file.split("/");
+        if (segments.length < 2 || segments[0] === "_components")
+          throw new Error("Attach the consuming menu's flow registry as a file for this feature.");
+        const menu = segments[1].replace(/\.feature$/i, "");
+        const relativePath = `e2e/tests/bdd/features/${segments[0]}/${menu}.flows.md`;
+        const absolutePath = await safeWorkspacePath(workspace, relativePath);
         const info = await lstat(absolutePath).catch(() => undefined);
-        if (!info?.isFile() || info.isSymbolicLink()) throw new Error("This feature has no attachable flow registry.");
+        if (!info?.isFile() || info.nlink > 1 || info.size > 32000)
+          throw new Error("This menu has no attachable flow registry, or it exceeds 32 KB.");
         content = await readFile(absolutePath, "utf8");
         source = relativePath;
-        label = `Flow registry · ${feature.file.replace(/\.feature$/, "")}`;
+        label = `Flow registry · ${segments[0]}/${menu}`;
       } else if (item.kind === "file") {
         const relativePath = item.ref.replaceAll("\\", "/");
         if (

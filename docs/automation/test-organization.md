@@ -47,6 +47,13 @@ Keep one confirmed-flow registry beside each menu's flat feature or folder at
 its format and resume rules are in the [flow registry reference](../../.agents/skills/write-e2e-scenarios/references/flow-registry.md).
 The explorer continues to derive flow categories from feature tags.
 
+Keep one shared exploration record at `<module>/<menu>.exploration.md` beside the same menu file or
+folder, starting during PRD work even when no feature exists yet. All child groups and all three authoring
+phases reuse it. It stores sanitized browser observations, the explored inventory, verified locators and
+remaining evidence gaps; see [exploration context](../../.agents/skills/ask-qa/references/exploration-context.md).
+The PRD and flow registry reference it rather than duplicating the browser log. Neither Markdown file is a
+scenario catalog input, an approval decision or an execution result.
+
 ## Integration ownership and identity
 
 Keep an E2E journey crossing menus, modules or external platforms under the **menu that owns its business

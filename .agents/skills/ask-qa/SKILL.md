@@ -13,7 +13,7 @@ For scoped work, read the [shared workflow contract](references/workflow-contrac
 ## Resolve and own the work
 
 1. Identify the outcome: explanation, lesson, review, execution, changes or a combination. “How do I run this?” asks for guidance; “run this” asks for execution. Preserve the user's scope and existing work.
-2. Investigate the named artifacts yourself. For Automation/test-code behavior, inspect implementation, callers, configuration and affected tests. Tenant frontend source is unavailable: use reviewed product context and live browser evidence for tenant behavior. Distinguish documented policy, observed implementation, recommendations and unknown intent.
+2. Investigate the named artifacts yourself. For Automation/test-code behavior, inspect implementation, callers, configuration and affected tests. Tenant frontend source is unavailable: use the active menu PRD and applicable live browser evidence for tenant behavior, preserving each item's provenance and review state. Distinguish documented policy, observed implementation, recommendations and unknown intent.
 3. Apply the matching specialist below in this conversation; Q-Rex uses `use_skill`. Applying a skill does not mean spawning an agent. Preserve responsibility across handoffs. A missing specialist for an unfamiliar testing concern is a discovery problem: inspect existing support, establish success criteria, complete what is feasible and identify concrete limits.
 4. State the intended action and material assumptions briefly, then work until the requested result is verified or an actual prerequisite/review boundary prevents dependent work. Reuse answered questions and continue independent work while an answer is pending.
 
@@ -25,7 +25,7 @@ For scoped work, read the [shared workflow contract](references/workflow-contrac
 | Run selected BDD, reproduce failures, investigate flakes, sync catalog | Follow testing operations; apply authoring specialists if repairs change their artifacts |
 | Discover/audit business journeys or change scenario intent | Apply [write-e2e-scenarios](../write-e2e-scenarios/SKILL.md): parent PRD, live discovery, flow confirmation and scenario review |
 | Create/import/refresh/review product context | Apply [write-prd](../write-prd/SKILL.md): provenance, exploration and PRD review |
-| Implement reviewed Gherkin or repair steps/POMs/COMs/fixtures/mocks | Apply [write-e2e-code](../write-e2e-code/SKILL.md); preserve existing intent and IDs for technical repairs |
+| Implement existing baseline or reviewed Gherkin, or repair steps/POMs/COMs/fixtures/mocks | Apply [write-e2e-code](../write-e2e-code/SKILL.md); assess baseline eligibility and host write gates, and preserve scenario intent and IDs |
 | Browser/locator/traffic inspection | Apply [playwright-cli](../playwright-cli/SKILL.md), using the active host's supported capabilities |
 | Automation app UI, explorer, evidence, runner or services | Own the app work directly, tracing relevant producers/consumers and repository instructions |
 | Testing quality, CI/config, reporting/export, Storybook, docs/skills or another testing concern | Own the work using testing operations and relevant source evidence; use specialists for overlapping portions |
@@ -42,7 +42,7 @@ For a lesson, walk through a manageable example: behavior to protect → suitabl
 
 - Verify commands in the active package scripts and runner, including argument forwarding, working directory, selection and environment. A configured CI job is not evidence of a successful run.
 - Preserve scenario/source identity and permanent IDs. Before allocating IDs inspect current features, catalog and known retired IDs. Missing/duplicate IDs are ambiguous, not permission to select a convenient row.
-- Compare consumer-visible business outcomes with reviewed requirements and browser evidence. Tags, flow percentages and passing subsets do not prove complete journey coverage. Use `@fixme @ref:<real-ticket>` for product defects and quarantine for demonstrated test unreliability; inspect runner-specific skip/filter behavior.
+- Compare consumer-visible business outcomes with applicable PRD requirements and browser evidence, distinguishing accepted items from unvalidated sources and provisional observations. Tags, flow percentages and passing subsets do not prove complete journey coverage. Use `@fixme @ref:<real-ticket>` for product defects and quarantine for demonstrated test unreliability; inspect runner-specific skip/filter behavior.
 - Feature files author the catalog; PostgreSQL metadata, actual result JSON and evidence-upload status remain distinct. Use producers for generated output.
 - Before live mutations or BDD execution inspect selected setup, steps/POMs and [data safety](../write-e2e-scenarios/references/data-safety.md). Preserve exact target identity, scoped seed exceptions and applicable native approvals. Intent-preserving repairs need no new scenario-design gate, but retain data safety.
 - Broad testing ownership does not authorize unrelated changes, another QA target, external publication or live CI actions. Follow existing authorization without adding routine approval steps for reversible local work.

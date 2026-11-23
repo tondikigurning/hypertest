@@ -17,11 +17,12 @@ Exploration finds possible journeys. It does not prove the PRD is complete. Rele
 
 ## Before you start
 
+- [ ] Apply [exploration reuse](../../ask-qa/references/exploration-context.md): recover the menu record and prior context, mark applicable evidence, and list only missing or affected questions for live work. Existing observations count toward this checklist; skip browser setup when none are missing.
 - [ ] Scope is settled: module, menu, environment (Step 0).
 - [ ] Available context for roles, accounts, production restrictions and known issues has been gathered; gaps are recorded (Step 0b). Discover required data during exploration.
 - [ ] Credentials come from the environment's configured variables. Never print or echo them.
 - [ ] E2E-owned operations are within the requested task and host approval rules; seed/shared data remains read-only without a scoped exception.
-- [ ] The host's managed Q-Rex browser or an owned terminal CLI session is ready. Identify it accurately in the log; do not invent an unavailable session name.
+- [ ] If live work remains, the host's managed Q-Rex browser or an owned terminal CLI session is ready. Identify it accurately in the log; do not invent an unavailable session name.
 - [ ] If reference material was supplied, list its statements so you can compare them with the live app.
 
 ## Ground rules
@@ -40,7 +41,7 @@ Exploration finds possible journeys. It does not prove the PRD is complete. Rele
 
 Use these areas as exploration prompts, not PRD sections or a requirement quota. Retain findings that define a business outcome, consequential branch, prerequisite or explicit requirement; routine control inventories stay in working notes. If an area does not exist, note how you checked; inaccessible areas remain unverified. Consolidate coverage limits in the PRD instead of copying this checklist into it.
 
-Before exploring, inventory all in-scope functions, actions and behavioral branches from every readable source, referencing the source. During exploration, add every in-scope action found in navigation, menus, tabs, dialogs, record states and available roles. Attempt each item and relevant reachable branch through its outcome, including permitted E2E-owned mutations. For each record the attempt and evidence or its specific blocker, pending user answer or explicit exclusion and next step. Revisit the inventory as new controls and dependencies appear. Account for every item before review; do not mark blocked or untried actions as explored. This inventory is working evidence and does not turn every control into a PRD requirement or E2E scenario.
+Before exploring, reconcile the saved inventory with all in-scope functions, actions and behavioral branches from every readable source, referencing the source. During exploration, add every newly found in-scope action in navigation, menus, tabs, dialogs, record states and available roles. Reuse applicable attempts and investigate only missing outcomes or branches, including permitted E2E-owned mutations. For each record the attempt and evidence or its specific blocker, pending user answer or explicit exclusion and next step in `.exploration.md`. Revisit affected entries as new controls and dependencies appear. Account for every item before review; do not mark blocked or untried actions as explored. This inventory does not turn every control into a PRD requirement or E2E scenario.
 
 ### 1. Entry and navigation
 
@@ -146,6 +147,8 @@ For each observation that affects a requirement or coverage gap, capture the rel
 
 Synthesize relevant findings into condition/action/outcome requirements using [prd-template.md](prd-template.md), with a shared evidence reference where possible. Keep notes factual: what you saw, not why you think it behaves that way. Request/locator details remain exploration evidence rather than PRD content unless explicitly required.
 
+Persist these notes and useful verified locator expressions in the shared `.exploration.md` as each meaningful chunk completes. Follow its record format, sanitization and per-item applicability rules; temporary snapshot refs are not reusable locators. Keep PRD evidence references aligned with the record.
+
 ## Evidence
 
 - Save safe evidence only through capabilities the host actually exposes. Q-Rex cannot capture screenshots/traces: use dated sanitized factual log entries with available snapshot/network context. Terminal hosts may retain safe artifacts at their real returned paths. Reference actual evidence and record limits without claiming an artifact exists. Do not commit large binaries unless requested.
@@ -182,7 +185,7 @@ Pause the affected interaction and ask the user when:
 
 ## Coverage statement
 
-End every exploration pass with a short statement for the PRD's exploration log:
+End every exploration pass by saving the shared record and a short coverage statement for the PRD, distinguishing reused evidence from newly observed scope:
 
 - Covered: the areas and actions you exercised, per this checklist.
 - Not covered: each source item or discovered action not exercised, including the affected role, state or mutation, reason and next step.

@@ -113,7 +113,7 @@ async function workflow(t, responses, runtime = {}, files = {}, prdStore) {
   });
   server.listen(0, "127.0.0.1");
   await once(server, "listening");
-  const session = createSession({
+  const sessionOptions = {
     stateFile: join(root, "session.json"),
     prdStore,
     prepareWorkspace: async () => ({ workspace, branch, baseBranch: branch, baseCommit: head, expectedHead: head }),
@@ -126,16 +126,142 @@ async function workflow(t, responses, runtime = {}, files = {}, prdStore) {
       recordAgentUsage: async () => {},
       ...runtime,
     },
-  });
+  };
+  const session = createSession(sessionOptions);
+  const sessions = [session];
   t.after(async () => {
-    if (session.snapshot().busy) await session.cancel();
+    for (const active of sessions) if (active.snapshot().busy) await active.cancel();
     server.closeAllConnections();
     await new Promise((resolve) => server.close(resolve));
     await rm(root, { recursive: true, force: true });
   });
   await session.setModel("9router", "test/model");
-  return { session, workspace, requests, prdStore };
+  return {
+    session,
+    workspace,
+    requests,
+    prdStore,
+    resumeSession: () => {
+      const resumed = createSession(sessionOptions);
+      sessions.push(resumed);
+      return resumed;
+    },
+  };
 }
+
+test("PRD exploration survives a restart and is reused through scenario and code handoffs without a browser", async (t) => {
+  const explorationPath = "e2e/tests/bdd/features/example/orders.exploration.md";
+  const registryPath = "e2e/tests/bdd/features/example/orders.flows.md";
+  const implementation = "e2e/tests/bdd/steps/example/orders.steps.ts";
+  const observation = "# Orders exploration\n\nE1: Test environment, reader role; orders list observed.\n";
+  const prd = "# Orders\n\n- [observed][validated] Orders are visible. Evidence: E1.\n";
+  const feature = `Feature: Orders\n  @${scenarioId} @flow:LIST\n  Scenario: List orders\n    Given the orders page is open\n    Then the orders are visible\n`;
+  const registry = `# Orders flows\n\nLIST: written\n\n## Implementation handoff\n${explorationPath}#e1\n`;
+  const responses = [
+    { tool: "write_file", input: { path: explorationPath, content: observation } },
+    { tool: "write_file", input: { path: prdPath, content: prd } },
+    { text: "PRD reviewed; exploration saved." },
+  ];
+  let browserStarts = 0;
+  const { session, workspace, requests, resumeSession } = await workflow(t, responses, {
+    startExplorationBrowser: async () => {
+      browserStarts++;
+      throw new Error("No live browser in this exercise");
+    },
+  });
+  await session.send("Finish the explored PRD.", undefined, undefined, [], "write-prd");
+  const review = await waitFor(session, (state) => state.approvalRequest || !state.busy);
+  assert.equal(review.approvalRequest?.kind, "prd-review");
+  assert.equal(await readFile(join(workspace, explorationPath), "utf8"), observation);
+  session.decideApproval(review.approvalRequest.id, "accept");
+  await waitFor(session, (state) => !state.busy);
+
+  const resumed = resumeSession();
+  responses.push(
+    { tool: "use_skill", input: { skill: "write-e2e-scenarios" } },
+    { tool: "read_file", input: { path: explorationPath } },
+    { tool: "confirm_flows", input: { featurePath, prdPath, flows: [{ id: "LIST", description: "List orders" }] } },
+    { tool: "write_file", input: { path: featurePath, content: feature } },
+    { tool: "write_file", input: { path: registryPath, content: registry } },
+    {
+      tool: "edit_file",
+      input: {
+        path: explorationPath,
+        oldText: "orders list observed",
+        newText: "orders list observed; locator getByRole('table') verified",
+      },
+    },
+    { text: "Review the scenario batch in Changes." },
+  );
+  await resumed.send("Continue with scenarios using the saved observations.");
+  const flows = await waitFor(resumed, (state) => state.approvalRequest || !state.busy);
+  assert.equal(flows.approvalRequest?.kind, "flow-review");
+  resumed.decideApproval(flows.approvalRequest.id, "accept");
+  await waitFor(resumed, (state) => !state.busy);
+  assert.equal(await readFile(join(workspace, registryPath), "utf8"), registry);
+  const scenarioDiff = await resumed.diff();
+  assert.equal(scenarioDiff.scenarioApproved, false, "saved evidence does not approve scenarios");
+  await resumed.approveScenarios(scenarioDiff.digest);
+
+  responses.push(
+    { tool: "use_skill", input: { skill: "write-e2e-code" } },
+    { tool: "read_file", input: { path: explorationPath } },
+    { tool: "read_file", input: { path: registryPath } },
+    {
+      tool: "edit_file",
+      input: {
+        path: explorationPath,
+        oldText: "locator getByRole('table') verified",
+        newText: "locator getByRole('table') verified; reused in code",
+      },
+    },
+    { tool: "write_file", input: { path: implementation, content: "// approved implementation draft\n" } },
+    { text: "Implementation draft; checks pending." },
+  );
+  await resumed.send("Implement the approved batch with the same evidence.");
+  await waitFor(resumed, (state) => !state.busy);
+  assert.equal(resumed.snapshot().error, "");
+  assert.equal(await readFile(join(workspace, implementation), "utf8"), "// approved implementation draft\n");
+  assert.match(await readFile(join(workspace, explorationPath), "utf8"), /reused in code/);
+  assert.equal((await resumed.diff()).scenarioApproved, true, "evidence edits do not change feature approval");
+  assert.equal(browserStarts, 0);
+  const toolResults = requests.flatMap((request) => request.messages.filter((message) => message.role === "tool"));
+  assert.ok(toolResults.some((message) => message.content.includes(observation.trim())));
+  assert.ok(toolResults.some((message) => message.content.includes("locator getByRole('table') verified")));
+  assert.ok(requests.every((request) => !JSON.stringify(request.messages).includes('"name":"playwright_cli"')));
+});
+
+test("authoring skills allow only their menu records and keep implementation and flow gates", async (t) => {
+  const explorationPath = "e2e/tests/bdd/features/example/orders.exploration.md";
+  const registryPath = "e2e/tests/bdd/features/example/orders.flows.md";
+  const implementation = "e2e/tests/bdd/steps/example/orders.steps.ts";
+  const nestedRecord = "e2e/tests/bdd/features/example/orders/child.exploration.md";
+  const arbitraryMarkdown = "e2e/tests/bdd/features/example/notes.md";
+  const feature = `Feature: Orders\n  @${scenarioId} @flow:LIST\n  Scenario: List orders\n    Given the orders page is open\n`;
+  const { session, workspace, requests } = await workflow(t, [
+    { tool: "write_file", input: { path: explorationPath, content: "# Safe exploration\n" } },
+    { tool: "write_file", input: { path: registryPath, content: "blocked" } },
+    { tool: "write_file", input: { path: featurePath, content: feature } },
+    { tool: "write_file", input: { path: nestedRecord, content: "blocked" } },
+    { tool: "write_file", input: { path: arbitraryMarkdown, content: "blocked" } },
+    { tool: "write_file", input: { path: implementation, content: "blocked" } },
+    { tool: "use_skill", input: { skill: "write-e2e-scenarios" } },
+    { tool: "write_file", input: { path: registryPath, content: "# Confirmed flows\n" } },
+    { tool: "write_file", input: { path: explorationPath, content: "# Updated exploration\n" } },
+    { tool: "write_file", input: { path: nestedRecord, content: "blocked" } },
+    { tool: "write_file", input: { path: arbitraryMarkdown, content: "blocked" } },
+    { tool: "write_file", input: { path: implementation, content: "blocked" } },
+    { tool: "write_file", input: { path: featurePath, content: feature } },
+    { text: "Records saved; scenario and implementation gates retained." },
+  ]);
+  await session.send("Save discovery context.", undefined, undefined, [], "write-prd");
+  await waitFor(session, (state) => !state.busy);
+  assert.equal(await readFile(join(workspace, explorationPath), "utf8"), "# Updated exploration\n");
+  assert.equal(await readFile(join(workspace, registryPath), "utf8"), "# Confirmed flows\n");
+  for (const path of [featurePath, nestedRecord, arbitraryMarkdown, implementation])
+    await assert.rejects(readFile(join(workspace, path)), { code: "ENOENT" });
+  assert.match(JSON.stringify(requests.at(-1).messages), /Confirm the affected flow list/);
+});
 
 test("PRD workflow writes through the database adapter and requests review", async (t) => {
   let content;
@@ -479,4 +605,46 @@ test("follow-up chat resolves an unchanged explorer attachment to its current dr
   assert.match(JSON.stringify(requests.at(-1).messages), /current orders page/);
   await writeFile(join(workspace, featurePath), `${updated}\n${updated.replace("Feature: Orders\n", "")}`);
   await assert.rejects(session.send("Continue.", undefined, undefined, contexts), /unavailable or ambiguous/);
+});
+
+test("legacy flow attachments resolve the owning menu registry for flat and nested features", async (t) => {
+  const nestedFeature = "e2e/tests/bdd/features/example/orders/integration/sync.feature";
+  const missingRegistryFeature = "e2e/tests/bdd/features/example/invoices/create.feature";
+  const componentFeature = "e2e/tests/bdd/features/_components/filter.feature";
+  const registryPath = "e2e/tests/bdd/features/example/orders.flows.md";
+  const nestedRegistry = "e2e/tests/bdd/features/example/orders/integration/sync.flows.md";
+  const scenario = (id) => `Feature: Orders\n  @${id}\n  Scenario: List orders\n    Given an order\n`;
+  const { session, requests } = await workflow(
+    t,
+    [{ text: "Using flat flow context." }, { text: "Using nested flow context." }],
+    {},
+    {
+      [featurePath]: scenario("TEN_ORD_LST_E2E_001"),
+      [nestedFeature]: scenario("TEN_ORD_SYN_E2E_001"),
+      [missingRegistryFeature]: scenario("TEN_INV_CRT_E2E_001"),
+      [componentFeature]: scenario("TEN_COM_FIL_E2E_001"),
+      [registryPath]: "# Owner menu flows\n",
+      [nestedRegistry]: "# Unrelated child file\n",
+    },
+  );
+  for (const ref of ["example/orders.feature", "example/orders/integration/sync.feature"]) {
+    await session.send("Use this flow.", undefined, undefined, [{ id: ref, kind: "flow", module: "example", ref }]);
+    await waitFor(session, (state) => !state.busy);
+    const sent = JSON.stringify(requests.at(-1).messages);
+    assert.match(sent, /Owner menu flows/);
+    assert.match(sent, /example\/orders\.flows\.md/);
+    assert.doesNotMatch(sent, /Unrelated child file/);
+  }
+  await assert.rejects(
+    session.send("Use component flow.", undefined, undefined, [
+      { id: "component", kind: "flow", module: "_components", ref: "_components/filter.feature" },
+    ]),
+    /consuming menu's flow registry/,
+  );
+  await assert.rejects(
+    session.send("Use missing flow.", undefined, undefined, [
+      { id: "missing", kind: "flow", module: "example", ref: "example/invoices/create.feature" },
+    ]),
+    /no attachable flow registry/,
+  );
 });
