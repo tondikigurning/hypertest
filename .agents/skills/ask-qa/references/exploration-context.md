@@ -5,9 +5,8 @@ Use this contract throughout `write-prd` → `write-e2e-scenarios` → `write-e2
 ## Recover before browsing
 
 1. Resolve the owning menu and authorized target from the shared workflow contract. Recover its active database PRD and relevant features when available, and these workspace files beside the menu's flat feature or folder when present. Scenario discovery requires the owning active PRD under its specialist workflow; an unavailable PRD does not by itself block independently eligible, intent-preserving code work:
-   - `e2e/tests/bdd/features/<module>/<menu>.exploration.md`: the shared exploration record, starting in PRD work, even before any feature exists.
+   - `e2e/tests/bdd/features/<module>/<menu>.exploration.md`: shared evidence, gaps, flow provenance and scenario handoffs, starting in PRD work even before a feature exists.
    - `e2e/tests/bdd/features/<module>/<menu>.flows.md`: confirmed flow inventory and PRD/actual mismatches only; keep scenario coverage gaps in the exploration record and review handoff.
-   - `e2e/tests/bdd/features/<module>/<menu>.exploration.md`: browser evidence, flow-confirmation provenance, scenario mappings and batch/review handoffs.
 2. Reuse relevant conversation/tool evidence already in context. In the same session, use the known record and observations without rereading unchanged material solely for a skill switch. Re-read sources that changed or whose contents are no longer available. In a new session, read the saved records and compare their source references with current artifacts. Also recover applicable legacy PRD notes, flow handoffs and verified implementation evidence; absence of the new record does not erase usable earlier exploration.
 3. Assess evidence per journey, branch, locator or request contract against the current scope, environment, safe tenant/entity description, role, prerequisites and known UI changes. Compare PRD references for requirement mappings and scenario contracts for implementation/review scope separately from browser facts. A changed PRD or scenario can require remapping without invalidating a still-applicable locator. A missing source comparison is unverified, not an exact match.
 4. Before any exploration/setup browser call, identify the specific unanswered question or affected item and why existing evidence cannot answer it. Apply the table below. If nothing needs live evidence, continue the phase without exploration calls, login or a routine freshness visit; preserve the browser cleanup rules below. Report reused evidence and its observation dates truthfully.
@@ -27,40 +26,17 @@ Observation age, an unknown UI build, a closed browser, or a changed session alo
 
 Create or update the menu's `.exploration.md` after each meaningful exploration chunk and before review, a skill handoff or stopping. This includes a blocked/partial PRD pass, flow-confirmation provenance, scenario mappings and handoffs, and locator/request findings obtained during code work. Persist enough sanitized context to resume after chat loss or compaction; do not wait for scenario authoring to save PRD discoveries. Update affected entries in place, preserve stable evidence IDs and unaffected entries, and distinguish new observations from reused ones. If interrupted before saving, recover available tool/chat evidence first and report any unrecoverable gap.
 
-Keep this record concise and searchable by journey, requirement and evidence ID. Use these fields, omitting unavailable values explicitly rather than inventing them:
+## Record structure and maintenance
 
-```markdown
-# <Menu> exploration
+Use the [exploration template](exploration-template.md) when creating a record; it defines the five required level-two sections and their order. Keep a section with `None yet` when it has no content. Use level-three headings for evidence, confirmation scopes and batches; do not add a section for each prompt, session or skill. The section names are an authoring convention, not a parser or approval mechanism.
 
-## Scope and sources
+Keep one current entry per item, confirmation scope or batch. Update it when facts or status change; reuse existing evidence IDs and references when nothing changed. A skill invocation, date or handoff alone does not require a file edit. Group requirements or branches that share the same evidence, blocker and next action, while retaining their IDs and any meaningful differences. Refer to the PRD, features and `.flows.md` instead of copying their contents, except where the scenario handoff requires an exact contract or snapshot identity.
 
-- Owner: <module/menu>; scope: <included journeys/children and exclusions>.
-- Target: <safe environment and tenant/entity alias>; role: <non-personal role>.
-- References: <active PRD identifier and version or relevant exact safe content reference;
-  source sections; relevant feature paths/contracts when present>.
-- Context: <answered business questions, priorities, restrictions, decisions and unresolved intent>.
-- UI/build: <known change indicator, or unknown>; observation dates are per evidence item.
+Keep distinct observations when their date, target, role, state or outcome matters for applicability. Preserve actual decisions and their matching source references, pending reviews, still-applicable evidence and unresolved gaps. When a proposal or status is superseded, replace redundant planning detail with a short dated note only if needed to interpret a retained decision, evidence or review; never represent an unconfirmed proposal as confirmed. Do not remove an evidence ID still referenced by a PRD, flow, scenario or handoff. Correct stale context in place and retain historical target details on the evidence they describe. There is no fixed size limit: completeness of actionable evidence and review provenance takes priority over a line count.
 
-## Exploration inventory
+Existing records with other headings remain valid. When touching an existing record, consolidate the affected material into these sections where practical, preserving decisions, source comparisons, evidence IDs and unrelated work. Do not require a wholesale rewrite, repeat exploration or discard legacy information merely to match the format.
 
-| Item / branch | Source / PRD IDs | Evidence | Remaining gap / next action |
-| --- | --- | --- | --- |
-| <entry, condition, action and expected/observed outcome> | <reference> | <E1 or not attempted> | <none, exact blocker, deferred branch or exclusion and reason> |
-
-## Evidence
-
-### E1 — <journey / branch>
-
-- Observed: <actual date, phase, host and supported evidence source>.
-- Context: <target alias, page/navigation, role, relevant record state and prerequisites>.
-- Attempt and result: <what was actually exercised, exact safe assertion text and observable outcome;
-  distinguish opening a form from submitting and observing saved data>.
-- Verified locators: <actual reusable expressions, their element scope and interaction/outcome;
-  identify unverified controls explicitly>.
-- Requests: <only supported sanitized contract facts needed downstream, or unavailable>.
-- Limits / next action: <unobserved branches, unavailable evidence, data provisioning/cleanup
-  recipe and remaining dependencies; no claim that a prior record still exists>.
-```
+Place a pending flow inventory and its comparison under `Flow confirmation provenance`; after confirmation, reference the confirmed inventory in `.flows.md` and retain its decision and source comparisons. Place scenario mappings, snapshot identities and per-batch review records under `Scenario handoffs` using the full requirements in [flow registry](../../write-e2e-scenarios/references/flow-registry.md). Put detailed observations and locators under `Evidence` once, and reference their IDs from inventory and handoffs. Track each remaining exploration gap in `Exploration inventory`, and each batch-specific coverage gap in its handoff; references may connect them without repeating the same explanation.
 
 While already viewing relevant UI, capture supported reusable locator expressions for controls/outcomes likely needed downstream, using snapshots, supported inspection or `generate-locator`. Save the expression, scope and what verified it; a label alone does not prove a unique locator. Do not revisit already covered journeys solely to fill optional locator fields or speculate about future selectors. Request details are collected only where useful and supported by the host. Live data existence, ownership and state must still be checked before a new mutation; retain a safe provisioning recipe rather than relying on an old record identity.
 

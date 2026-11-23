@@ -51,6 +51,8 @@ Keep one shared exploration record at `<module>/<menu>.exploration.md` beside th
 folder, starting during PRD work even when no feature exists yet. All child groups and all three authoring
 phases reuse it. It stores sanitized browser observations, the explored inventory, verified locators and
 remaining evidence gaps; see [exploration context](../../.agents/skills/ask-qa/references/exploration-context.md).
+Its five fixed sections cover scope and sources, inventory, evidence, flow confirmation and scenario handoffs.
+Update affected entries in place; a new prompt or skill invocation alone does not add a record.
 The PRD and flow registry reference it rather than duplicating the browser log. Neither Markdown file is a
 scenario catalog input, an approval decision or an execution result.
 
