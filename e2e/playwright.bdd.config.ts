@@ -122,6 +122,13 @@ export default defineConfig({
                     // are intentionally excluded because their undefined steps would break bddgen.
                     "tests/bdd/features/case-management/survey-template-manager.feature",
                     "tests/bdd/features/case-management/dashboard.feature",
+                    "tests/bdd/features/case-management/cases/assignment.feature",
+                    "tests/bdd/features/case-management/cases/collaboration.feature",
+                    "tests/bdd/features/case-management/cases/communications.feature",
+                    "tests/bdd/features/case-management/cases/create.feature",
+                    "tests/bdd/features/case-management/cases/editing.feature",
+                    "tests/bdd/features/case-management/cases/lifecycle.feature",
+                    "tests/bdd/features/case-management/cases/list-and-detail.feature",
                     "tests/bdd/features/workforce-management/**/*.feature",
                     "tests/bdd/features/system-settings/**/*.feature",
                     // Organization Management runs as its own project (below) with a longer

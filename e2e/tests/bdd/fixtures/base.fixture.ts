@@ -5,6 +5,7 @@ import type { AnyHandler } from "msw";
 import { AccessRolesPage } from "../pages/iam/AccessRolesPage";
 import { PermissionSetsPage } from "../pages/iam/PermissionSetsPage";
 import { CaseDashboardPage } from "../pages/case-management/CaseDashboardPage";
+import { CasesPage } from "../pages/case-management/CasesPage";
 import { SurveyTemplateManagerPage } from "../pages/case-management/SurveyTemplateManagerPage";
 import { LoginPage } from "../pages/auth/LoginPage";
 import { UserGroupsPage } from "../pages/user-management/UserGroupsPage";
@@ -29,6 +30,7 @@ type BddFixtures = {
     permissionSetsPage: PermissionSetsPage;
     surveyTemplateManagerPage: SurveyTemplateManagerPage;
     caseDashboardPage: CaseDashboardPage;
+    casesPage: CasesPage;
     workOrdersPage: WorkOrdersPage;
     workOrdersCreatePage: WorkOrdersCreatePage;
     organizationsPage: OrganizationsPage;
@@ -64,8 +66,13 @@ export const test = base.extend<BddFixtures>({
     handlers: [[], { option: true }],
 
     network: [
-        async ({ context, handlers }, use, testInfo) => {
+        async ({ context, handlers, baseURL }, use, testInfo) => {
             const isMocked = testInfo.tags.includes("@mock");
+            if (testInfo.tags.includes("@production-restricted")) {
+                const host = baseURL ? new URL(baseURL).hostname.toLowerCase() : "";
+                const allowed = /^converge\.(?:dev|stt\d*|pp|qa\d*|uat\d*|staging)\.hyperscal\.com$/.test(host);
+                testInfo.skip(!allowed, "Case customer-data mutations require a recognized non-production target.");
+            }
             const isQuarantined = testInfo.tags.includes("@quarantine");
             const runQuarantined = process.env.RUN_QUARANTINE === "1";
 
@@ -110,6 +117,10 @@ export const test = base.extend<BddFixtures>({
     },
     caseDashboardPage: async ({ page }, use) => {
         await use(new CaseDashboardPage(page));
+    },
+    casesPage: async ({ page }, use) => {
+        const casesPage = new CasesPage(page);
+        try { await use(casesPage); } finally { await casesPage.cleanupOwnedEdits(); }
     },
     accessRolesPage: async ({ page }, use) => {
         await use(new AccessRolesPage(page));

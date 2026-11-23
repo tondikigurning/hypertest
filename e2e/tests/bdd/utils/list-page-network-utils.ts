@@ -27,7 +27,7 @@ import { dismissTencentWorkbenchIfPresent } from "./tencent-workbench-utils";
 
 type PlaywrightPage = import("@playwright/test").Page;
 
-type ActivePage = PageContext["currentPage"];
+type ActivePage = Exclude<PageContext["currentPage"], "organizations" | "entities">;
 
 const LIST_CONFIG: Record<
     ActivePage,
@@ -87,6 +87,9 @@ const pendingResponseProbe = new WeakMap<
 >();
 
 function getListConfig(pageContext: PageContext) {
+    if (pageContext.currentPage === "organizations" || pageContext.currentPage === "entities") {
+        throw new Error(`No shared list network configuration exists for ${pageContext.currentPage}.`);
+    }
     return LIST_CONFIG[pageContext.currentPage];
 }
 
