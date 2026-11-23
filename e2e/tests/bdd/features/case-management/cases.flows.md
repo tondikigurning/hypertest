@@ -4,42 +4,42 @@
 
 | Flow | Outcome | Feature | Status |
 | --- | --- | --- | --- |
-| TEN_CAS_LIST_FLOW | Find cases through list, pipelines, search, filter, sort and paging | case-management/cases/list-and-detail.feature | pending |
+| TEN_CAS_LIST_FLOW | Find cases through list, pipelines, search, filter, sort and paging | case-management/cases/list-and-detail.feature | written |
 | TEN_CAS_EXPORT_FLOW | Export permitted case list to registered email | case-management/cases/list-and-detail.feature | pending |
-| TEN_CAS_BULK_STATUS_FLOW | Resolve or close cases in bulk from a supplied case-ID file | case-management/cases/bulk.feature | pending |
-| TEN_CAS_VIEW_DETAIL_FLOW | Inspect case, customer, billing, address, summary and SLA information | case-management/cases/list-and-detail.feature | pending |
-| TEN_CAS_CREATE_FLOW | Manually create and route a case; validate input and cancel safely | case-management/cases/create.feature | pending |
-| TEN_CAS_DUPLICATE_FLOW | Decide whether to create or view an existing potential duplicate | case-management/cases/create.feature | pending |
+| TEN_CAS_BULK_STATUS_FLOW | Resolve or close cases in bulk from a supplied case-ID file | case-management/cases/bulk.feature | written |
+| TEN_CAS_VIEW_DETAIL_FLOW | Inspect case, customer, billing, address, summary and SLA information | case-management/cases/list-and-detail.feature | written |
+| TEN_CAS_CREATE_FLOW | Manually create and route a case; validate input and cancel safely | case-management/cases/create.feature | written |
+| TEN_CAS_DUPLICATE_FLOW | Decide whether to create or view an existing potential duplicate | case-management/cases/create.feature | written |
 | TEN_CAS_INBOUND_CASE_FLOW | Create and enrich a case from an inbound interaction, including unknown sender reply | case-management/cases/integrations.feature | pending |
 | TEN_CAS_MASS_ISSUE_FLOW | Link reports to a confirmed mass issue | case-management/cases/integrations.feature | pending |
-| TEN_CAS_CHANGE_CUSTOMER_FLOW | Relink a case and refresh customer data | case-management/cases/editing.feature | pending |
-| TEN_CAS_VIEW_FEEDS_FLOW | Read external and internal interaction history for the case origin | case-management/cases/communications.feature | pending |
-| TEN_CAS_SEND_EMAIL_FLOW | Send customer email and observe the resulting history and audit | case-management/cases/communications.feature | pending |
+| TEN_CAS_CHANGE_CUSTOMER_FLOW | Relink a case and refresh customer data | case-management/cases/editing.feature | written |
+| TEN_CAS_VIEW_FEEDS_FLOW | Read external and internal interaction history for the case origin | case-management/cases/communications.feature | written |
+| TEN_CAS_SEND_EMAIL_FLOW | Send customer email and observe the resulting history and audit | case-management/cases/communications.feature | written |
 | TEN_CAS_LIVE_CHAT_FLOW | Receive and handle a live chat and its alerts | case-management/cases/communications.feature | pending |
 | TEN_CAS_IVR_CALL_FLOW | Receive an IVR case, handle call and notes, or observe RNA | case-management/cases/communications.feature | pending |
-| TEN_CAS_WATCHERS_FLOW | Add or remove watcher without changing ownership or SLA | case-management/cases/collaboration.feature | pending |
-| TEN_CAS_ACTIVITY_FLOW | Inspect immutable activity history with actor and timestamp | case-management/cases/collaboration.feature | pending |
-| TEN_CAS_CASE_RELATION_FLOW | Add a case relation and see the related case | case-management/cases/collaboration.feature | pending |
+| TEN_CAS_WATCHERS_FLOW | Add or remove watcher without changing ownership or SLA | case-management/cases/collaboration.feature | written |
+| TEN_CAS_ACTIVITY_FLOW | Inspect immutable activity history with actor and timestamp | case-management/cases/collaboration.feature | written |
+| TEN_CAS_CASE_RELATION_FLOW | Add a case relation and see the related case | case-management/cases/collaboration.feature | written |
 | TEN_CAS_MERGE_FLOW | Consolidate duplicate cases and preserve their interaction history | case-management/cases/collaboration.feature | pending |
-| TEN_CAS_KNOWLEDGE_FLOW | Find and read CTS-matched knowledge or see an empty state | case-management/cases/collaboration.feature | pending |
+| TEN_CAS_KNOWLEDGE_FLOW | Find and read CTS-matched knowledge or see an empty state | case-management/cases/collaboration.feature | written |
 | TEN_CAS_HANDOVER_FLOW | Record and read team handover history | case-management/cases/collaboration.feature | pending |
-| TEN_CAS_START_TICKET_FLOW | Start assigned work and begin the team OLA | case-management/cases/lifecycle.feature | pending |
-| TEN_CAS_ASSIGN_FLOW | Assign an open case to an agent | case-management/cases/assignment.feature | pending |
-| TEN_CAS_UNASSIGN_FLOW | Return an assigned case to its team's open queue | case-management/cases/assignment.feature | pending |
-| TEN_CAS_TRANSFER_AGENT_FLOW | Transfer an assigned case to another agent | case-management/cases/assignment.feature | pending |
+| TEN_CAS_START_TICKET_FLOW | Start assigned work and begin the team OLA | case-management/cases/lifecycle.feature | written |
+| TEN_CAS_ASSIGN_FLOW | Assign an open case to an agent | case-management/cases/assignment.feature | written |
+| TEN_CAS_UNASSIGN_FLOW | Return an assigned case to its team's open queue | case-management/cases/assignment.feature | written |
+| TEN_CAS_TRANSFER_AGENT_FLOW | Transfer an assigned case to another agent | case-management/cases/assignment.feature | written |
 | TEN_CAS_SUBMIT_DEPARTMENT_FLOW | Transfer or advance/return a case through allowed departments | case-management/cases/assignment.feature | pending |
-| TEN_CAS_AUTO_ASSIGN_FLOW | Route and assign by profile, availability and capacity, or retain open queue | case-management/cases/assignment.feature | pending |
-| TEN_CAS_PENDING_REPLY_FLOW | Request customer information and freeze timers; return to open on reply | case-management/cases/lifecycle.feature | pending |
-| TEN_CAS_RESOLVE_FLOW | Resolve with remarks and notify the customer | case-management/cases/lifecycle.feature | pending |
-| TEN_CAS_CLOSE_FLOW | Close a resolved case and preserve a read-only final state | case-management/cases/lifecycle.feature | pending |
+| TEN_CAS_AUTO_ASSIGN_FLOW | Route and assign by profile, availability and capacity, or retain open queue | case-management/cases/assignment.feature | written |
+| TEN_CAS_PENDING_REPLY_FLOW | Request customer information and freeze timers; return to open on reply | case-management/cases/lifecycle.feature | written |
+| TEN_CAS_RESOLVE_FLOW | Resolve with remarks and notify the customer | case-management/cases/lifecycle.feature | written |
+| TEN_CAS_CLOSE_FLOW | Close a resolved case and preserve a read-only final state | case-management/cases/lifecycle.feature | written |
 | TEN_CAS_REOPEN_FLOW | Reopen or re-engage a resolved case | case-management/cases/lifecycle.feature | pending |
-| TEN_CAS_CANCEL_FLOW | Cancel an abandoned chat or IVR case | case-management/cases/lifecycle.feature | pending |
-| TEN_CAS_EDIT_CASE_FLOW | Update permitted case fields and observe saved values and audit | case-management/cases/editing.feature | pending |
-| TEN_CAS_EDIT_CTS_FLOW | Change classification and apply workflow implications | case-management/cases/editing.feature | pending |
-| TEN_CAS_CREATE_CHILD_FLOW | Create an independently tracked child linked to its parent | case-management/cases/assignment.feature | pending |
-| TEN_CAS_VIEW_WORKFLOW_FLOW | Inspect the current and possible workflow steps | case-management/cases/assignment.feature | pending |
-| TEN_CAS_ENDORSE_WFM_FLOW | Endorse an eligible case and see its linked work order | case-management/cases/integrations.feature | pending |
-| TEN_CAS_SLA_ESCALATION_FLOW | Track SLA/OLA health and breach escalation | case-management/cases/lifecycle.feature | pending |
+| TEN_CAS_CANCEL_FLOW | Cancel an abandoned chat or IVR case | case-management/cases/lifecycle.feature | written |
+| TEN_CAS_EDIT_CASE_FLOW | Update permitted case fields and observe saved values and audit | case-management/cases/editing.feature | written |
+| TEN_CAS_EDIT_CTS_FLOW | Change classification and apply workflow implications | case-management/cases/editing.feature | written |
+| TEN_CAS_CREATE_CHILD_FLOW | Create an independently tracked child linked to its parent | case-management/cases/assignment.feature | written |
+| TEN_CAS_VIEW_WORKFLOW_FLOW | Inspect the current and possible workflow steps | case-management/cases/assignment.feature | written |
+| TEN_CAS_ENDORSE_WFM_FLOW | Endorse an eligible case and see its linked work order | case-management/cases/integrations.feature | written |
+| TEN_CAS_SLA_ESCALATION_FLOW | Track SLA/OLA health and breach escalation | case-management/cases/lifecycle.feature | written |
 
 ## Gaps
 
