@@ -361,6 +361,9 @@ export function createLocalRunService({
     target: environments.find((item) => item.id === defaultEnvironment).target,
     environments,
     defaultEnvironment,
+    variableDefaults: {
+      E2E_CASE_CUSTOMER_ID: configured.E2E_CASE_CUSTOMER_ID || "",
+    },
     active() {
       return Boolean(run && !run.done);
     },

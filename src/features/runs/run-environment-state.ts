@@ -3,7 +3,13 @@ import { createContext } from "react";
 export interface RunConfig {
   defaultEnvironment: string;
   environments: Array<{ id: string; label: string; target: string }>;
-  variables: Array<{ name: string; label: string; secret: boolean }>;
+  variables: Array<{
+    name: string;
+    label: string;
+    secret: boolean;
+    required: boolean;
+    defaultValue?: string;
+  }>;
 }
 
 export const RunEnvironmentContext = createContext<{

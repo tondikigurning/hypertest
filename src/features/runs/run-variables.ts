@@ -1,8 +1,8 @@
 export const storageKey = "automation-run-variables";
-export function readVariables(): Record<string, string> {
+export function readVariables(defaults: Record<string, string> = {}): Record<string, string> {
   try {
-    return JSON.parse(sessionStorage.getItem(storageKey) || "{}");
+    return { ...defaults, ...JSON.parse(sessionStorage.getItem(storageKey) || "{}") };
   } catch {
-    return {};
+    return defaults;
   }
 }

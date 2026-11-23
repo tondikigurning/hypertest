@@ -10,8 +10,14 @@ import { resolveSelection } from "./run-selection.mjs";
 const e2eWorkspace = resolve(import.meta.dirname, "../../../e2e");
 const service = createLocalRunService({ resultStore });
 const variables = [
-  { name: "E2E_USERNAME", label: "E2E username", secret: false },
-  { name: "E2E_PASSWORD", label: "E2E password", secret: true },
+  { name: "E2E_USERNAME", label: "E2E username", secret: false, required: true },
+  { name: "E2E_PASSWORD", label: "E2E password", secret: true, required: true },
+  {
+    name: "E2E_CASE_CUSTOMER_ID",
+    label: "E2E case customer ID",
+    secret: false,
+    required: false,
+  },
 ];
 
 function json(res, status, value) {
@@ -35,7 +41,12 @@ export function getRunConfig(_req, res) {
     target: service.target,
     environments: service.environments,
     defaultEnvironment: service.defaultEnvironment,
-    variables,
+    variables: variables.map((variable) => ({
+      ...variable,
+      ...(variable.name === "E2E_CASE_CUSTOMER_ID"
+        ? { defaultValue: service.variableDefaults.E2E_CASE_CUSTOMER_ID }
+        : {}),
+    })),
   });
 }
 
@@ -112,10 +123,15 @@ export function startRun(req, res) {
     if (
       !values ||
       typeof values !== "object" ||
-      variables.some(({ name }) => typeof values[name] !== "string" || !values[name].trim())
+      variables.some(({ name, required }) => required && (typeof values[name] !== "string" || !values[name].trim()))
     )
-      return json(res, 400, { error: "Set all environment variables before running a scenario." });
-    const environment = Object.fromEntries(variables.map(({ name }) => [name, values[name]]));
+      return json(res, 400, { error: "Set the required environment variables before running a scenario." });
+    const environment = Object.fromEntries(
+      variables.flatMap(({ name }) => {
+        const value = values[name];
+        return typeof value === "string" && value.trim() ? [[name, value]] : [];
+      }),
+    );
     const target = service.environments.find((item) => item.id === input.environment)?.target;
     if (!target) return json(res, 400, { error: "Select a valid environment." });
     let resolved;
