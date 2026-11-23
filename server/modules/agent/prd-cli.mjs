@@ -3,12 +3,8 @@ import { closeDatabase } from "../../database.mjs";
 import { createPrdDatabase } from "./prd-database.mjs";
 import { prdIdentity } from "./prd-identity.mjs";
 
-const identity = process.env.AUTOMATION_PRD_IDENTITY;
-const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-
 async function main() {
-  if (!uuid.test(identity || "")) throw new Error("Set AUTOMATION_PRD_IDENTITY to the intended browser identity.");
-  const store = createPrdDatabase(identity);
+  const store = createPrdDatabase();
   const [action, path] = process.argv.slice(2);
   if (action === "list") return process.stdout.write(`${JSON.stringify(await store.list())}\n`);
   if (action === "read") {

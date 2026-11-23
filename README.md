@@ -55,8 +55,10 @@ pnpm typecheck
 pnpm build
 ```
 
-Select a menu to use **View PRD**. Its one document covers the menu and all child test groups/files; child views do not have separate PRDs. Q-Rex stores PRDs and their versions in PostgreSQL for the local preview identity; `docs/prd/<module>/<menu>.md` is their virtual identifier in agent tools, not a repository file. Manage versions in the PRD view; edit any version manually, or use **Edit with Q-Rex** on the active version. Attach a PDF, DOCX, Markdown, or text file in chat when importing. The agent explores the selected environment and requests review before marking observations validated. Documents have no draft or reviewed status. PRD edits do not become Git changes.
+Select a menu to use **View PRD**. Its one document covers the menu and all child test groups/files; child views do not have separate PRDs. Q-Rex stores PRDs and their versions in the configured PostgreSQL database, shared across browser identities; `docs/prd/<module>/<menu>.md` is their virtual identifier in agent tools, not a repository file. Manage versions in the PRD view; edit any version manually, or use **Edit with Q-Rex** on the active version. Attach a PDF, DOCX, Markdown, or text file in chat when importing. The agent explores the selected environment and requests review before marking observations validated. Documents have no draft or reviewed status. PRD edits do not become Git changes.
 
-Terminal agents access the same PRDs using the selected browser's local preview identity and the [database access procedure](.agents/skills/ask-qa/references/prd-database-access.md), including reading, writing and explicitly requested version deletion. This identity partitions local data and is not a login.
+Terminal agents access the same PRDs using the same configured database and the [database access procedure](.agents/skills/ask-qa/references/prd-database-access.md), including reading, writing and explicitly requested version deletion.
+
+The shared PRD migration stops if different browser identities have records for the same module and menu. Preserve and reconcile those records before retrying the migration. Non-conflicting legacy rows are retained in `automation_agent_prds_legacy_backup` when the migration succeeds.
 
 The [terminal agent workflow](docs/automation/README.md#terminal-agent-workflow) uses the same local skills and reusable exploration records directly from the checkout. It can resume saved, uncommitted work in that checkout without a Q-Rex session or API restart.

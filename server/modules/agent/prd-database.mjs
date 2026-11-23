@@ -25,9 +25,8 @@ function serialize(state, module, menu) {
   };
 }
 
-export function createPrdDatabase(userId) {
-  const where = (module, menu) =>
-    and(eq(agentPrds.userId, userId), eq(agentPrds.module, module), eq(agentPrds.menu, menu));
+export function createPrdDatabase() {
+  const where = (module, menu) => and(eq(agentPrds.module, module), eq(agentPrds.menu, menu));
   async function load(module, menu) {
     validate(module, menu);
     const [row] = await database().select().from(agentPrds).where(where(module, menu));
@@ -35,11 +34,7 @@ export function createPrdDatabase(userId) {
   }
   async function save(module, menu, state, revision) {
     if (!revision) {
-      const rows = await database()
-        .insert(agentPrds)
-        .values({ userId, module, menu, state })
-        .onConflictDoNothing()
-        .returning();
+      const rows = await database().insert(agentPrds).values({ module, menu, state }).onConflictDoNothing().returning();
       if (!rows.length) throw new Error("The PRD changed concurrently. Reload and try again.");
     } else {
       const rows = await database()
@@ -74,7 +69,7 @@ export function createPrdDatabase(userId) {
   }
   return {
     async list() {
-      const rows = await database().select().from(agentPrds).where(eq(agentPrds.userId, userId));
+      const rows = await database().select().from(agentPrds);
       return rows.flatMap(({ module, menu, state }) => {
         const active = state.versions.find((item) => item.id === state.activeVersionId);
         return active ? [{ module, menu, content: active.content }] : [];

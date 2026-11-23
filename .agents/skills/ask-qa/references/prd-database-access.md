@@ -1,6 +1,6 @@
 # Terminal PRD database access
 
-PRDs use the same PostgreSQL store and browser identity as Q-Rex. Set `AUTOMATION_PRD_IDENTITY` to the intended browser's `automation-dummy-user-id` value from local storage. Confirm the intended browser identity with the user if it is not established; never choose another identity or enumerate other users' documents. This identifier partitions local preview data; it is not authentication. Configure `AUTOMATION_DATABASE_URL` as for the API. If access is unavailable, report the blocker instead of creating a repository PRD.
+PRDs are shared by all clients using the configured PostgreSQL database. Configure `AUTOMATION_DATABASE_URL` as for the API; no browser identity is needed. If access is unavailable, report the blocker instead of creating a repository PRD.
 
 From the repository root, `node server/modules/agent/prd-cli.mjs list` lists active PRDs and `node server/modules/agent/prd-cli.mjs read docs/prd/<module>/<menu>.md` reads one. These paths are virtual identifiers. `write <identifier>` reads a JSON object from stdin with `content` and `expected` (the exact previously read content, or null if absent). It rejects stale changes. A draft must preserve unchanged validations and leave new or changed items without `[validated]`.
 
