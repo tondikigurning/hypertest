@@ -48,7 +48,7 @@ The same four skills and shared review/reuse contract also apply to an AI agent 
 
 For a new terminal conversation, recover the owning menu's active database PRD where available and the checkout's `e2e/tests/bdd/features/<module>/<menu>.exploration.md`, `<menu>.flows.md` and relevant feature files. Scenario discovery needs the active owning PRD; independently eligible technical implementation or repair can continue when the PRD is unavailable. Reuse applicable observations without another browser visit. A missing record or lost chat is a specific evidence gap, not proof that all prior exploration is invalid; recover available PRD notes and existing code first. Files saved in the same checkout remain available without a commit, while another worktree does not automatically contain them. Do not reset or copy another workspace implicitly.
 
-Terminal agents use the [database PRD procedure](../../.agents/skills/ask-qa/references/prd-database-access.md) for the configured database, an owned `playwright-cli` session for needed exploration, and the terminal review procedures in the [shared contract](../../.agents/skills/ask-qa/references/workflow-contract.md). Record actual flow confirmation and scenario approval with their matching source references in the flow registry so a later terminal session can recover them. A recorded observation, hash or flow list is not a review decision or permission for a live mutation. The terminal can run appropriate repository checks against its own checkout; inspect selected setup and follow data safety before any live BDD execution.
+Terminal agents use the [database PRD procedure](../../.agents/skills/ask-qa/references/prd-database-access.md) for the configured database, an owned `playwright-cli` session for needed exploration, and the terminal review procedures in the [shared contract](../../.agents/skills/ask-qa/references/workflow-contract.md). Record actual flow confirmation and scenario approval with their matching source references in the shared `.exploration.md` so a later terminal session can recover them. A recorded observation, hash or flow list is not a review decision or permission for a live mutation. The terminal can run appropriate repository checks against its own checkout; inspect selected setup and follow data safety before any live BDD execution.
 
 ## Workflow and review boundaries
 
@@ -69,8 +69,8 @@ The default workflow uses the review gates below. When an approval is pending, *
 3. `write-e2e-scenarios` reads the active matching PRD and reuses applicable PRD-phase browser evidence, exploring only remaining or changed scope. The active document is usable as context even with unvalidated items, open questions or incomplete coverage; there is no document-level review status. The agent records gaps and follows the separate review rules for PRD changes. `confirm_flows`
    presents the described flow list for confirmation before scenario-intent changes. Confirmation
    is tied to the current PRD and feature contents and does not approve the scenarios.
-   Confirmed flows and discovery gaps are recorded in one `e2e/tests/bdd/features/<module>/<menu>.flows.md`
-   file, with a sanitized implementation handoff and requirement-to-scenario mapping for each authored batch.
+   All discovered in-scope flows are presented for confirmation, including flows planned for later scenario batches.
+   The menu's `.flows.md` contains only confirmed flows and gaps. Flow-confirmation provenance, requirement-to-scenario mappings and a sanitized handoff for each authored batch are saved in the shared `.exploration.md`.
    The handoff includes a comparable scenario contract or an exact snapshot identity where available. Its
    `pending` and `written` statuses describe scenario authoring, not review or execution.
    Resume by reading this file, the active database PRD and the relevant features; recheck changed or
@@ -78,7 +78,7 @@ The default workflow uses the review gates below. When an approval is pending, *
    workspace or committed source that contains it; a separate draft does not automatically inherit it.
    A full pass plans supported, important smoke and regression branches for each flow. Batches are
    grouped by related outcomes and review/verification effort; deferred or blocked branches stay in
-   the registry's gaps so later batches can resume them.
+   `.flows.md` gaps so later batches can resume them.
 4. Q-Rex writes one scenario batch and stops for review. Open **Changes**, inspect its preview and
    diff, then **Approve scenarios**. Chat answers, PRD review and flow confirmation do not replace
    this approval. A changed scenario snapshot invalidates approval for implementation and execution.
@@ -89,7 +89,7 @@ The default workflow uses the review gates below. When an approval is pending, *
 5. On a subsequent turn, `write-e2e-code` inventories the requested scope and implements all eligible
    scenarios missing code, including across approved batches, while preserving their IDs and
    intent. It reuses applicable scenario-phase context, verified locators and observations, including the
-   registry handoff when a new session lacks earlier chat. It compares that handoff with current scenario and
+   `.exploration.md` handoff when a new session lacks earlier chat. It compares that handoff with current scenario and
    PRD sources and explores only evidence gaps or changed scope. A registry edit does not invalidate Q-Rex's
    feature-only scenario approval; the agent must reconcile its contents separately.
    Snapshot element refs are temporary; fresh refs are needed for
