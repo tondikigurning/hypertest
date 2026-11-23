@@ -154,6 +154,7 @@ export function createLocalRunService({
       ...environment,
       AUTOMATION_SELECTED_ENV: environments.find((item) => item.target === run.target)?.id || "",
       AUTOMATION_RUN_TARGET: run.target,
+      AUTOMATION_BDD_FEATURES: JSON.stringify(run.files.map((file) => `tests/bdd/features/${file}`)),
       AUTOMATION_SETUP_AUTH_FILE: auth,
       AUTOMATION_OUTPUT_DIR: join(run.dir, "output"),
       AUTOMATION_REPORT_DIR: join(run.dir, "report"),

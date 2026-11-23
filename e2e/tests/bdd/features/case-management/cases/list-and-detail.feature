@@ -107,6 +107,28 @@ Feature: Cases list and detail
     Then the identified case is not shown
     And the Cases list shows "No Data Available"
 
+  @TEN_CAS_VDT_E2E_004 @regression @flow:TEN_CAS_VIEW_DETAIL_FLOW @type:positive
+  Scenario: Open another case from the customer's ticket history
+    Given an accessible case has another ticket in its case summary
+    When the user opens the case summary
+    Then Ticket History shows the current case and another ticket
+    When the user opens the other ticket from Ticket History
+    Then that ticket opens in a separate case workspace tab
+
+  @TEN_CAS_VDT_E2E_005 @regression @flow:TEN_CAS_VIEW_DETAIL_FLOW @type:positive
+  Scenario: Inspect case details in the customer's ticket history
+    Given an accessible case has tickets in its case summary
+    When the user opens the case summary
+    Then a displayed ticket shows its case number, classification, subject, status and date
+    And the open case is marked Current
+
+  @TEN_CAS_VDT_E2E_006 @regression @flow:TEN_CAS_VIEW_DETAIL_FLOW @type:edge-case
+  Scenario: Show an empty child-case summary
+    Given an accessible case has no child cases
+    When the user opens the case summary
+    Then the Child Case count is zero
+    And the summary shows "No child cases found."
+
   @TEN_CAS_LST_E2E_014 @regression @flow:TEN_CAS_LIST_FLOW @type:ui-interaction
   Scenario: Reset clears the current search and filters
     Given the Cases list has a search query and a filter applied

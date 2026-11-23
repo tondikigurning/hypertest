@@ -18,7 +18,7 @@ Given("the configured case customer is available", async ({ casesPage }) => {
 });
 When("the user creates a case for that customer with a unique E2E subject and valid required details", async ({ casesPage }) => { await casesPage.submitCreate(); });
 Then("the newly created case workspace identifies the new case", async ({ casesPage }) => { await casesPage.expectCreatedCase(); });
-Then("the new case shows the E2E subject", async ({ casesPage }) => { await casesPage.expectCreatedCase(); });
+Then("the new case shows the E2E subject", async ({ casesPage }) => { await casesPage.expectNewCaseSubject(); });
 Given("an active case already exists for the configured customer and selected CTS", async ({ casesPage }) => { await casesPage.prepareDuplicate(); });
 When("the user submits a new case with the same customer and CTS", async ({ casesPage }) => { await casesPage.submitCreate(); });
 Then("the duplicate warning identifies the existing case", async ({ casesPage }) => { await casesPage.expectDuplicateWarning(); });

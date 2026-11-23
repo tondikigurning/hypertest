@@ -379,13 +379,18 @@ export class CasesPage {
 
     async expectCreatedCase(): Promise<void> {
         if (!this.newSubject) throw new Error("No new case subject was recorded.");
-        await expect(this.page.getByText("Case Information", { exact: true })).toBeVisible({ timeout: 30_000 });
+        await expect(this.field("Case Number")).toBeVisible({ timeout: 30_000 });
         const number = (await this.field("Case Number").innerText()).trim();
         if (!number) throw new Error("The created case did not expose its case number.");
         this.selectedCaseNumber = number;
         this.ownedSubject = this.newSubject;
         await expect(this.field("Subject")).toHaveText(this.newSubject);
         await expect(this.field("Account Number", "last")).toContainText(this.ownedCustomer!);
+    }
+
+    async expectNewCaseSubject(): Promise<void> {
+        if (!this.newSubject) throw new Error("No new case subject was recorded.");
+        await expect(this.field("Subject")).toHaveText(this.newSubject);
     }
 
     async prepareDuplicate(): Promise<void> {
@@ -690,6 +695,39 @@ export class CasesPage {
         this.selectedCaseNumber = number;
     }
 
+    /** Select a visible case for read-only inspection; never use this to authorize a mutation. */
+    async openFirstVisibleReadOnlyCase(options: { agentUnassigned?: boolean } = {}): Promise<string> {
+        const rows = this.rows;
+        if (!(await rows.first().isVisible({ timeout: 10_000 }).catch(() => false))) {
+            throw new CasesPrerequisiteError("No case is available in the selected list.");
+        }
+        const headers = await this.page.getByRole("columnheader").allTextContents();
+        const agentColumn = headers.findIndex((header) => /^(?:Assigned )?Agent$/i.test(header.trim()));
+        if (options.agentUnassigned && agentColumn < 0) throw new CasesPrerequisiteError("The list does not expose an Agent column.");
+        for (let index = 0; index < await rows.count(); index += 1) {
+            const row = rows.nth(index);
+            if (options.agentUnassigned) {
+                const agent = (await row.getByRole("cell").nth(agentColumn).innerText()).trim();
+                if (agent && agent !== "—" && agent !== "Unassigned") continue;
+            }
+            const number = (await row.getByRole("cell").first().innerText()).trim();
+            if (!number) continue;
+            this.selectedCaseNumber = number;
+            await this.searchFor(number);
+            const selectedRow = rows.filter({ has: this.page.getByText(number, { exact: true }) });
+            if (!(await selectedRow.isVisible({ timeout: 10_000 }).catch(() => false))) {
+                throw new CasesPrerequisiteError("The selected read-only case is no longer available in the current list.");
+            }
+            await selectedRow.click();
+            await this.page.getByRole("button", { name: "View Case Detail", exact: true }).click();
+            await this.expectSelectedCase();
+            return number;
+        }
+        throw new CasesPrerequisiteError(options.agentUnassigned
+            ? "No unassigned case is available in the selected list."
+            : "The selected read-only case has no case number.");
+    }
+
     async selectCorrespondentCase(): Promise<void> {
         await this.navigateTo();
         await this.selectPipeline("All");
@@ -715,7 +753,7 @@ export class CasesPage {
     async expectSelectedCase(): Promise<void> {
         if (!this.selectedCaseNumber) throw new Error("No case was selected from the list.");
         await expect(this.page.getByRole("tab", { name: new RegExp(`^${this.selectedCaseNumber}\\s`) })).toBeVisible();
-        await expect(this.page.getByText("Case Information", { exact: true })).toBeVisible();
+        await expect(this.page.getByText("Case Information", { exact: true }).first()).toBeVisible();
     }
 
     async expectCaseInformation(): Promise<void> {

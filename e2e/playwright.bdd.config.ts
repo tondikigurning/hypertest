@@ -51,6 +51,26 @@ const AUTH_FILE = AUTOMATION_AUTH_FILE || process.env.AUTOMATION_SETUP_AUTH_FILE
 const BDD_STEPS = ["tests/bdd/steps/**/*.ts", "tests/bdd/fixtures/**/*.ts"];
 const BDD_REPORT_DIR = process.env.AUTOMATION_REPORT_DIR || path.join(import.meta.dirname, "playwright-report", "bdd");
 const BDD_OUTPUT_DIR = process.env.AUTOMATION_OUTPUT_DIR || path.join(import.meta.dirname, "test-results", "bdd");
+const AUTOMATION_BDD_FEATURES = process.env.AUTOMATION_BDD_FEATURES
+    ? JSON.parse(process.env.AUTOMATION_BDD_FEATURES)
+    : [
+        "tests/bdd/features/_components/**/*.feature",
+        "tests/bdd/features/user-management/**/*.feature",
+        "tests/bdd/features/iam/**/*.feature",
+        "tests/bdd/features/case-management/survey-template-manager.feature",
+        "tests/bdd/features/case-management/dashboard.feature",
+        "tests/bdd/features/case-management/cases/assignment.feature",
+        "tests/bdd/features/case-management/cases/collaboration.feature",
+        "tests/bdd/features/case-management/cases/communications.feature",
+        "tests/bdd/features/case-management/cases/bulk.feature",
+        "tests/bdd/features/case-management/cases/create.feature",
+        "tests/bdd/features/case-management/cases/editing.feature",
+        "tests/bdd/features/case-management/cases/lifecycle.feature",
+        "tests/bdd/features/case-management/cases/list-and-detail.feature",
+        "tests/bdd/features/case-management/cases/integrations.feature",
+        "tests/bdd/features/workforce-management/**/*.feature",
+        "tests/bdd/features/system-settings/**/*.feature",
+    ];
 const EVIDENCE_SIZE = { width: 1920, height: 1080 };
 
 export default defineConfig({
@@ -112,29 +132,7 @@ export default defineConfig({
         {
             ...defineBddProject({
                 name: "bdd-chromium-authenticated",
-                features: [
-                    "tests/bdd/features/_components/**/*.feature",
-                    "tests/bdd/features/user-management/**/*.feature",
-                    "tests/bdd/features/iam/**/*.feature",
-                    // Phase 1 implemented (steps + POM present). Register sibling feature files
-                    // here only once their steps/POM exist — the Phase 0 features (home, iam,
-                    // organization-management, workforce-management, case-management/dashboard)
-                    // are intentionally excluded because their undefined steps would break bddgen.
-                    "tests/bdd/features/case-management/survey-template-manager.feature",
-                    "tests/bdd/features/case-management/dashboard.feature",
-                    "tests/bdd/features/case-management/cases/assignment.feature",
-                    "tests/bdd/features/case-management/cases/collaboration.feature",
-                    "tests/bdd/features/case-management/cases/communications.feature",
-                    "tests/bdd/features/case-management/cases/create.feature",
-                    "tests/bdd/features/case-management/cases/editing.feature",
-                    "tests/bdd/features/case-management/cases/lifecycle.feature",
-                    "tests/bdd/features/case-management/cases/list-and-detail.feature",
-                    "tests/bdd/features/workforce-management/**/*.feature",
-                    "tests/bdd/features/system-settings/**/*.feature",
-                    // Organization Management runs as its own project (below) with a longer
-                    // per-test timeout — its list/detail flows are heavy and time out at 180s.
-                    // Add new module feature globs here as BDD coverage expands.
-                ],
+                features: AUTOMATION_BDD_FEATURES,
                 steps: BDD_STEPS,
             }),
             use: {
