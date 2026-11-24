@@ -562,7 +562,7 @@ test("large feature files can be read in bounded pages", async (t) => {
   assert.match(await tools.read_file.execute({ path: "large.feature", startLine: 2500, lineCount: 2 }), /line 2500:/);
 });
 
-test("agent cannot invoke workspace scenario execution", async (t) => {
+test("draft execution tool is present but cannot run before the implementation skill", async (t) => {
   let runs = 0;
   const responses = [
     { tool: "run_draft_scenario", input: { scenarioId, file: "example/orders.feature", dataOwner: "e2e-owned" } },
@@ -578,7 +578,7 @@ test("agent cannot invoke workspace scenario execution", async (t) => {
   await waitFor(session, (state) => !state.busy);
   assert.equal(runs, 0);
   assert.equal(session.draftRun(), null);
-  assert.ok(requests.every((request) => !request.tools?.some((item) => item.function?.name === "run_draft_scenario")));
+  assert.ok(requests.some((request) => request.tools?.some((item) => item.function?.name === "run_draft_scenario")));
 });
 
 test("browser locator inspection stays read-only and CLI option overrides are rejected", async () => {
@@ -636,6 +636,32 @@ test("answers use browser configuration saved while an agent question is pending
   assert.equal(starts[0].target, environment.target);
   assert.equal(starts[0].variables.E2E_USERNAME, variables.E2E_USERNAME);
   assert.doesNotMatch(JSON.stringify(requests), /fixture-password|fixture-user/);
+});
+
+test("a question answer preserves both a chosen option and its accompanying information", async (t) => {
+  const responses = [
+    {
+      tool: "ask_user",
+      input: {
+        question: "How can I access the entity?",
+        options: [
+          { label: "Provide access guidance", description: "Explain how to access it.", recommended: true },
+          { label: "Continue with the gap", description: "Leave it unresolved.", recommended: false },
+        ],
+        isSecret: false,
+      },
+    },
+    { text: "Received the guidance." },
+  ];
+  const { session, requests } = await workflow(t, responses);
+  await session.send("Create a PRD.");
+  const pending = await waitFor(session, (state) => state.userRequest || !state.busy);
+  assert.ok(pending.userRequest);
+  const answer = "1. Provide access guidance\nSelect the Converge entity.";
+  session.answer(pending.userRequest.id, { [pending.userRequest.questions[0].id]: answer });
+  await waitFor(session, (state) => !state.busy);
+  assert.ok(session.snapshot().messages.some((message) => message.role === "user" && message.text === answer));
+  assert.match(JSON.stringify(requests.at(-1).messages), /Select the Converge entity/);
 });
 
 test("follow-up chat resolves an unchanged explorer attachment to its current draft source", async (t) => {

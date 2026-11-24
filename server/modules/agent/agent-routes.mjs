@@ -470,8 +470,18 @@ export function createAgentRouter({ resolveSession = sessionFor, resolveIdentity
     if (!service) return res.status(404).json({ error: "Evidence unavailable." });
     return sendRunEvidence(service, req, res);
   });
-  router.post("/draft-run", (_req, res) => {
-    res.status(403).json({ error: "Running scenarios from the agent workspace is unavailable." });
+  router.post("/draft-run", async (req, res) => {
+    try {
+      const result = await req.agentSession.runDraft(
+        req.body,
+        req.body?.environment ? resolveAgentEnvironment(req.body.environment) : undefined,
+        resolveAgentVariables(req.body?.variables),
+      );
+      touchLocalDraft(req.agentIdentity.userId, req.agentDraftId);
+      res.json(result);
+    } catch (error) {
+      res.status(409).json({ error: error.message });
+    }
   });
   router.post("/draft-run/cancel", (req, res) => {
     try {

@@ -390,7 +390,7 @@ export function createAgentTools({
     }),
     ask_user: tool({
       description:
-        "Ask one focused question and wait for the user's answer before continuing. Include numbered choices when useful, exactly one recommended choice with its reason, and allow free text.",
+        "Ask one focused question and wait for the user's answer before continuing. When asking for facts, access instructions, or restrictions, use an open question without options. Only offer choices that are complete answers or decisions by themselves, not options such as 'provide guidance' that require further information. Include exactly one recommended choice with its reason when offering choices; free text is always available. A choice to provide information alone does not supply that information.",
       inputSchema: z.object({
         question: z.string().min(1).max(1600),
         options: z

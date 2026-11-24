@@ -11,7 +11,7 @@ Use this for E2E execution, scenario maintenance, test infrastructure and Automa
 
 ## Run BDD scenarios
 
-These execution steps apply to a terminal host with the checkout runner. Q-Rex has no shell or draft execution tool: inspect the selected source safely and provide the [external verification handoff](workflow-contract.md#turns-batches-and-completion). Do not treat an explorer checkout run as verification of unmerged draft changes or express a shell command through browser tools.
+These command steps apply to a terminal host with the checkout runner. Q-Rex can run one approved, implemented scenario through `run_draft_scenario`, using its isolated Docker bridge and separate scoped data-safety approval. It has no shell or standalone collection/typecheck; provide the [external verification handoff](workflow-contract.md#turns-batches-and-completion) for those checks. Do not treat an explorer checkout run as verification of unmerged draft changes or express a shell command through browser tools.
 
 1. Read the selected .feature setup, steps, tags and page/component objects. Follow .agents/skills/write-e2e-scenarios/references/data-safety.md before scenarios that can mutate live data.
 2. Establish the target environment and credentials using the host-specific shared contract without printing secret values. Before production execution, exclude `@production-restricted` and mutation scenarios with unresolved production eligibility until an approved safe treatment exists; the tag alone is not enforced.

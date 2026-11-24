@@ -34,6 +34,8 @@ Recommended repair: describe Q-Rex's attainable output as an implementation draf
 
 Acceptance: an approved Q-Rex batch produces concrete code and a per-scenario verification handoff without claiming checks ran. A checkout run cannot advance its draft verification state.
 
+Resolution note (2026-11-24): Q-Rex now has a dedicated `run_draft_scenario` tool after activating `write-e2e-code`. It runs one approved scenario with E2E-owned data in an isolated Docker sandbox after separate data-safety approval; its evidence stays outside official results. Collection and standalone type checks remain external, so the `implemented` gate still needs those checks.
+
 ### A02 — P1: shared review instructions conflict with Q-Rex approval mechanisms
 
 [Scenario Step 6](../../.agents/skills/write-e2e-scenarios/SKILL.md), lines 193–195, offers an interactive Yes/No scenario approval. The [adapter](../../server/modules/agent/agent-skills.mjs), line 14, requires `show_diff` and **Changes > Approve scenarios**, and explicitly rejects chat answers as a substitute. A model following the shared text can collect a chat approval that the implementation write guard subsequently rejects.

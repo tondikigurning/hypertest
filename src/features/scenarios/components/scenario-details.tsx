@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { CloseButton } from "../../../components";
 import { EvidenceViewer } from "../../evidence/components/evidence-viewer";
+import { DraftRun } from "../../runs/components/draft-run";
 import { LocalRun } from "../../runs/components/local-run";
 import { hasDistinctExpectedResult, type Scenario } from "../scenario";
 import { RunStatus } from "./run-status";
@@ -122,18 +123,17 @@ export function ScenarioDetails({
           <ScenarioSteps background={scenario.background} steps={scenario.steps} />
           {scenario.draft && scenario.draft !== "deleted" ? (
             <>
-              {scenario.availabilityReasons.some(
-                (reason) => reason !== "Draft scenario execution is currently unavailable in this preview.",
-              ) && (
+              {scenario.availabilityReasons.length > 0 && (
                 <ExecutionState>
                   Draft preview:{" "}
-                  {scenario.availabilityReasons
-                    .filter((reason) => reason !== "Draft scenario execution is currently unavailable in this preview.")
-                    .join(" ")}
+                  {scenario.availabilityReasons.join(" ")}
                 </ExecutionState>
               )}
-              <ExecutionState>Running scenarios from the agent workspace is unavailable.</ExecutionState>
+              <ScenarioDetailsDivider />
+              <DraftRun key={scenario.key} scenario={scenario} />
             </>
+          ) : scenario.draft === "deleted" ? (
+            <ExecutionState>This scenario is deleted in the draft and cannot be run.</ExecutionState>
           ) : scenario.availability === "unavailable" ? (
             <ExecutionState>Execution unavailable: {scenario.availabilityReasons.join(" ")}</ExecutionState>
           ) : (

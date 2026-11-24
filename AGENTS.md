@@ -42,11 +42,13 @@ describes a draft hosted product; use the README and implementation to understan
   actual test outcomes as distinct. It excludes uncommitted changes, ignored files and credentials. Local dependency
   directories are linked from the checkout for execution and remain outside the agent's writable workspace.
 - Keep the agent's command/file permission requests separate from business-flow review, scenario approval and live-data
-  approval. Draft scenario execution is currently omitted from the QA Agent; the explorer runner only verifies scenarios
-  in the current checkout. Do not claim that its result verifies unmerged agent changes. If draft execution is restored,
-  use a dedicated bridge with validated worktree selection, browser-supplied credentials outside chat, explicit scoped
-  data-safety handling, isolated artifacts, and truthful result reporting. Do not enable arbitrary shell BDD execution or
-  unrestricted live browser mutation through the agent.
+  approval. Draft scenario execution uses a dedicated bridge with validated worktree selection, browser-supplied
+  credentials outside chat, explicit scoped data-safety handling, isolated artifacts, and truthful result reporting.
+  Draft runs are limited to uniquely identified scenarios with E2E-owned data, after scenario approval and code
+  implementation, inside the isolated runner with target-only egress. Draft results never become official results or
+  upload evidence. Do not enable arbitrary shell BDD execution or unrestricted live browser mutation through the agent.
+  The explorer runner only verifies scenarios in the current checkout; do not claim that its result verifies unmerged
+  agent changes.
 - Agent worktrees, branches and local conversation state can outlive the API process. Preserve user changes and do not
   delete, reset, commit or push another task's workspace implicitly. Treat persisted conversations, local paths, logs,
   environment values and Codex thread state as potentially sensitive.
