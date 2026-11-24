@@ -372,6 +372,13 @@
   overflow-wrap: anywhere;
   margin: 0;
 }
+.agent-browser-approvals summary {
+  cursor: pointer;
+  color: var(--agent-muted);
+}
+.agent-browser-approvals p {
+  margin-top: 6px;
+}
 .agent-message.user {
   margin-left: 24px;
   padding: 12px 16px;

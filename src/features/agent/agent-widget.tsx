@@ -8,6 +8,7 @@ import { useRunEnvironment } from "../runs/use-run-environment";
 import { label as displayLabel } from "../scenarios/scenario";
 import { isScenarioInScope } from "../scenarios/selectors";
 import { agentFetch, getActiveDraftId, setActiveDraftId } from "./agent-api";
+import { combineAnswer, groupBrowserApprovals } from "./agent-conversation";
 import { AgentSettings } from "./agent-settings";
 import { readAgentVariables } from "./agent-variables";
 import {
@@ -451,6 +452,7 @@ export function AgentWidget({
   const [confirmReset, setConfirmReset] = useState(false);
   const [connectionError, setConnectionError] = useState(false);
   const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [answerDetails, setAnswerDetails] = useState<Record<string, string>>({});
   const [patch, setPatch] = useState<string>();
   const [reviewDigest, setReviewDigest] = useState<string>();
   const [reviewNotice, setReviewNotice] = useState("");
@@ -1089,7 +1091,12 @@ export function AgentWidget({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           requestId: session.userRequest.id,
-          answers,
+          answers: Object.fromEntries(
+            session.userRequest.questions.map((question) => [
+              question.id,
+              combineAnswer(answers[question.id] ?? "", answerDetails[question.id] ?? ""),
+            ]),
+          ),
           environment,
           variables: readAgentVariables(),
         }),
@@ -1098,6 +1105,7 @@ export function AgentWidget({
       if (!response.ok) throw new Error(result.error);
       applySnapshot(result, sequence);
       setAnswers({});
+      setAnswerDetails({});
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Could not send answer.");
     } finally {
@@ -1118,6 +1126,7 @@ export function AgentWidget({
       if (!response.ok) throw new Error("Could not start a new conversation.");
       applySnapshot((await response.json()) as Session, sequence);
       setAnswers({});
+      setAnswerDetails({});
       setConfirmReset(false);
       setView("chat");
       setMessage("");
@@ -1566,22 +1575,38 @@ export function AgentWidget({
                   </div>
                 )}
 
-              {session?.messages.map((item) => (
-                <div className={`agent-message ${item.role}`} key={item.id}>
-                  <strong>{item.role === "user" ? "You" : item.role === "tool" ? "HyperTest runner" : "Q-Rex"}</strong>
-                  {(item.skill || item.contexts?.length) && (
-                    <div className="agent-message-contexts">
-                      {item.skill && <span className="agent-message-skill">/{item.skill}</span>}
-                      {item.contexts?.map((context) => (
-                        <span key={context.id} title={context.source}>
-                          {context.label}
-                        </span>
-                      ))}
+              {groupBrowserApprovals(session?.messages ?? []).map((group) =>
+                group.browserApprovals ? (
+                  <details className="agent-message agent-browser-approvals" key={group.messages[0].id}>
+                    <summary>
+                      {group.messages.length} browser {group.messages.length === 1 ? "action" : "actions"} automatically
+                      allowed
+                    </summary>
+                    {group.messages.map((item) => (
+                      <p key={item.id}>{item.text}</p>
+                    ))}
+                  </details>
+                ) : (
+                  group.messages.map((item) => (
+                    <div className={`agent-message ${item.role}`} key={item.id}>
+                      <strong>
+                        {item.role === "user" ? "You" : item.role === "tool" ? "HyperTest runner" : "Q-Rex"}
+                      </strong>
+                      {(item.skill || item.contexts?.length) && (
+                        <div className="agent-message-contexts">
+                          {item.skill && <span className="agent-message-skill">/{item.skill}</span>}
+                          {item.contexts?.map((context) => (
+                            <span key={context.id} title={context.source}>
+                              {context.label}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      <p>{item.text}</p>
                     </div>
-                  )}
-                  <p>{item.text}</p>
-                </div>
-              ))}
+                  ))
+                ),
+              )}
               {session?.busy && !session.userRequest && !session.approvalRequest && (
                 <div className="agent-working" role="status">
                   <QRex mood="working" />
@@ -1934,6 +1959,11 @@ export function AgentWidget({
                         </small>
                       </label>
                     ))}
+                  {!question.isSecret && question.options?.some((option) => option.label === answers[question.id]) && (
+                    <button type="button" onClick={() => setAnswers((current) => ({ ...current, [question.id]: "" }))}>
+                      Clear selection
+                    </button>
+                  )}
                   {question.isSecret ? (
                     <div className="agent-secret-answer">
                       <p>
@@ -1951,20 +1981,21 @@ export function AgentWidget({
                     <TextInput
                       aria-label={`Your answer: ${question.question}`}
                       type="text"
-                      placeholder={question.options?.length ? "Or type your answer" : "Type your answer"}
-                      value={
-                        question.options?.some((option) => option.label === answers[question.id])
-                          ? ""
-                          : (answers[question.id] ?? "")
-                      }
-                      onValueChange={(value) => setAnswers((current) => ({ ...current, [question.id]: value }))}
+                      placeholder={question.options?.length ? "Add details or type your answer" : "Type your answer"}
+                      value={answerDetails[question.id] ?? ""}
+                      onValueChange={(value) => setAnswerDetails((current) => ({ ...current, [question.id]: value }))}
                     />
                   )}
                 </fieldset>
               ))}
               <button
                 type="submit"
-                disabled={sending || session.userRequest.questions.some((question) => !answers[question.id]?.trim())}
+                disabled={
+                  sending ||
+                  session.userRequest.questions.some(
+                    (question) => !combineAnswer(answers[question.id] ?? "", answerDetails[question.id] ?? ""),
+                  )
+                }
               >
                 Send answers
               </button>
