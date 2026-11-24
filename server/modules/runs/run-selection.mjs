@@ -33,15 +33,15 @@ export function resolveSelection(input, features, catalog) {
       );
     }
   } else if (
-    selection.kind === "category" &&
+    selection.kind === "flow" &&
     typeof selection.file === "string" &&
-    typeof selection.category === "string"
+    typeof selection.flow === "string"
   ) {
     const rows = catalog.filter(
-      (item) => item.file === selection.file && (item.category || "Uncategorized") === selection.category,
+      (item) => item.file === selection.file && (item.flow || "Unassigned flow") === selection.flow,
     );
     if (rows.some((item) => item.availability === "unavailable"))
-      throw new Error("This category contains scenarios without a unique, executable feature entry.");
+      throw new Error("This flow contains scenarios without a unique, executable feature entry.");
     candidates = rows.map((row) => features.find((item) => item.key === row.key));
   } else throw new Error("Invalid run selection.");
   if (

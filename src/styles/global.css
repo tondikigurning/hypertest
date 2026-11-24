@@ -1013,11 +1013,6 @@ select:focus-visible {
   background: #f2effb;
   border-color: #e9e3f7;
 }
-.scenario-badge.priority-high {
-  color: #946019;
-  background: #fff6e7;
-  border-color: #f8e6c6;
-}
 .scenario-badge.attention {
   color: #946019;
   background: #fff6e7;
@@ -2159,7 +2154,7 @@ select:focus-visible {
   margin-top: 10px;
 }
 
-/* Feature and category run */
+/* Feature and flow run */
 .group-run-button {
   display: inline-flex;
   align-items: center;

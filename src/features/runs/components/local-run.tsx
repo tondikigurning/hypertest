@@ -244,8 +244,8 @@ export function GroupRun({ selection, name, items }: { selection: RunSelection; 
             titleId="group-run-title"
             title={name}
             description={
-              selection.kind === "category"
-                ? "Run every scenario in this category"
+              selection.kind === "flow"
+                ? "Run every scenario in this flow"
                 : selection.kind === "group"
                   ? "Run every scenario in this group and its child files"
                   : "Run every scenario in this feature"

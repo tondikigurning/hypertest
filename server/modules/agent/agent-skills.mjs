@@ -20,6 +20,7 @@ Review boundaries still apply across handoffs:
 
 Use the provided tools in place of shell examples in skills:
 - list_files and paged read_file inspect source and references; use scoped directories to avoid truncated listings.
+- read_baseline_feature reads a feature at the immutable draft base for comparison with the current file, including inherited tags, backgrounds and examples. An unavailable baseline is not evidence of eligibility or approval.
 - playwright_cli owns a named authenticated browser; it starts automatically, so do not open a second session or request credentials in chat. Use the selected environment; default an Entity options input to Converge unless the user specified another entity, within the authorized target. snapshot/find expose current refs; generate-locator verifies locators without arbitrary JavaScript. Use fresh snapshots after navigation and read saved snapshot paths with read_file. requests exposes listings only: there is no request-detail, eval/run-code, screenshot, trace, storage or mocking action. Record dated sanitized observations when artifacts/details are unavailable; never fabricate paths or mock schemas.
 - show_diff presents draft changes without approving or committing them.
 - Scenario execution from the agent workspace is unavailable. The explorer runner uses the current checkout and cannot verify unmerged workspace changes. Report execution and standalone TypeScript checks as unperformed when unavailable.

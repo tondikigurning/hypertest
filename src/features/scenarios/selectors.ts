@@ -1,10 +1,9 @@
-import { category, label, type Scenario } from "./scenario";
+import { flow, label, scenarioTagLabels, type Scenario } from "./scenario";
 
 export interface ScenarioFilters {
   scopePath?: string;
   status: string;
-  priority: string;
-  type: string;
+  tag: string;
   search: string;
 }
 
@@ -90,9 +89,8 @@ export function filterScenarios(scenarios: Array<Scenario>, filters: ScenarioFil
     (scenario) =>
       (search ? true : Boolean(filters.scopePath && isScenarioInScope(scenario.file, filters.scopePath))) &&
       (filters.status === "all" || (scenario.status?.trim() || "Not run") === filters.status) &&
-      (filters.priority === "all" || scenario.tags.includes(`@priority:${filters.priority}`)) &&
-      (filters.type === "all" || scenario.type === filters.type) &&
-      `${scenario.id} ${scenario.title} ${scenario.feature} ${scenario.module} ${scenario.file} ${label(scenario.file)} ${scenario.category} ${scenario.catalogTags.join(" ")} ${scenario.tags.join(" ")}`
+      (filters.tag === "all" || scenarioTagLabels(scenario).includes(filters.tag)) &&
+      `${scenario.id} ${scenario.title} ${scenario.feature} ${scenario.module} ${scenario.file} ${label(scenario.file)} ${scenario.flow} ${scenario.catalogTags.join(" ")} ${scenario.tags.join(" ")}`
         .toLowerCase()
         .includes(search),
   );
@@ -101,7 +99,7 @@ export function filterScenarios(scenarios: Array<Scenario>, filters: ScenarioFil
 export function groupFlows(scenarios: Array<Scenario>) {
   const groups = new Map<string, Array<Scenario>>();
   for (const scenario of scenarios) {
-    const key = `${scenario.file}:${category(scenario)}`;
+    const key = `${scenario.file}:${flow(scenario)}`;
     const entries = groups.get(key);
     if (entries) entries.push(scenario);
     else groups.set(key, [scenario]);

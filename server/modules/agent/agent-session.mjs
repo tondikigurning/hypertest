@@ -203,25 +203,25 @@ export function selectFeatureContext(catalog, feature) {
   };
 }
 
-export function selectCategoryContext(catalog, ref) {
+export function selectScenarioFlowContext(catalog, ref) {
   let identity;
   try {
     identity = JSON.parse(ref);
   } catch {
-    throw new Error("The attached category identity is invalid.");
+    throw new Error("The attached flow identity is invalid.");
   }
   if (!Array.isArray(identity) || identity.length !== 3 || identity.some((part) => typeof part !== "string" || !part))
-    throw new Error("The attached category identity is invalid.");
-  const [module, file, category] = identity;
+    throw new Error("The attached flow identity is invalid.");
+  const [module, file, flow] = identity;
   const scenarios = catalog.filter(
     (scenario) =>
-      scenario.module === module && scenario.file === file && (scenario.category || "Uncategorized") === category,
+      scenario.module === module && scenario.file === file && (scenario.flow || "Unassigned flow") === flow,
   );
-  if (!scenarios.length) throw new Error("The attached category is unavailable in the committed workspace.");
+  if (!scenarios.length) throw new Error("The attached flow is unavailable in the committed workspace.");
   return {
     module,
     file,
-    category,
+    flow,
     scenarios: scenarios.map(({ id, title, steps, tags }) => ({ id, title, steps, tags })),
   };
 }
@@ -235,7 +235,7 @@ function validateContextItems(items) {
       throw new Error("A context attachment is invalid. Remove it and attach it again.");
     if (seenIds.has(item.id)) throw new Error("Each context attachment needs a unique identity.");
     seenIds.add(item.id);
-    if (!new Set(["scenario", "feature", "category", "flow", "file", "run", "note", "upload"]).has(item.kind))
+    if (!new Set(["scenario", "feature", "scenario-flow", "flow", "file", "run", "note", "upload"]).has(item.kind))
       throw new Error("This type of context cannot be attached.");
     const ref = item.kind === "note" ? item.text : item.kind === "upload" ? item.title : item.ref;
     if (typeof ref !== "string" || !ref.trim() || ref.length > 4000)
@@ -1521,6 +1521,21 @@ export function createSession({
         requestApproval,
         runBrowserCommand: (args) => runBrowserCommand(workspace, explorationBrowser, args),
         getDiff: async () => ({ patch: await workspaceDiff(workspace, baseCommit) }),
+        readBaselineFeature: async (path) => {
+          await verifyHead();
+          try {
+            const result = await execFileAsync("git", ["show", `${baseCommit}:${path}`], {
+              cwd: workspace,
+              timeout: 30000,
+              maxBuffer: 2 * 1024 * 1024,
+            });
+            return result.stdout;
+          } catch {
+            throw new Error(
+              "The baseline feature is unavailable at the draft's base commit. Do not assume baseline eligibility.",
+            );
+          }
+        },
         browserName: explorationBrowser,
         ensureBrowser,
         closeBrowser: closeActiveExplorationBrowser,
@@ -1862,11 +1877,11 @@ export function createSession({
           null,
           2,
         );
-      } else if (item.kind === "category") {
-        const categoryContext = selectCategoryContext(catalog, item.ref);
-        label = `${categoryContext.category} ? ${categoryContext.file.replace(/\.feature$/, "")}`;
-        source = categoryContext.file;
-        content = JSON.stringify(categoryContext, null, 2);
+      } else if (item.kind === "scenario-flow") {
+        const flowContext = selectScenarioFlowContext(catalog, item.ref);
+        label = `${flowContext.flow} · ${flowContext.file.replace(/\.feature$/, "")}`;
+        source = flowContext.file;
+        content = JSON.stringify(flowContext, null, 2);
       } else if (item.kind === "flow") {
         const feature = catalog.find((scenario) => scenario.file === item.ref && scenario.module === item.module);
         if (!feature) throw new Error("The attached feature is unavailable in this workspace.");

@@ -43,7 +43,7 @@ interface Message {
   contexts?: Array<{ id: string; kind: ContextKind; label: string; source: string }>;
   skill?: string;
 }
-type ContextKind = "scenario" | "feature" | "category" | "flow" | "file" | "run" | "note" | "upload";
+type ContextKind = "scenario" | "feature" | "scenario-flow" | "flow" | "file" | "run" | "note" | "upload";
 interface ContextScenario {
   key: string;
   title: string;
@@ -51,7 +51,7 @@ interface ContextScenario {
   file: string;
   module: string;
   feature?: string;
-  category?: string;
+  flow?: string;
   steps: Array<string>;
   tags?: Array<string>;
 }
@@ -167,7 +167,7 @@ function isContextAttachment(item: unknown): item is ContextAttachment {
     typeof candidate.id === "string" &&
     typeof candidate.ref === "string" &&
     typeof candidate.label === "string" &&
-    ["scenario", "feature", "category", "flow", "file", "run", "note"].includes(candidate.kind) &&
+    ["scenario", "feature", "scenario-flow", "flow", "file", "run", "note"].includes(candidate.kind) &&
     (candidate.kind !== "note" || (typeof candidate.text === "string" && typeof candidate.title === "string"))
   );
 }
@@ -177,7 +177,16 @@ function readContexts(): Array<ContextAttachment> | undefined {
     const raw = localStorage.getItem(contextStorageKey);
     if (raw === null) return undefined;
     const value = JSON.parse(raw);
-    return Array.isArray(value) ? value.filter(isContextAttachment).slice(0, 8) : [];
+    return Array.isArray(value)
+      ? value
+          .map((item) =>
+            item && typeof item === "object" && "kind" in item && item.kind === "category"
+              ? { ...item, kind: "scenario-flow" }
+              : item,
+          )
+          .filter(isContextAttachment)
+          .slice(0, 8)
+      : [];
   } catch {
     return [];
   }
@@ -185,7 +194,7 @@ function readContexts(): Array<ContextAttachment> | undefined {
 
 function contextDisplayLabel(item: ContextAttachment) {
   if ((item.kind === "feature" || item.kind === "scenario") && item.value?.title) return item.value.title;
-  if (item.kind === "category") {
+  if (item.kind === "scenario-flow") {
     try {
       const identity = JSON.parse(item.ref);
       if (Array.isArray(identity) && typeof identity[2] === "string") return identity[2];
@@ -274,7 +283,7 @@ export function AgentWidget({
   const [selectedSkill, setSelectedSkill] = useState<string>();
   const [contexts, setContexts] = useState<Array<ContextAttachment>>(() => initialContexts(scenario, feature, group));
   const [contextPicker, setContextPicker] = useState<
-    "menu" | "scenario" | "feature" | "category" | "flow" | "file" | "run" | "note" | null
+    "menu" | "scenario" | "feature" | "scenario-flow" | "flow" | "file" | "run" | "note" | null
   >(null);
   const [contextSearch, setContextSearch] = useState("");
   const [contextFiles, setContextFiles] = useState<Array<string>>([]);
@@ -555,14 +564,14 @@ export function AgentWidget({
     return [...features.values()];
   }, [contextScenarios]);
 
-  const categoryOptions = useMemo(() => {
-    const groups = new Map<string, { file: string; module: string; category: string; feature: string }>();
+  const flowOptions = useMemo(() => {
+    const groups = new Map<string, { file: string; module: string; flow: string; feature: string }>();
     for (const item of contextScenarios) {
       if (feature && item.file !== feature.file) continue;
       if (group && !isScenarioInScope(item.file, group.path)) continue;
-      const name = item.category || "Uncategorized";
+      const name = item.flow || "Unassigned flow";
       const key = JSON.stringify([item.module, item.file, name]);
-      groups.set(key, { file: item.file, module: item.module, category: name, feature: item.feature || item.file });
+      groups.set(key, { file: item.file, module: item.module, flow: name, feature: item.feature || item.file });
     }
     return [...groups.values()];
   }, [contextScenarios, feature, group]);
@@ -734,12 +743,12 @@ export function AgentWidget({
       value: item,
     });
 
-  const addCategoryContext = (item: { file: string; module: string; category: string }) =>
+  const addScenarioFlowContext = (item: { file: string; module: string; flow: string }) =>
     addContext({
       id: contextId(),
-      kind: "category",
-      ref: JSON.stringify([item.module, item.file, item.category]),
-      label: item.category,
+      kind: "scenario-flow",
+      ref: JSON.stringify([item.module, item.file, item.flow]),
+      label: item.flow,
     });
 
   const addFlowContext = (registryPath: string) => {
@@ -2143,7 +2152,7 @@ export function AgentWidget({
                             ×
                           </button>
                         </div>
-                        {!["feature", "category", "scenario"].includes(item.kind) && (
+                        {!["feature", "scenario-flow", "scenario"].includes(item.kind) && (
                           <small>
                             {item.kind === "note"
                               ? "Custom note"
@@ -2183,7 +2192,7 @@ export function AgentWidget({
                             ? editingNote
                               ? "Edit note"
                               : "Add a note"
-                            : `Add ${contextPicker === "feature" ? "menu" : contextPicker === "file" ? "source file" : contextPicker}`}
+                            : `Add ${contextPicker === "feature" ? "menu" : contextPicker === "file" ? "source file" : contextPicker === "scenario-flow" ? "flow" : contextPicker}`}
                       </strong>
                       <button
                         type="button"
@@ -2204,8 +2213,8 @@ export function AgentWidget({
                         </button>
                         {!home && (
                           <>
-                            <button type="button" onClick={() => setContextPicker("category")}>
-                              Category
+                            <button type="button" onClick={() => setContextPicker("scenario-flow")}>
+                              Flow
                             </button>
                             <button type="button" onClick={() => setContextPicker("scenario")}>
                               Scenario
@@ -2290,42 +2299,42 @@ export function AgentWidget({
                             ))}
                         </AgentContextResults>
                       </>
-                    ) : contextPicker === "category" ? (
+                    ) : contextPicker === "scenario-flow" ? (
                       <>
                         <AgentContextSearch
                           value={contextSearch}
-                          placeholder="Search categories"
-                          label="Search categories to attach"
+                          placeholder="Search flows"
+                          label="Search flows to attach"
                           maxLength={160}
                           onChange={setContextSearch}
                         />
                         <AgentContextResults>
-                          {categoryOptions
+                          {flowOptions
                             .filter(
                               (item) =>
                                 !selectedContextRefs.has(
-                                  `category:${JSON.stringify([item.module, item.file, item.category])}`,
+                                  `scenario-flow:${JSON.stringify([item.module, item.file, item.flow])}`,
                                 ),
                             )
                             .filter((item) =>
-                              `${item.category} ${item.feature} ${item.module}`
+                              `${item.flow} ${item.feature} ${item.module}`
                                 .toLowerCase()
                                 .includes(contextSearch.trim().toLowerCase()),
                             )
                             .slice(0, 30)
                             .map((item) => (
                               <AgentContextOption
-                                key={JSON.stringify([item.module, item.file, item.category])}
-                                title={item.category}
+                                key={JSON.stringify([item.module, item.file, item.flow])}
+                                title={item.flow}
                                 description={item.feature}
-                                onSelect={() => addCategoryContext(item)}
+                                onSelect={() => addScenarioFlowContext(item)}
                               />
                             ))}
-                          {categoryOptions.every((item) =>
+                          {flowOptions.every((item) =>
                             selectedContextRefs.has(
-                              `category:${JSON.stringify([item.module, item.file, item.category])}`,
+                              `scenario-flow:${JSON.stringify([item.module, item.file, item.flow])}`,
                             ),
-                          ) && <p>No categories available.</p>}
+                          ) && <p>No flows available.</p>}
                         </AgentContextResults>
                       </>
                     ) : contextPicker === "flow" ? (

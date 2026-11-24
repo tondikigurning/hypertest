@@ -43,8 +43,8 @@ export function ScenarioDetails({
           </div>
           <dl className="catalog-metadata">
             <div>
-              <dt>Category</dt>
-              <dd>{scenario.category || "Uncategorized"}</dd>
+              <dt>Flow</dt>
+              <dd>{scenario.flow || "Unassigned flow"}</dd>
             </div>
             <div>
               <dt>Method</dt>

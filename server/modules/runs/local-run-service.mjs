@@ -80,6 +80,7 @@ export function createLocalRunService({
   workspaceRoot = repoRoot,
   configFile = "playwright.bdd.config.ts",
   skipEvidenceUpload = false,
+  evidenceUploadTimeoutMs = 60_000,
   maxRuntimeMs,
   safeProcessEnvironment = false,
   onFinished = async () => {},
@@ -90,6 +91,7 @@ export function createLocalRunService({
   const recovery = journal?.recover().catch(() => {});
   let run;
   let generatedFingerprint;
+  let generatedFilesKey;
   const collections = new Map();
 
   function events() {
@@ -99,13 +101,30 @@ export function createLocalRunService({
   function publicRun() {
     if (!run) return null;
     const progress = events();
+    const tests = Object.values(progress.tests);
+    const failedStepAwaitingTestEnd = tests.some(
+      (test) => test.status === "running" && test.steps?.some((step) => step.status === "failed"),
+    );
+    const hasRunningTest = tests.some((test) => test.status === "running");
+    const hasPendingTest = tests.some((test) => test.status === "pending");
+    const stage =
+      !run.executionDone && run.stage === "executing"
+        ? failedStepAwaitingTestEnd
+          ? "finishing scenario"
+          : tests.length > 0 && !hasRunningTest
+            ? hasPendingTest
+              ? "starting scenario"
+              : "finishing run"
+            : run.stage
+        : run.stage;
     return {
       id: run.id,
       scenarioId: run.scenarioId,
       scenarioIds: run.scenarioIds,
       selection: run.selection,
       target: run.target,
-      stage: run.stage,
+      stage,
+      executionDone: Boolean(run.executionDone),
       done: run.done,
       error: run.error,
       evidenceUpload: run.evidenceUpload,
@@ -135,15 +154,37 @@ export function createLocalRunService({
     };
   }
 
-  function command(script, args, env, cwd = e2eWorkspace) {
+  function command(script, args, env, cwd = e2eWorkspace, timeoutMs = 0) {
     return new Promise((resolvePromise) => {
       const child = spawnProcess(process.execPath, [script, ...args], { cwd, env, stdio: "ignore", windowsHide: true });
       run.child = child;
-      child.on("error", () => resolvePromise(false));
-      child.on("close", (code) => {
+      let settled = false;
+      let timedOut = false;
+      let timeoutTimer;
+      let forceKillTimer;
+      const finish = (ok) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timeoutTimer);
+        clearTimeout(forceKillTimer);
         if (run.child === child) run.child = undefined;
-        resolvePromise(code === 0);
-      });
+        resolvePromise(ok);
+      };
+      child.on("error", () => finish(false));
+      child.on("close", (code) => finish(!timedOut && code === 0));
+      if (timeoutMs > 0) {
+        timeoutTimer = setTimeout(() => {
+          timedOut = true;
+          forceKillTimer = setTimeout(() => child.kill("SIGKILL"), 5000);
+          forceKillTimer.unref?.();
+          if (process.platform === "win32" && child.pid) {
+            spawn("taskkill", ["/pid", String(child.pid), "/t", "/f"], { stdio: "ignore", windowsHide: true }).on(
+              "error",
+              () => child.kill(),
+            );
+          } else child.kill("SIGTERM");
+        }, timeoutMs);
+      }
     });
   }
 
@@ -177,15 +218,18 @@ export function createLocalRunService({
       }
       run.stage = "generating";
       const fingerprintForRun = fingerprint();
-      if (generatedFingerprint !== fingerprintForRun) {
+      const filesKey = JSON.stringify([...run.files].sort());
+      if (generatedFingerprint !== fingerprintForRun || generatedFilesKey !== filesKey) {
         collections.clear();
         generatedFingerprint = undefined;
+        generatedFilesKey = undefined;
         if (!(await command(bddgen, [`--config=${configFile}`], env, workspaceE2e))) {
           if (run.cancelRequested) return;
           run.error = "Unable to generate BDD tests. Check the local runner configuration.";
           return;
         }
         generatedFingerprint = fingerprint();
+        generatedFilesKey = filesKey;
       }
       if (run.cancelRequested) return;
       run.stage = "checking collection";
@@ -226,6 +270,8 @@ export function createLocalRunService({
         env,
         workspaceE2e,
       );
+      run.executionDone = true;
+      run.stage = "saving results";
       if (run.cancelRequested) return;
       const progress = events();
       if (existsSync(env.BDD_RESULTS_FILE)) {
@@ -278,6 +324,7 @@ export function createLocalRunService({
       await onFinished().catch(() => {
         run.error ||= "Could not clean the isolated draft workspace.";
       });
+      run.executionDone = true;
       run.done = true;
       run.finishedAt = new Date().toISOString();
       run.stage = "finished";
@@ -292,14 +339,21 @@ export function createLocalRunService({
     }
 
     run.stage = "uploading evidence";
+    run.evidenceUpload = { status: "uploading", scenarioIds: [] };
     const environmentId = environments.find((item) => item.target === run.target)?.id;
     if (!environmentId) throw new Error("Unknown evidence environment.");
-    const uploaded = await command(
-      tsx,
-      [evidenceCli, "--push", "--auto", "--results", resultsPath, "--environment", environmentId, "--run-id", run.id],
-      env,
-      repoRoot,
-    );
+    let uploaded = false;
+    try {
+      uploaded = await command(
+        tsx,
+        [evidenceCli, "--push", "--auto", "--results", resultsPath, "--environment", environmentId, "--run-id", run.id],
+        env,
+        repoRoot,
+        evidenceUploadTimeoutMs,
+      );
+    } catch {
+      // Evidence failure must not change the test outcome or leave upload marked as active.
+    }
     let results = [];
     try {
       results = JSON.parse(readFileSync(resultsPath, "utf8"));
@@ -326,6 +380,7 @@ export function createLocalRunService({
       files: resolved.files,
       scenarioId: resolved.ids.length === 1 ? resolved.ids[0] : "",
       stage: "starting",
+      executionDone: false,
       done: false,
     };
     if (Number.isFinite(maxRuntimeMs) && maxRuntimeMs > 0) {

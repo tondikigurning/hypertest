@@ -63,8 +63,8 @@ export function cancelRun(req, res) {
   if (req.headers.origin !== `http://${req.headers.host}`) return json(res, 403, { error: "Local requests only." });
   if (!service.active() || !service.matches(url.searchParams.get("run")))
     return json(res, 409, { error: "This run is no longer active." });
-  if (service.publicRun().stage === "uploading evidence")
-    return json(res, 409, { error: "The scenarios have finished; evidence upload cannot be cancelled." });
+  if (service.publicRun().executionDone)
+    return json(res, 409, { error: "Scenario execution has finished; only run finalization remains." });
   return json(res, 202, service.cancel());
 }
 

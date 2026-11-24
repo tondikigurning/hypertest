@@ -116,6 +116,7 @@ export function createAgentTools({
   confirmFlows,
   useSkill,
   prdStore,
+  readBaselineFeature,
 }) {
   const pathSchema = z.object({ path: z.string().describe("Relative path inside this draft workspace.") });
   const agentTools = {
@@ -195,6 +196,33 @@ export function createAgentTools({
         return redact(`Lines ${first}-${first + selected.length - 1} of ${lines.length}\n${page}`, variables);
       },
     }),
+    ...(readBaselineFeature
+      ? {
+          read_baseline_feature: tool({
+            description:
+              "Read a feature file from this draft's immutable base commit to compare scenario intent, including inherited tags, backgrounds and examples. This is source evidence, not scenario approval. Paths must be under e2e/tests/bdd/features and end in .feature. Use bounded pages for large files.",
+            inputSchema: pathSchema.extend({
+              startLine: z.number().int().min(1).optional(),
+              lineCount: z.number().int().min(1).max(500).optional(),
+            }),
+            execute: async ({ path, startLine, lineCount }) => {
+              const normalized = path.replaceAll("\\", "/");
+              if (!normalized.startsWith("e2e/tests/bdd/features/") || !normalized.endsWith(".feature"))
+                throw new Error("Choose a feature file under e2e/tests/bdd/features.");
+              await safeWorkspacePath(workspace, normalized);
+              const content = await readBaselineFeature(normalized);
+              if (startLine === undefined && lineCount === undefined && Buffer.byteLength(content) <= 64000)
+                return redact(content, variables);
+              const lines = content.split(/\r?\n/);
+              const first = startLine ?? 1;
+              const selected = lines.slice(first - 1, first - 1 + (lineCount ?? 200));
+              const page = selected.join("\n");
+              if (Buffer.byteLength(page) > 64000) throw new Error("This page exceeds 64 KB. Request fewer lines.");
+              return redact(`Lines ${first}-${first + selected.length - 1} of ${lines.length}\n${page}`, variables);
+            },
+          }),
+        }
+      : {}),
     write_file: tool({
       description:
         "Create or replace a text file in the draft workspace, or write a database PRD using its virtual identifier. Workspace changes remain in the private draft for review.",
@@ -282,7 +310,10 @@ export function createAgentTools({
       inputSchema: z.object({}),
       execute: async () => {
         const result = await getDiff();
-        return redact(result.patch, variables).slice(0, 48000) || "There are no workspace changes to display.";
+        const patch = redact(result.patch, variables);
+        if (patch.length > 48000)
+          return `${patch.slice(0, 48000)}\n[Diff truncated; inspect the complete Changes panel before review.]`;
+        return patch || "There are no workspace changes to display.";
       },
     }),
     ask_user: tool({

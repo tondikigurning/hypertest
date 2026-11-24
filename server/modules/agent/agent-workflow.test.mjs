@@ -149,6 +149,33 @@ async function workflow(t, responses, runtime = {}, files = {}, prdStore) {
   };
 }
 
+test("baseline feature reader compares the immutable base with the draft and rejects unsafe paths", async (t) => {
+  const baseline = `@original\nFeature: Orders\n  Background:\n    Given an order\n  @${scenarioId}\n  Scenario: List\n    Then the order is visible\n`;
+  const responses = [
+    { tool: "read_baseline_feature", input: { path: featurePath } },
+    { tool: "read_file", input: { path: featurePath } },
+    { tool: "read_baseline_feature", input: { path: "e2e/tests/bdd/features/../../../../.env.feature" } },
+    { tool: "read_baseline_feature", input: { path: "e2e/tests/bdd/features/example/missing.feature" } },
+    { text: "Compared the feature sources." },
+  ];
+  const { session, workspace, requests } = await workflow(t, responses, {}, { [featurePath]: baseline });
+  await writeFile(join(workspace, featurePath), baseline.replace("@original", "@changed"));
+  await session.send("Compare the feature to its committed baseline.");
+  await waitFor(session, (state) => !state.busy);
+  assert.equal(session.snapshot().error, "");
+  const transcript = JSON.stringify(requests.at(-1));
+  assert.match(transcript, /@original/);
+  assert.match(transcript, /@changed/);
+  assert.match(transcript, /outside the agent's allowed workspace files/);
+  assert.match(transcript, /baseline feature is unavailable/);
+});
+
+test("show_diff identifies an incomplete patch", async () => {
+  const agentTools = createAgentTools({ getDiff: async () => ({ patch: "x".repeat(48001) }) });
+  const result = await agentTools.show_diff.execute({});
+  assert.match(result, /Diff truncated; inspect the complete Changes panel/);
+});
+
 test("PRD exploration survives a restart and is reused through scenario and code handoffs without a browser", async (t) => {
   const explorationPath = "e2e/tests/bdd/features/example/orders.exploration.md";
   const registryPath = "e2e/tests/bdd/features/example/orders.flows.md";

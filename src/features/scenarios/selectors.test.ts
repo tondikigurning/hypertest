@@ -53,13 +53,13 @@ test("parent filtering includes descendants, child filtering excludes siblings, 
     scenario("case-management/cases-archive.feature", "TEN_ARC_LST_E2E_001"),
     scenario("knowledge-management/articles/integration.feature", "TEN_ART_INT_E2E_001"),
   ];
-  const filters = { status: "all", priority: "all", type: "all", search: "" };
+  const filters = { status: "all", tag: "all", search: "" };
   assert.deepEqual(filterScenarios(scenarios, { ...filters, scopePath: "case-management/cases" }), scenarios.slice(0, 2));
   assert.deepEqual(filterScenarios(scenarios, { ...filters, scopePath: "case-management/cases/integration" }), [scenarios[1]]);
   assert.deepEqual(filterScenarios(scenarios, { ...filters, search: "integration" }), [scenarios[1], scenarios[3]]);
   assert.deepEqual(filterScenarios(scenarios, { ...filters, search: "case-management/cases/integration" }), [scenarios[1]]);
   assert.deepEqual(filterScenarios(scenarios, filters), []);
-  assert.equal(groupFlows(scenarios).length, 4, "same category names retain separate file identities");
+  assert.equal(groupFlows(scenarios).length, 4, "same flow names retain separate file identities");
 });
 
 test("nested routes and PRDs retain their parent menu identity", () => {

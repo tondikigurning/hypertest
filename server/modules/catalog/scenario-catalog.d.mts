@@ -15,7 +15,7 @@ export interface CatalogScenario {
   availabilityReasons: Array<string>;
 }
 export interface AutomationScenario extends CatalogScenario {
-  category: string;
+  flow: string;
   type: string;
   method: string;
   catalogTags: Array<string>;
