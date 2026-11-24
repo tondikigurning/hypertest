@@ -118,7 +118,11 @@ File/command permissions, flow confirmation,
 scenario approval and live-data approval are separate decisions.
 
 Tools replace the shell examples in skills: `list_files`, `read_file`, `write_file`, `edit_file`,
-`show_diff`, `ask_user`, `confirm_flows`, `playwright_cli` and `use_skill`.
+`show_diff`, `ask_user`, `confirm_flows`, `playwright_cli`, `use_skill` and `read_baseline_feature`.
+The baseline reader compares a feature's committed base with its current draft contents, including
+inherited tags and examples; it does not establish historical approval. If the base file cannot be
+read, eligibility remains unverified. A truncated `show_diff` is marked and the complete Changes
+panel remains the review source.
 Large source files can be read in pages with `startLine` and `lineCount`. References resolve relative
 to the skill document but tool paths are relative to the worktree root. The model has a bounded
 80-step turn; reaching that limit saves context and asks for a follow-up without claiming completion.

@@ -45,7 +45,7 @@ appears once and its total includes both. Prefer the folder layout for new multi
 Keep one confirmed-flow registry beside each menu's flat feature or folder at
 `<module>/<menu>.flows.md`. The registry records scenario authoring progress and discovery gaps;
 its format and resume rules are in the [flow registry reference](../../.agents/skills/write-e2e-scenarios/references/flow-registry.md).
-The explorer continues to derive flow categories from feature tags.
+The explorer continues to derive flows from feature tags.
 
 Keep one shared exploration record at `<module>/<menu>.exploration.md` beside the same menu file or
 folder, starting during PRD work even when no feature exists yet. All child groups and all three authoring
@@ -100,7 +100,7 @@ its owning menu PRD. Shared `_components` master contracts have no product owner
 the PRD of the consuming menu; the workflow must resolve that owner from context.
 The reusable `_components` navigation is not a product menu and does not expose a PRD button.
 
-Run can select a scenario, file, flow category within a file, or a menu/folder. The server resolves every group
+Run can select a scenario, file, flow within a file, or a menu/folder. The server resolves every group
 from current source and catalog entries, rejects stale or ambiguous selections, then checks Playwright collection.
 An authored child file does not by itself establish execution availability. Q-Rex group context records the selected
 scope without silently choosing a child file; its committed worktree may differ from the explorer checkout.

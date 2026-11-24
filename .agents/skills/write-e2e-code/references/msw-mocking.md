@@ -28,7 +28,7 @@ steps/<module>/*.steps.ts          module-specific mutation and auth mocks (crea
 
 | Scenario tag        | MSW active   | Backend hit             | When                                                                         |
 | ------------------- | ------------ | ----------------------- | ---------------------------------------------------------------------------- |
-| `@smoke`            | never        | always                  | Release-gating P0 journeys. The real backend must validate production parity |
+| `@smoke`            | never        | always                  | Release-gating journeys. The real backend must validate production parity |
 | `@regression`       | no (default) | yes                     | Stable reads, UI-only interactions, cancel and close flows                   |
 | `@regression @mock` | yes          | intercepted per handler | Volatile mutations (create, update, delete) or error boundary and edge cases |
 

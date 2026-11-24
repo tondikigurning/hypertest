@@ -2,6 +2,7 @@
 # Owner PRD: docs/prd/case-management/cases.md
 # Search and filter use existing cases read-only. A case number selected for detail is
 # retained through the assertion; it is not a mutation target.
+# Export coverage is limited to the observed menu entry; permission and delivery are unverified.
 
 Feature: Cases list and detail
 
@@ -52,13 +53,13 @@ Feature: Cases list and detail
   @TEN_CAS_LST_E2E_007 @regression @flow:TEN_CAS_LIST_FLOW @type:ui-interaction @ref:TEN_COM_PIP_E2E_001
   Scenario: The Closed pipeline contains closed cases
     Given the Cases list is open
-    When the user opens the Closed pipeline from Others
+    When the user opens the Closed pipeline
     Then every displayed case has status Closed
 
   @TEN_CAS_LST_E2E_008 @regression @flow:TEN_CAS_LIST_FLOW @type:ui-interaction @ref:TEN_COM_PIP_E2E_001
   Scenario: The Solved pipeline contains solved cases
     Given the Cases list is open
-    When the user opens the Solved pipeline from Others
+    When the user opens the Solved pipeline
     Then every displayed case has status Solved
 
   @TEN_CAS_LST_E2E_011 @regression @flow:TEN_CAS_LIST_FLOW @type:positive @ref:TEN_COM_PIP_E2E_001
@@ -146,7 +147,7 @@ Feature: Cases list and detail
   @TEN_CAS_LST_E2E_016 @regression @flow:TEN_CAS_LIST_FLOW @type:ui-interaction
   Scenario: Pending Customer Reply pipeline contains pending-reply cases
     Given the Cases list is open
-    When the user opens Pending Customer Reply from Others
+    When the user opens the Pending Customer Reply pipeline
     Then every displayed case has status Pending Customer Reply
 
   @TEN_CAS_LST_E2E_017 @regression @flow:TEN_CAS_LIST_FLOW @type:ui-interaction
@@ -154,4 +155,10 @@ Feature: Cases list and detail
     Given the Cases list is open
     When the user opens Add Filters
     Then the available filters include Assigned Agent, Case Flag, Case Number, Case Source, Case Status, Case Sub Type, Case Template, Case Type, Category, Closed At, Closed By, Created At, Created By, Customer Name, Customer No, Customer Product, Customer Type, Last Updated At, Last Updated By, OLA Status, Parent Case Number, Priority, SLA Status, Solved At, Subject and Team
+
+  @TEN_CAS_EXP_E2E_001 @regression @flow:TEN_CAS_EXPORT_FLOW @type:ui-interaction
+  Scenario: The Cases list actions menu offers Export
+    Given the Cases list is open
+    When the user opens the Cases list actions menu
+    Then the Cases list actions menu offers Export
 

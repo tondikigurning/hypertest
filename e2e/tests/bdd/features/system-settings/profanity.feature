@@ -46,20 +46,20 @@ Feature: System Settings — Profanity Settings
 
   # ── TEN_PRF_LIST_FLOW ─────────────────────────────────────────────────
 
-  @TEN_PRF_LST_E2E_001 @priority:P0 @smoke @flow:TEN_PRF_LIST_FLOW @type:positive
+  @TEN_PRF_LST_E2E_001 @smoke @flow:TEN_PRF_LIST_FLOW @type:positive
   Scenario: Profanity Settings page loads with the filter card and word management actions
     Given the user is on the profanity settings page
     Then the profanity filter card is visible
     And the profanity filter status is shown
     And the manage word/phrase action is visible
 
-  @TEN_PRF_LST_E2E_002 @priority:P1 @smoke @flow:TEN_PRF_LIST_FLOW @type:positive
+  @TEN_PRF_LST_E2E_002 @smoke @flow:TEN_PRF_LIST_FLOW @type:positive
   Scenario: Profanity Settings opens from the System Settings sidebar
     Given the user is on the system settings policies page
     When the user opens "Profanity Settings" from the system settings sidebar
     Then the profanity settings page is visible
 
-  @TEN_PRF_LST_E2E_003 @priority:P0 @smoke @flow:TEN_PRF_LIST_FLOW @type:positive
+  @TEN_PRF_LST_E2E_003 @smoke @flow:TEN_PRF_LIST_FLOW @type:positive
   Scenario: Manage panel opens the word list with the expected columns
     Given the user is on the profanity settings page
     When the user opens the manage word/phrase panel
@@ -67,35 +67,35 @@ Feature: System Settings — Profanity Settings
     And the profanity word list shows the "Word/Phrase" column
     And the profanity word list shows the "Type" column
 
-  @TEN_PRF_LST_E2E_004 @priority:P1 @regression @flow:TEN_PRF_LIST_FLOW @type:positive
+  @TEN_PRF_LST_E2E_004 @regression @flow:TEN_PRF_LIST_FLOW @type:positive
   Scenario: Custom words expose edit and delete actions while default words are read-only
     Given the user is on the profanity settings page
     When the user opens the manage word/phrase panel
     Then custom word rows show the edit and delete actions
     And default word rows show no row actions
 
-  @TEN_PRF_LST_E2E_005 @priority:P1 @smoke @flow:TEN_PRF_LIST_FLOW @type:positive
+  @TEN_PRF_LST_E2E_005 @smoke @flow:TEN_PRF_LIST_FLOW @type:positive
   Scenario: Search filters the word list by the first visible word
     Given the user is on the profanity settings page
     And the manage word/phrase panel is open
     When the user searches the profanity word list for the first visible word
     Then the profanity word list shows only matching words
 
-  @TEN_PRF_LST_E2E_006 @priority:P1 @regression @flow:TEN_PRF_LIST_FLOW @type:negative
+  @TEN_PRF_LST_E2E_006 @regression @flow:TEN_PRF_LIST_FLOW @type:negative
   Scenario: Search with no matches shows the empty state
     Given the user is on the profanity settings page
     And the manage word/phrase panel is open
     When the user searches the profanity word list for a value that matches no word
     Then the profanity word list shows the empty state
 
-  @TEN_PRF_LST_E2E_007 @priority:P1 @regression @flow:TEN_PRF_LIST_FLOW @type:ui-interaction
+  @TEN_PRF_LST_E2E_007 @regression @flow:TEN_PRF_LIST_FLOW @type:ui-interaction
   Scenario: Filtering by word returns rows that contain the selected word
     Given the user is on the profanity settings page
     And the manage word/phrase panel is open
     When the user applies the "Word/Phrase" filter with the first visible word
     Then the filtered profanity words contain the selected word
 
-  @TEN_PRF_LST_E2E_008 @priority:P1 @regression @flow:TEN_PRF_LIST_FLOW @type:ui-interaction
+  @TEN_PRF_LST_E2E_008 @regression @flow:TEN_PRF_LIST_FLOW @type:ui-interaction
   Scenario: Sorting the word list by Word/Phrase works in both directions
     Given the user is on the profanity settings page
     And the manage word/phrase panel is open
@@ -103,7 +103,7 @@ Feature: System Settings — Profanity Settings
     Then each profanity word sort request returns HTTP 200
     And the word list is returned in the requested order
 
-  @TEN_PRF_LST_E2E_009 @priority:P1 @regression @flow:TEN_PRF_LIST_FLOW @type:ui-interaction
+  @TEN_PRF_LST_E2E_009 @regression @flow:TEN_PRF_LIST_FLOW @type:ui-interaction
   Scenario: Word list paginates beyond the first page
     Given the user is on the profanity settings page
     When the user opens the manage word/phrase panel
@@ -113,7 +113,7 @@ Feature: System Settings — Profanity Settings
     When the user goes to the previous profanity word list page
     Then the previous profanity word list page action is disabled
 
-  @TEN_PRF_LST_E2E_010 @priority:P1 @regression @mock @flow:TEN_PRF_LIST_FLOW @type:negative
+  @TEN_PRF_LST_E2E_010 @regression @mock @flow:TEN_PRF_LIST_FLOW @type:negative
   Scenario: Word list shows an error state when the API returns 500 server error
     Given the user is on the profanity settings page
     And the manage word/phrase panel is open
@@ -121,7 +121,7 @@ Feature: System Settings — Profanity Settings
     When the user searches the profanity word list for "test"
     Then the profanity word list shows an error state
 
-  @TEN_PRF_LST_E2E_011 @priority:P1 @regression @mock @flow:TEN_PRF_LIST_FLOW @type:edge-case
+  @TEN_PRF_LST_E2E_011 @regression @mock @flow:TEN_PRF_LIST_FLOW @type:edge-case
   Scenario: Word list shows a loading state while waiting for a slow API response
     Given the user is on the profanity settings page
     And the manage word/phrase panel is open
@@ -131,7 +131,7 @@ Feature: System Settings — Profanity Settings
 
   # ── TEN_PRF_FILTER_TOGGLE_FLOW ────────────────────────────────────────
 
-  @TEN_PRF_FTG_E2E_001 @priority:P0 @smoke @flow:TEN_PRF_FILTER_TOGGLE_FLOW @type:positive
+  @TEN_PRF_FTG_E2E_001 @smoke @flow:TEN_PRF_FILTER_TOGGLE_FLOW @type:positive
   Scenario: Operator disables the profanity filter and restores it
     Given the user is on the profanity settings page
     And the profanity filter status is recorded
@@ -145,7 +145,7 @@ Feature: System Settings — Profanity Settings
     Then the profanity filter success toast is shown
     And the profanity filter status matches the recorded status
 
-  @TEN_PRF_FTG_E2E_002 @priority:P1 @regression @flow:TEN_PRF_FILTER_TOGGLE_FLOW @type:negative
+  @TEN_PRF_FTG_E2E_002 @regression @flow:TEN_PRF_FILTER_TOGGLE_FLOW @type:negative
   Scenario: Cancelling the confirmation keeps the current filter state
     Given the user is on the profanity settings page
     And the profanity filter status is recorded
@@ -154,7 +154,7 @@ Feature: System Settings — Profanity Settings
     Then the profanity filter confirmation dialog is not visible
     And the profanity filter status matches the recorded status
 
-  @TEN_PRF_FTG_E2E_003 @priority:P1 @regression @mock @flow:TEN_PRF_FILTER_TOGGLE_FLOW @type:negative
+  @TEN_PRF_FTG_E2E_003 @regression @mock @flow:TEN_PRF_FILTER_TOGGLE_FLOW @type:negative
   Scenario: Filter update shows an error toast when the API returns 500 server error
     Given the user is on the profanity settings page
     And the profanity filter status is recorded
@@ -166,7 +166,7 @@ Feature: System Settings — Profanity Settings
 
   # ── TEN_PRF_CREATE_FLOW ───────────────────────────────────────────────
 
-  @TEN_PRF_CRT_E2E_001 @priority:P0 @smoke @flow:TEN_PRF_CREATE_FLOW @type:positive
+  @TEN_PRF_CRT_E2E_001 @smoke @flow:TEN_PRF_CREATE_FLOW @type:positive
   Scenario: Operator adds a new E2E profanity word
     Given the user is on the profanity settings page
     When the user opens the manage word/phrase panel
@@ -175,7 +175,7 @@ Feature: System Settings — Profanity Settings
     And the created profanity word appears in the word list
     And the profanity add word input is empty
 
-  @TEN_PRF_CRT_E2E_002 @priority:P1 @regression @flow:TEN_PRF_CREATE_FLOW @type:negative
+  @TEN_PRF_CRT_E2E_002 @regression @flow:TEN_PRF_CREATE_FLOW @type:negative
   Scenario: Add rejects a word containing invalid characters
     Given the user is on the profanity settings page
     When the user opens the manage word/phrase panel
@@ -183,7 +183,7 @@ Feature: System Settings — Profanity Settings
     Then the profanity add word input is marked invalid
     And the add word action is disabled
 
-  @TEN_PRF_CRT_E2E_003 @priority:P1 @regression @flow:TEN_PRF_CREATE_FLOW @type:ui-interaction
+  @TEN_PRF_CRT_E2E_003 @regression @flow:TEN_PRF_CREATE_FLOW @type:ui-interaction
   Scenario: Add action is disabled while the input is empty
     Given the user is on the profanity settings page
     When the user opens the manage word/phrase panel
@@ -191,7 +191,7 @@ Feature: System Settings — Profanity Settings
 
   # ── TEN_PRF_EDIT_FLOW ─────────────────────────────────────────────────
 
-  @TEN_PRF_EDT_E2E_001 @priority:P1 @regression @flow:TEN_PRF_EDIT_FLOW @type:ui-interaction
+  @TEN_PRF_EDT_E2E_001 @regression @flow:TEN_PRF_EDIT_FLOW @type:ui-interaction
   Scenario: Edit dialog can be opened and cancelled without changing the word
     Given the user is on the profanity settings page
     And the manage word/phrase panel is open
@@ -201,7 +201,7 @@ Feature: System Settings — Profanity Settings
     Then the edit word dialog is not visible
     And the word is unchanged in the word list
 
-  @TEN_PRF_EDT_E2E_002 @priority:P0 @smoke @flow:TEN_PRF_EDIT_FLOW @type:positive
+  @TEN_PRF_EDT_E2E_002 @smoke @flow:TEN_PRF_EDIT_FLOW @type:positive
   Scenario: Operator updates an E2E profanity word
     Given the user is on the profanity settings page
     And the manage word/phrase panel is open
@@ -211,7 +211,7 @@ Feature: System Settings — Profanity Settings
     Then the profanity word updated toast is shown
     And the updated profanity word appears in the word list
 
-  @TEN_PRF_EDT_E2E_003 @priority:P1 @regression @flow:TEN_PRF_EDIT_FLOW @type:negative
+  @TEN_PRF_EDT_E2E_003 @regression @flow:TEN_PRF_EDIT_FLOW @type:negative
   Scenario: Edit rejects a word containing invalid characters
     Given the user is on the profanity settings page
     And the manage word/phrase panel is open
@@ -223,7 +223,7 @@ Feature: System Settings — Profanity Settings
 
   # ── TEN_PRF_DELETE_FLOW ───────────────────────────────────────────────
 
-  @TEN_PRF_DEL_E2E_001 @priority:P1 @regression @flow:TEN_PRF_DELETE_FLOW @type:ui-interaction
+  @TEN_PRF_DEL_E2E_001 @regression @flow:TEN_PRF_DELETE_FLOW @type:ui-interaction
   Scenario: Delete confirmation can be cancelled and keeps the word
     Given the user is on the profanity settings page
     And the manage word/phrase panel is open
@@ -234,7 +234,7 @@ Feature: System Settings — Profanity Settings
     Then the delete profanity word confirmation is not visible
     And the word remains in the word list
 
-  @TEN_PRF_DEL_E2E_002 @priority:P0 @smoke @flow:TEN_PRF_DELETE_FLOW @type:positive
+  @TEN_PRF_DEL_E2E_002 @smoke @flow:TEN_PRF_DELETE_FLOW @type:positive
   Scenario: Operator deletes an E2E profanity word
     Given the user is on the profanity settings page
     And the manage word/phrase panel is open
@@ -244,7 +244,7 @@ Feature: System Settings — Profanity Settings
     Then the profanity word deleted toast is shown
     And the deleted profanity word is no longer in the word list
 
-  @TEN_PRF_DEL_E2E_003 @priority:P1 @regression @mock @flow:TEN_PRF_DELETE_FLOW @type:negative
+  @TEN_PRF_DEL_E2E_003 @regression @mock @flow:TEN_PRF_DELETE_FLOW @type:negative
   Scenario: Delete shows an error toast when the API returns 500 server error
     Given the user is on the profanity settings page
     And the manage word/phrase panel is open

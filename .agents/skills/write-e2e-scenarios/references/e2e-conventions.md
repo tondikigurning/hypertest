@@ -120,7 +120,6 @@ Component masters, optional `@flow` (coverage only, not encoded in the ID):
 #   @quarantine                 flaky test (runner-specific execution policy)
 #   @production-restricted      forbidden production mutation; requires safe treatment
 #   @flow:TEN_DASHBOARD_FLOW    journey identifier for coverage
-#   @priority:P0|P1|P2          optional
 #   @type:positive              positive | negative | ui-interaction | edge-case
 #   @ref:TEN_COM_*_E2E_*        optional reusable component link
 #   @ref:HC-467                 optional issue link

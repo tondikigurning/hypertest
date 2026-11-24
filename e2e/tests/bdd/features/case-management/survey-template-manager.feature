@@ -28,34 +28,34 @@ Feature: Case Management — Survey Template Manager
 
   # ── TEN_STM_LIST_FLOW ───────────────────────────────────────────────────────
 
-  @TEN_STM_LST_E2E_001 @priority:P1 @regression @ref:TEN_COM_VDT_E2E_001 @flow:TEN_STM_LIST_FLOW @type:positive
+  @TEN_STM_LST_E2E_001 @regression @ref:TEN_COM_VDT_E2E_001 @flow:TEN_STM_LIST_FLOW @type:positive
   Scenario: Selecting a survey template opens its preview
     Given a list page with detail panel layout is open
     When the user clicks the first list row
     Then the detail panel is visible
     And the detail panel header shows a title
 
-  @TEN_STM_LST_E2E_002 @priority:P1 @regression @ref:TEN_COM_FSR_E2E_001 @flow:TEN_STM_LIST_FLOW @type:positive
+  @TEN_STM_LST_E2E_002 @regression @ref:TEN_COM_FSR_E2E_001 @flow:TEN_STM_LIST_FLOW @type:positive
   Scenario: Searching by survey template name returns matching templates
     Given a list page with search is open
     When the user searches for the first visible row "template_name"
     Then the search returns matching rows
 
-  @TEN_STM_LST_E2E_003 @priority:P1 @regression @ref:TEN_COM_FIL_E2E_001 @flow:TEN_STM_LIST_FLOW @type:ui-interaction
+  @TEN_STM_LST_E2E_003 @regression @ref:TEN_COM_FIL_E2E_001 @flow:TEN_STM_LIST_FLOW @type:ui-interaction
   Scenario: Filtering by survey template name returns matching templates
     Given a list page with filters is open
     When the user applies the "template_name" filter option
     Then the filter triggers an API call that returns HTTP 200
     And the filter response includes rows that match the selected value
 
-  @TEN_STM_LST_E2E_004 @priority:P1 @regression @ref:TEN_COM_SAP_E2E_001 @flow:TEN_STM_LIST_FLOW @type:ui-interaction
+  @TEN_STM_LST_E2E_004 @regression @ref:TEN_COM_SAP_E2E_001 @flow:TEN_STM_LIST_FLOW @type:ui-interaction
   Scenario: Survey templates can be sorted in both directions
     Given a list page with sort is open
     When the user applies each sort option in ascending and descending direction
     Then each sort triggers an API call that returns HTTP 200
     And each sort response includes rows in the correct order
 
-  @TEN_STM_LST_E2E_005 @priority:P2 @regression @flow:TEN_STM_LIST_FLOW @type:ui-interaction
+  @TEN_STM_LST_E2E_005 @regression @flow:TEN_STM_LIST_FLOW @type:ui-interaction
   Scenario: Moving to the next template page shows a different set of templates
     Given more than one page of survey templates is available
     When the user moves to the next survey template page
@@ -63,7 +63,7 @@ Feature: Case Management — Survey Template Manager
 
   # ── TEN_STM_CREATE_FLOW ─────────────────────────────────────────────────────
 
-  @TEN_STM_CRT_E2E_001 @priority:P1 @regression @flow:TEN_STM_CREATE_FLOW @type:positive
+  @TEN_STM_CRT_E2E_001 @regression @flow:TEN_STM_CREATE_FLOW @type:positive
   Scenario: Creating a survey template adds it to the template list
     Given the user is on the survey template manager page
     When the user creates a survey template with one required text question and a unique E2E name
@@ -72,7 +72,7 @@ Feature: Case Management — Survey Template Manager
 
   # ── TEN_STM_EDIT_FLOW ───────────────────────────────────────────────────────
 
-  @TEN_STM_EDT_E2E_001 @priority:P1 @regression @flow:TEN_STM_EDIT_FLOW @type:positive
+  @TEN_STM_EDT_E2E_001 @regression @flow:TEN_STM_EDIT_FLOW @type:positive
   Scenario: Editing an E2E-owned survey template saves the updated name
     Given the user is on the survey template manager page
     And an E2E-owned survey template with one required text question has been created
@@ -82,7 +82,7 @@ Feature: Case Management — Survey Template Manager
 
   # ── TEN_STM_DELETE_FLOW ─────────────────────────────────────────────────────
 
-  @TEN_STM_DEL_E2E_001 @priority:P1 @regression @flow:TEN_STM_DELETE_FLOW @type:positive
+  @TEN_STM_DEL_E2E_001 @regression @flow:TEN_STM_DELETE_FLOW @type:positive
   Scenario: Deleting an E2E-owned survey template removes it from the list
     Given the user is on the survey template manager page
     And an E2E-owned survey template with one required text question has been created
@@ -92,7 +92,7 @@ Feature: Case Management — Survey Template Manager
 
   # ── TEN_STM_VIEW_REPORT_FLOW ────────────────────────────────────────────────
 
-  @TEN_STM_RPT_E2E_001 @priority:P0 @smoke @flow:TEN_STM_VIEW_REPORT_FLOW @type:positive
+  @TEN_STM_RPT_E2E_001 @smoke @flow:TEN_STM_VIEW_REPORT_FLOW @type:positive
   Scenario: Reviewing reports and exporting responses and logs succeeds
     Given the user is on the survey template manager page
     And a read-only survey template with responses is available
