@@ -37,13 +37,32 @@ async function main() {
     if (content === undefined) throw new Error("PRD not found.");
     return process.stdout.write(content);
   }
-  if (action !== "write") throw new Error("Use list, read <identifier>, or write <identifier> with JSON on stdin.");
+  if (action === "versions") {
+    const id = typeof path === "string" && prdIdentity(path);
+    if (!id) throw new Error("Choose a valid PRD identifier.");
+    return process.stdout.write(`${JSON.stringify(await store.versions(id.module, id.menu))}\n`);
+  }
+  if (action !== "write" && action !== "delete")
+    throw new Error("Use list, read, versions, write, or delete with a PRD identifier and JSON input when needed.");
   let input = "";
   for await (const chunk of process.stdin) {
     input += chunk;
     if (Buffer.byteLength(input) > 600000) throw new Error("Input too large.");
   }
-  const { content, expected, approvedSha256 } = JSON.parse(input);
+  const payload = JSON.parse(input);
+  if (action === "delete") {
+    const id = typeof path === "string" && prdIdentity(path);
+    if (!id) throw new Error("Choose a valid PRD identifier.");
+    if (typeof payload.versionId !== "string" || typeof payload.expectedContent !== "string")
+      throw new Error("Provide versionId and expectedContent (the exact version content) in JSON.");
+    const result = await store.mutate("delete", {
+      ...id,
+      versionId: payload.versionId,
+      expectedContent: payload.expectedContent,
+    });
+    return process.stdout.write(`${JSON.stringify(result)}\n`);
+  }
+  const { content, expected, approvedSha256 } = payload;
   if (typeof content !== "string" || (expected !== null && typeof expected !== "string"))
     throw new Error("Provide content and expected (current content or null) in JSON.");
   const before = await store.read(path);

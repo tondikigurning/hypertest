@@ -141,7 +141,7 @@ export function enrichScenario(scenario) {
   const flow = tag("@flow:")
     ?.replace(/_FLOW$/, "")
     .split("_");
-  const category =
+  const flowName =
     flow
       ?.slice(flow.length > 2 ? 2 : flow.length === 2 ? 1 : 0)
       .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
@@ -166,7 +166,7 @@ export function enrichScenario(scenario) {
   }
   return {
     ...scenario,
-    category,
+    flow: flowName,
     type: tag("@type:") || "positive",
     method: "e2e",
     catalogTags: scenario.tags

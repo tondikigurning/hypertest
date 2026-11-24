@@ -42,11 +42,25 @@ Existing flat paths remain supported. If a flat file temporarily coexists with a
 appears once and its total includes both. Prefer the folder layout for new multi-file coverage.
 `_components/` remains the separate inventory of reusable component master contracts.
 
+Keep one confirmed-flow registry beside each menu's flat feature or folder at
+`<module>/<menu>.flows.md`. The registry records scenario authoring progress and discovery gaps;
+its format and resume rules are in the [flow registry reference](../../.agents/skills/write-e2e-scenarios/references/flow-registry.md).
+The explorer continues to derive flows from feature tags.
+
+Keep one shared exploration record at `<module>/<menu>.exploration.md` beside the same menu file or
+folder, starting during PRD work even when no feature exists yet. All child groups and all three authoring
+phases reuse it. It stores sanitized browser observations, the explored inventory, verified locators and
+remaining evidence gaps; see [exploration context](../../.agents/skills/ask-qa/references/exploration-context.md).
+Its five fixed sections cover scope and sources, inventory, evidence, flow confirmation and scenario handoffs.
+Update affected entries in place; a new prompt or skill invocation alone does not add a record.
+The PRD and flow registry reference it rather than duplicating the browser log. Neither Markdown file is a
+scenario catalog input, an approval decision or an execution result.
+
 ## Integration ownership and identity
 
 Keep an E2E journey crossing menus, modules or external platforms under the **menu that owns its business
 outcome**. Record entry points, participating menus/platforms, prerequisites, observable outcome, cleanup and
-unverified boundaries in its reviewed PRD and scenario review. Link related scenario contracts with existing
+unverified boundaries in its PRD and scenario review. Link related scenario contracts with existing
 `@ref:` tags where appropriate. Store one authored copy of a journey; additional participants do not require copies.
 Resolve unclear ownership from the requirements and user context before authoring.
 
@@ -83,10 +97,10 @@ requirements; it does not imply full coverage. If a child introduces missing req
 through its review workflow. Use other menu PRDs as supporting context, and keep review ownership with the
 menu whose feature is being authored. The flow-confirmation tool validates that a flat or nested feature uses
 its owning menu PRD. Shared `_components` master contracts have no product owner in their path, so they use
-the reviewed PRD of the consuming menu; the workflow must resolve that owner from context.
+the PRD of the consuming menu; the workflow must resolve that owner from context.
 The reusable `_components` navigation is not a product menu and does not expose a PRD button.
 
-Run can select a scenario, file, flow category within a file, or a menu/folder. The server resolves every group
+Run can select a scenario, file, flow within a file, or a menu/folder. The server resolves every group
 from current source and catalog entries, rejects stale or ambiguous selections, then checks Playwright collection.
 An authored child file does not by itself establish execution availability. Q-Rex group context records the selected
 scope without silently choosing a child file; its committed worktree may differ from the explorer checkout.

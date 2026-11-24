@@ -13,8 +13,6 @@ related:
 > The public contract between this package and its consumers.
 > This package has no JS/TS exports — its "API" is the CSS contract:
 > design tokens, custom utility/component classes, and the `@source` list.
-> ⚠️ **`global.css`, `index.ts`, and `postcss.config.js` are dead — zero
-> consumers repo-wide.** Don't build on them; see [[tailwind-config-intent]].
 
 **Status:** draft · **Package:** `packages/tailwind-config` · **Updated:** 2026-07-02
 
@@ -98,8 +96,8 @@ pixel values. Also: `.button-fill`, `.control-fill` (fill-mode variants).
 | `.filter-popover-min-w`                                                                                        | `src/filter.css`                                    | `min-width: 16rem` for filter popovers.                                                                                                                                                              |
 | `tr.active-row` (+ `> td:first-child:before`, `> td.pinned`)                                                   | `src/table.css`                                     | Active-table-row highlighting with a left accent bar.                                                                                                                                                |
 | `.merge-tag`                                                                                                   | `backoffice.css`                                    | Styled inline tag for merge-field tokens (used by `@hyperscal/ui`'s merge-tag/rich-text components).                                                                                                 |
-| `.selected-h-{sm,md,lg,fill}` (in `backoffice.css`) and `.selected-h-{xs,sm,md,lg,xl}` (in `global.css`, dead) | both                                                | ⚠️ Two overlapping-but-not-identical sets of the same-named utility exist in the active and dead stylesheets — don't assume `global.css`'s variants are available; only `backoffice.css`'s are live. |
-| `.codemirror-readonly`                                                                                         | both `backoffice.css` and `global.css` (duplicated) | Read-only CodeMirror styling — defined identically in both files; only the `backoffice.css` copy is live.                                                                                            |
+| `.selected-h-{sm,md,lg,fill}` | `backoffice.css` | Selected-item height utilities. |
+| `.codemirror-readonly` | `backoffice.css` | Read-only CodeMirror styling. |
 | `.animate-member-row-in`/`.animate-member-row-out`                                                             | `backoffice.css`                                    | Row insert/remove transition (used by `@hyperscal/ui`'s membership components).                                                                                                                      |
 | `.animate-wave`, `.animate-wave-2`, `.animate-wave-3`                                                          | `backoffice.css`                                    | Staggered wave animation (3 delay variants).                                                                                                                                                         |
 | `.ql-toolbar button`/`.ql-toolbar select`/`.ql-active`                                                         | `backoffice.css`                                    | Quill rich-text editor toolbar theming — appears **twice, verbatim**, in the same file (see [[tailwind-config-internals]]).                                                                          |
@@ -148,9 +146,6 @@ every consumer simultaneously (all four apps share one stylesheet).
 
 - Adding new tokens, new `@source` entries, or new utility/component
   classes.
-- Deleting the confirmed-dead files (`global.css`, `index.ts`,
-  `postcss.config.js`) — see
-  [[tailwind-config-intent]]'s Open questions before doing so.
 
 ---
 

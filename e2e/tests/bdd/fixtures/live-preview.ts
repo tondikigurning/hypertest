@@ -1,6 +1,8 @@
 import { renameSync, rmSync, writeFileSync } from "node:fs";
 import type { BrowserContext, CDPSession, Page } from "@playwright/test";
 
+const PREVIEW_DETACH_TIMEOUT_MS = 2_000;
+
 /** Opt-in local preview; the ordinary BDD runner does not create a stream. */
 export async function startLivePreview(context: BrowserContext): Promise<() => Promise<void>> {
     const framePath = process.env.AUTOMATION_LIVE_FRAME;
@@ -31,7 +33,18 @@ export async function startLivePreview(context: BrowserContext): Promise<() => P
     return async () => {
         closed = true;
         context.off("page", attach);
-        await Promise.all([...sessions].map(session => session.detach().catch(() => {})));
+        let detachTimer: ReturnType<typeof setTimeout> | undefined;
+        try {
+            await Promise.race([
+                Promise.all([...sessions].map(session => session.detach().catch(() => {}))),
+                new Promise<void>(resolve => {
+                    detachTimer = setTimeout(resolve, PREVIEW_DETACH_TIMEOUT_MS);
+                }),
+            ]);
+        } finally {
+            if (detachTimer) clearTimeout(detachTimer);
+            sessions.clear();
+        }
         try { rmSync(framePath, { force: true }); } catch { /* Best effort. */ }
     };
 }

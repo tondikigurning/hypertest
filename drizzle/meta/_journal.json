@@ -50,6 +50,20 @@
       "when": 1794996729819,
       "tag": "0006_prd_menu_identity",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1795408957238,
+      "tag": "0007_wandering_rage",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1795408983741,
+      "tag": "0008_organic_marrow",
+      "breakpoints": true
     }
   ]
 }

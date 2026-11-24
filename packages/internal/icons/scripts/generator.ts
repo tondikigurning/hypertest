@@ -10,8 +10,13 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const iconPath = join(__dirname, "..", "node_modules/@iconify-json/tabler/icons.json");
 const iconSet = JSON.parse(await readFile(iconPath, "utf8")) as IconSet;
 
+for (const icon of icons) {
+  if (!iconSet.icons[icon]) {
+    throw new Error(`Icon "${icon}" not found in icon set.`);
+  }
+}
+
 const css = generateCSS(iconSet, icons);
-const _sprite = generateSprite(iconSet, icons);
 const types = generateTypes(icons);
 
 // Ensure src/gen directory exists before writing files
@@ -26,7 +31,6 @@ if (!existsSync(genDir)) {
 // Save generated code and log the size
 await Promise.all([
   writer("CSS", join(genDir, "icon.css"), await css),
-  // writer("SVG Sprite", join(genDir, "icon.svg"), await sprite),
   writer("Types", join(genDir, "types.ts"), await types),
 ]);
 
@@ -35,27 +39,6 @@ await Promise.all([
 // -------------------------------------------------------------------------
 
 type IconSet = Parameters<typeof getIconsCSS>[0];
-
-async function generateSprite(iconSet: IconSet, icons: Array<string>) {
-  const symbols = icons.map((icon) => {
-    const iconData = iconSet.icons[icon];
-
-    if (!iconData) {
-      throw new Error(`Icon "${icon}" not found in icon set.`);
-    }
-
-    return `<symbol id="i-${icon}" viewBox="0 0 24 24">${iconData.body}</symbol>`;
-  });
-
-  return [
-    '<?xml version="1.0" encoding="UTF-8"?>',
-    '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="0" height="0">',
-    "<defs>", // for semantics: https://developer.mozilla.org/en-US/docs/Web/SVG/Element/defs
-    ...symbols,
-    "</defs>",
-    "</svg>",
-  ].join("\n");
-}
 
 async function generateCSS(iconSet: IconSet, icons: Array<string>) {
   const content = getIconsCSS(iconSet, icons, { iconSelector: ".i-{name}" });

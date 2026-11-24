@@ -1,8 +1,7 @@
 export interface ScenarioFilters {
   search: string;
   status: string;
-  priority: string;
-  type: string;
+  tag: string;
 }
 
 export type ScenarioFilterKey = keyof ScenarioFilters;
@@ -10,15 +9,13 @@ export type ScenarioFilterKey = keyof ScenarioFilters;
 const filterQueryKeys: Record<ScenarioFilterKey, string> = {
   search: "q",
   status: "status",
-  priority: "priority",
-  type: "type",
+  tag: "tag",
 };
 
 const defaultFilters: ScenarioFilters = {
   search: "",
   status: "all",
-  priority: "all",
-  type: "all",
+  tag: "all",
 };
 
 export function scenarioPath(module: string, file: string) {
@@ -46,16 +43,16 @@ export function scenarioFiltersFromSearchParams(params: URLSearchParams): Scenar
   return {
     search: params.get(filterQueryKeys.search) ?? defaultFilters.search,
     status: params.get(filterQueryKeys.status) ?? defaultFilters.status,
-    priority: params.get(filterQueryKeys.priority) ?? defaultFilters.priority,
-    type: params.get(filterQueryKeys.type) ?? defaultFilters.type,
+    tag: params.get(filterQueryKeys.tag) ?? defaultFilters.tag,
   };
 }
 
 export function updateScenarioFilterParams(params: URLSearchParams, key: ScenarioFilterKey, value: string) {
   const next = new URLSearchParams(params);
+  next.delete("priority");
   next.delete("sort");
-  next.delete("tag");
   next.delete("flow");
+  next.delete("type");
   const queryKey = filterQueryKeys[key];
   const defaultValue = defaultFilters[key];
   const normalized = value;
@@ -66,9 +63,10 @@ export function updateScenarioFilterParams(params: URLSearchParams, key: Scenari
 
 export function clearScenarioFilterParams(params: URLSearchParams) {
   const next = new URLSearchParams(params);
+  next.delete("priority");
   next.delete("sort");
   for (const key of Object.values(filterQueryKeys)) next.delete(key);
-  next.delete("tag");
+  next.delete("type");
   next.delete("flow");
   return next;
 }

@@ -8,6 +8,8 @@ This exercises model decisions using actual skill text. It does not execute thos
 
 ## Inputs and reproducibility
 
+Cases 9–17 were added after the comparison below to exercise scenario branch coverage, cumulative scenario-batch review, and reuse and reconciliation of scenario exploration and terminal review decisions, including in a new session. They were not included in the recorded eight-case results and have not been independently evaluated here. Cases 18–23 have a separate exploration-reuse evaluation recorded below; they do not change the eight-case comparison.
+
 - [Requests and host facts](skill-evaluation/cases.md)
 - [Baseline responses](skill-evaluation/baseline-responses.md)
 - [Revised responses](skill-evaluation/revised-responses.md)
@@ -55,3 +57,42 @@ The implementation also passed 45 runtime tests, the real-CLI/browser smoke agai
 Skill names/descriptions, supported existing frontmatter/invocation fields and reference paths/anchors were checked locally. The bundled `quick_validate.py` could not execute because PyYAML was unavailable in the installed Python; its success is not claimed, and no dependency or invocation-policy change was made to satisfy it.
 
 These checks do not establish live tenant correctness, actual draft BDD outcomes, every case in the broader audit matrix, or reliability for a chosen production provider. No live tenant mutations, BDD generation, evidence upload, catalog sync, draft reset, commit or publication occurred during this work.
+
+## Exploration reuse — 2026-11-23
+
+An independent agent with no parent conversation read an immutable skill snapshot and Cases 18–23 from the [exercise requests](skill-evaluation/cases.md). It could read only that snapshot and write its response there; live repository, browser, network, credentials, execution and publication were excluded. The [raw responses](skill-evaluation/exploration-reuse-responses.md) preserve its actual decisions and reported ambiguities. This was one trial per case, without a baseline trial or statistical reliability claim. The agent inherited the session model; no exact model identifier was exposed, so none is inferred.
+
+The initial exercised snapshot contains all Markdown under `.agents/skills`, `docs/automation/test-organization.md` and `docs/automation/skill-evaluation/cases.md`: 32 files, SHA-256 `65d5a9d69aa2b9308712b0b0fa450403db74b43950b5ee9c25e7a1adba5092a0`. Fingerprinting sorts relative `/` paths and hashes each path, NUL, LF-normalized UTF-8 content, NUL. The main agent checked the responses against the supplied facts and evidence/review rules:
+
+| Case | Observed decision | Assessment |
+| --- | --- | --- |
+| 18 | Backfill PRD-phase chat evidence, reuse outcomes/locators and checked CLI support; request flow confirmation without browser replay | Pass |
+| 19 | Recover the shared record in a new chat; absent Variables/browser does not block evidenced scenario work; retain native review gates | Pass |
+| 20 | Reuse complete observations for an imported proposal; an explicit post-deployment delete recheck needs targeted fresh evidence | Pass |
+| 21 | Inspect only the missing Save locator with fresh refs; retain the unchanged role blocker and disclose an unusable redacted locator | Pass |
+| 22 | Compare the changed PRD rule/mapping separately from still-applicable locators and matching terminal scenario acceptance | Pass |
+| 23 | Recover dated legacy PRD observations, report missing worktree artifacts and assess affected evidence on the different target | Pass |
+
+The trial identified small ambiguities around cleanup versus exploration calls, legacy factual PRD notes versus requirements, terminal flow-decision provenance, and the accepted PRD representation used for its digest. Follow-up edits clarified those points, aligned import/review and CLI-help wording with reuse, and retained the existing review gates. The resulting 32-file snapshot is `dffc2344032820ab58c9987a808283e2721f060baf2df5082cf9e421c7be5983`; the initial trial is not relabeled as a blind trial of those later edits.
+
+The same evaluator's [follow-up review](skill-evaluation/exploration-reuse-follow-up.md) retained all six decisions and found the earlier material ambiguities resolved. It requested one final wording qualification: an **unsaved pending** PRD proposal does not replace the active version, while a saved active version can contain unvalidated items. That qualification was applied afterward. The then-current 32-file working instruction/case set hashed to `62122ab7e4e0c78b5f4aa5a3f54b3448fdaf8f259abf20c0994f58b1f9617b58`. It also preserved concurrent edits to `write-e2e-code` and scenario batching outside the frozen follow-up snapshot; no additional blind model trial is claimed for those edits or the final sentence. Later workflow-alignment edits are recorded separately below and change the current fingerprint.
+
+Runtime validation used the actual AI SDK tool loop with a scripted local provider and temporary repositories. The new handoff case writes PRD exploration, reloads the session, reads that evidence in scenarios and code, preserves scenario approval across evidence-only edits and starts no browser. A second case checks that PRD work can write only its exploration record, scenario work can write the menu records, nested/arbitrary Markdown and implementation writes stay blocked, and records do not bypass flow confirmation. These verify tool transport and enforcement, not autonomous provider decisions.
+
+The workflow suite passed **13/13**. The full agent suite passed **51/52**; the unchanged reset fixture in `changes-history.test.mjs` fails at `prdVersions` with `PRD database store is unavailable`. The same failure was reproduced from archived committed HEAD with the existing dependencies linked in an isolated temporary directory. It was not changed as part of exploration reuse. Type checking and build passed. Biome passed with the existing 18 CSS warnings; build retained the large-chunk warning. Local Markdown reference paths/anchors and unchanged skill frontmatter/scaffolding were checked. The bundled Python skill validator was attempted but could not import the unavailable PyYAML; its success is not claimed and no dependency was added for it.
+
+No tenant browser exploration, tenant BDD generation/execution, evidence upload, catalog database sync, application restart, user-draft reset, commit or publication occurred. The build regenerated its ignored static output through the normal producer. These checks do not establish live-tenant behavior or guarantee decisions across models. Q-Rex still needs the revised skills in its selected workspace/base and an API restart for runtime changes; existing drafts were preserved.
+
+## Workflow alignment follow-up
+
+A further source and runtime audit aligned `ask-qa` and Q-Rex's workflow prompt with the code skill's eligibility rule for unchanged baseline scenarios. Handoff instructions now retain unknown historical review rather than calling those scenarios approved; changed scenario snapshots still follow the host review gate. The shared flow status table now matches the registry's partially authored `pending` and fully authored `written` meanings.
+
+The audit also found that a previously saved `flow` context attachment for a nested feature selected a child-path registry, although the registry belongs to its parent menu. The resolver now uses the menu registry for flat and nested feature paths, reports an unavailable registry and asks for the consuming menu's file for shared components. The current flow picker already attaches a registry by file path; this correction also supports retained legacy attachments. The resolver applies workspace path and file-size checks before reading.
+
+The agent workflow and review suites passed **28/28**, including a new scripted-provider case covering flat and nested attachments, a misleading child registry, a missing registry and shared-component handling. Biome and TypeScript passed; Biome reported the existing 18 CSS warnings. The build passed with its large-chunk warning. Local Markdown references and `git diff --check` passed. These checks do not include a live tenant, a production provider, scenario execution or a fresh independent decision exercise of the latest wording.
+
+## Terminal continuation follow-up
+
+The shared contract now explicitly describes loading skills and resuming saved uncommitted handoffs from the terminal agent's own checkout, independently of the Q-Rex runtime. Terminal flow confirmation records the pre-review PRD and feature digests, checks them again after the user's decision, and records the agent's verified post-authoring feature contents for later comparison. PRD source digests use exact bytes from the database CLI, not a virtual path treated as a local file. Browser configuration and prior exploration can be reused across skills, and an unavailable PRD does not independently block eligible technical repairs.
+
+The PRD database suite passed **3/3**, exercising the real terminal CLI with isolated generated test identities, shared database reads, stale-write checks and review-gated writes. The installed `playwright-cli.cmd --help` was checked without opening a browser. Local reference paths/anchors and `git diff --check` passed. This validates terminal CLI access and documentation links; it does not simulate an autonomous terminal agent completing a human review, perform tenant exploration or execute BDD scenarios. No user PRD identity or existing task workspace was modified by the database tests.

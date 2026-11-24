@@ -8,7 +8,6 @@
 @source "../../src/**/*.{ts,tsx}";
 @source "../../e2e/**/*.{ts,tsx}";
 @source "../internal/icons/src/icon.tsx";
-/*@source "safelist.text";*/
 @source inline("line-clamp-{2..6}");
 @source inline("row-start-{1..100}");
 @source inline("min-w-{xs,sm,md,lg,xl}");

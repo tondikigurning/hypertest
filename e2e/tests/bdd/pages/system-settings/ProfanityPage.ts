@@ -13,9 +13,15 @@ import { dismissTencentWorkbenchIfPresent } from "../../utils/tencent-workbench-
 
 type FilterStatus = "Active" | "Inactive";
 
-/** Mirrors the server's word collation: case-insensitive, whitespace-insensitive. */
-function normalizeWord(value: string): string {
-    return value.toLowerCase().replace(/\s+/g, "");
+/** Mirrors the API's case-sensitive, character-by-character ordering for ASCII words. */
+function compareWords(left: string, right: string): number {
+    if (left < right) {
+        return -1;
+    }
+    if (left > right) {
+        return 1;
+    }
+    return 0;
 }
 
 /**
@@ -483,9 +489,9 @@ export class ProfanityPage {
             for (let index = 1; index < words.length; index++) {
                 const previous = words[index - 1];
                 const current = words[index];
-                // The API sorts case-insensitively and ignores spaces ("siraulo" precedes
-                // "sira ulo"), so normalize both before checking direction.
-                const comparison = normalizeWord(previous).localeCompare(normalizeWord(current));
+                // Compare the returned words as-is: the API's order is case-sensitive and
+                // includes spaces and punctuation.
+                const comparison = compareWords(previous, current);
                 const ordered = result.direction === "asc" ? comparison <= 0 : comparison >= 0;
                 expect(
                     ordered,

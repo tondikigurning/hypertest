@@ -68,6 +68,7 @@ test("implementation writes require approval of the current scenario snapshot", 
     options,
   );
   const feature = "e2e/tests/bdd/features/example.feature";
+  const registry = "e2e/tests/bdd/features/example.flows.md";
   const implementation = "e2e/tests/bdd/steps/example.ts";
   await mkdir(join(workspace, "e2e/tests/bdd/features"), { recursive: true });
   await mkdir(join(workspace, "e2e/tests/bdd/steps"), { recursive: true });
@@ -77,6 +78,8 @@ test("implementation writes require approval of the current scenario snapshot", 
     workspace,
     authorizeFileWrite: (path) => authorizeScenarioImplementationWrite(workspace, "HEAD", path, approvedDigest),
   });
+  await tools.write_file.execute({ path: registry, content: "# Example flows\n" });
+  assert.equal((await scenarioChanges(workspace)).scenarioDigest, undefined);
   await tools.write_file.execute({ path: feature, content: "Feature: Example\n  Scenario: First\n    Given a step\n" });
   await assert.rejects(
     tools.write_file.execute({ path: implementation, content: "blocked" }),
@@ -88,6 +91,8 @@ test("implementation writes require approval of the current scenario snapshot", 
   );
   assert.equal(await readFile(join(workspace, implementation), "utf8"), "original");
   approvedDigest = (await scenarioChanges(workspace)).scenarioDigest;
+  await tools.write_file.execute({ path: registry, content: "# Example flows\n\nUpdated gaps.\n" });
+  assert.equal((await scenarioChanges(workspace)).scenarioDigest, approvedDigest);
   await tools.edit_file.execute({ path: implementation, oldText: "original", newText: "approved" });
   assert.equal(await readFile(join(workspace, implementation), "utf8"), "approved");
   await tools.write_file.execute({
@@ -165,7 +170,7 @@ test("retained PRD validation is distinguished from newly validated content", ()
   assert.equal(requiresPrdReview(previous, `${previous}- [observed][needs-review] New.\n`), false);
   assert.equal(requiresPrdReview(previous, previous.replace("Existing.", "Changed.")), true);
   assert.equal(requiresPrdReview(previous, `${previous}- [observed][validated] Existing.\n`), true);
-  assert.equal(requiresPrdReview(previous, previous.replace("status: draft", "status: 'reviewed'")), true);
+  assert.equal(requiresPrdReview(previous, previous.replace("status: draft", "status: 'reviewed'")), false);
 });
 
 test("an edit does not overwrite a file changed while approval is pending", async (t) => {
@@ -225,7 +230,7 @@ test("agent file and browser output redacts the configured provider key", async 
   assert.equal(await tools.playwright_cli.execute({ action: "snapshot" }), "[redacted]");
 });
 
-test("scenario intent changes require scoped flow confirmation against a current reviewed PRD", async (t) => {
+test("scenario intent changes require scoped flow confirmation against the current PRD", async (t) => {
   const workspace = await mkdtemp(join(tmpdir(), "automation-agent-flows-"));
   t.after(() => rm(workspace, { recursive: true, force: true }));
   const featurePath = "e2e/tests/bdd/features/module/example.feature";
@@ -298,22 +303,29 @@ test("scenario intent changes require scoped flow confirmation against a current
   );
 });
 
-test("a draft PRD cannot be used to confirm a flow list", async (t) => {
+test("flow confirmation requires a PRD but does not require a document status", async (t) => {
   const workspace = await mkdtemp(join(tmpdir(), "automation-agent-flow-prd-"));
   t.after(() => rm(workspace, { recursive: true, force: true }));
   await mkdir(join(workspace, "e2e/tests/bdd/features/module"), { recursive: true });
-  await assert.rejects(
-    confirmFlowReview({
-      workspace,
-      featurePath: "e2e/tests/bdd/features/module/example.feature",
-      prdPath: "docs/prd/module/example.md",
-      flows: [{ id: "ONE", description: "A flow" }],
-      safePath: safeWorkspacePath,
-      redact: (value) => value,
-      requestApproval: async () => true,
-      readPrd: async () => "---\nstatus: draft\n---\n",
+  const options = {
+    workspace,
+    featurePath: "e2e/tests/bdd/features/module/example.feature",
+    prdPath: "docs/prd/module/example.md",
+    flows: [{ id: "ONE", description: "A flow" }],
+    safePath: safeWorkspacePath,
+    redact: (value) => value,
+    requestApproval: async () => true,
+    readPrd: async () => "",
+  };
+  await assert.rejects(confirmFlowReview(options), /matching PRD is required/);
+  assert.ok(await confirmFlowReview({ ...options, readPrd: async () => "# Requirements\nA flow" }));
+  assert.ok(await confirmFlowReview({ ...options, readPrd: async () => "---\nstatus: draft\n---\nA flow" }));
+  assert.ok(
+    await confirmFlowReview({
+      ...options,
+      readPrd: async () => "# Requirements\n- [observed] A flow\n## Open issues\n- Outcome unverified",
     }),
-    /reviewed PRD is required/,
+    "an active PRD with unvalidated items and unresolved questions remains usable",
   );
 });
 
@@ -395,7 +407,7 @@ test("flow confirmation uses the owning menu PRD for flat and nested features", 
       safePath: async () => {},
       readPrd: async () => reviewed,
     }),
-    /matching reviewed PRD/,
+    /matching PRD/,
   );
 });
 

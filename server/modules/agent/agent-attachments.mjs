@@ -86,6 +86,7 @@ export async function readUploadedAttachment(item) {
     return { content: "Image attached to this message.", image: `data:${imageType};base64,${item.data}` };
   }
   let content;
+  const limitations = [];
   try {
     if (textExtensions.has(ext)) {
       content = new TextDecoder("utf-8", { fatal: true }).decode(buffer);
@@ -93,18 +94,35 @@ export async function readUploadedAttachment(item) {
     } else if (ext === ".pdf") {
       if (buffer.subarray(0, 5).toString() !== "%PDF-") throw new Error("invalid PDF");
       const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
-      const pdf = await pdfjs.getDocument({ data: new Uint8Array(buffer), useSystemFonts: true }).promise;
-      if (pdf.numPages > 100) throw new Error("too many pages");
+      const loadingTask = pdfjs.getDocument({ data: new Uint8Array(buffer), useSystemFonts: true });
       const pages = [];
-      for (let page = 1; page <= pdf.numPages; page++) {
-        const text = await (await pdf.getPage(page)).getTextContent();
-        pages.push(`Page ${page}:\n${text.items.map((part) => part.str || "").join(" ")}`);
+      const pagesWithoutText = [];
+      let hasText = false;
+      try {
+        const pdf = await loadingTask.promise;
+        if (pdf.numPages > 100) throw new Error("too many pages");
+        for (let page = 1; page <= pdf.numPages; page++) {
+          const text = await (await pdf.getPage(page)).getTextContent();
+          const pageText = text.items.map((part) => part.str || "").join(" ");
+          if (pageText.trim()) hasText = true;
+          else pagesWithoutText.push(page);
+          pages.push(`Page ${page}:\n${pageText}`);
+        }
+      } finally {
+        await loadingTask.destroy();
       }
-      content = pages.join("\n\n");
-      await pdf.destroy();
+      content = hasText ? pages.join("\n\n") : "";
+      limitations.push(
+        "PDF text extraction does not include images or diagrams, and table layout and reading order may be lost. Visual content is not inspected.",
+      );
+      if (pagesWithoutText.length)
+        limitations.push(`No readable text was extracted from PDF pages: ${pagesWithoutText.join(", ")}.`);
     } else if (ext === ".docx") {
       validateOfficeArchive(buffer);
       content = (await mammoth.extractRawText({ buffer })).value;
+      limitations.push(
+        "DOCX raw-text extraction does not include images or diagrams and may lose table structure, headers, footers, or other layout.",
+      );
     } else if (ext === ".xlsx") {
       validateOfficeArchive(buffer);
       const workbook = new ExcelJS.Workbook();
@@ -132,6 +150,12 @@ export async function readUploadedAttachment(item) {
     );
   }
   if (!content?.trim())
-    throw new Error("A context file contains no readable text. Scanned PDFs need OCR before attaching.");
+    throw new Error(
+      ext === ".pdf"
+        ? "A context file contains no readable text. Scanned PDFs need OCR before attaching."
+        : "A context file contains no readable text.",
+    );
+  if (limitations.length)
+    content = `Extraction limitations:\n- ${limitations.join("\n- ")}\n\nExtracted text:\n${content}`;
   return { content };
 }

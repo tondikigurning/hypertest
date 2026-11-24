@@ -8,6 +8,10 @@ const stageLabels: Record<string, string> = {
   generating: "Generating tests",
   "checking collection": "Finding scenario",
   executing: "Running scenario",
+  "starting scenario": "Starting next scenario",
+  "finishing scenario": "Finishing failed scenario",
+  "finishing run": "Finishing run",
+  "saving results": "Saving results",
   "uploading evidence": "Uploading evidence",
   finished: "Run finished",
   cancelling: "Stopping run",
@@ -30,6 +34,19 @@ function LiveRunMessage({
 }
 
 export function LiveRun({ run, onClose }: { run: Run; onClose: () => void }) {
+  const executionDone = Boolean(run.executionDone || run.done);
+  const badgeClass = executionDone ? (run.error ? "failed" : run.status) : "running";
+  const badgeLabel = run.cancelRequested
+    ? run.done
+      ? "Cancelled"
+      : "Stopping"
+    : executionDone
+      ? run.error
+        ? "Failed"
+        : run.status
+      : run.stage === "finishing scenario" || run.stage === "finishing run"
+        ? "Finishing"
+        : "Live";
   const [expanded, setExpanded] = useState(false);
   const [cancelError, setCancelError] = useState("");
   const [cancelling, setCancelling] = useState(false);
@@ -54,27 +71,18 @@ export function LiveRun({ run, onClose }: { run: Run; onClose: () => void }) {
           <SectionEyebrow>{run.selection?.kind === "scenario" ? "SCENARIO RUN" : "GROUP RUN"}</SectionEyebrow>
           <h2 id="live-title">
             {run.scenarioId ||
-              (run.selection?.kind === "category"
-                ? run.selection.category
+              (run.selection?.kind === "flow"
+                ? run.selection.flow
                 : run.selection?.kind === "feature"
                   ? run.selection.file
                   : "Scenario run")}
           </h2>
         </div>
         <div className="live-header-actions">
-          <span className={`live-badge ${run.done ? (run.error ? "failed" : run.status) : "running"}`}>
-            <span />{" "}
-            {run.cancelRequested
-              ? run.done
-                ? "Cancelled"
-                : "Stopping"
-              : run.done
-                ? run.error
-                  ? "Failed"
-                  : run.status
-                : "Live"}
+          <span className={`live-badge ${badgeClass}`}>
+            <span /> {badgeLabel}
           </span>
-          {!run.done && run.stage !== "uploading evidence" && (
+          {!executionDone && (
             <button
               type="button"
               className="live-action stop"
@@ -107,7 +115,7 @@ export function LiveRun({ run, onClose }: { run: Run; onClose: () => void }) {
           </div>
           <BrowserPreview
             url={`/api/local/live?${new URLSearchParams({ run: run.id })}`}
-            done={run.done}
+            done={executionDone}
             label={stageLabels[run.stage] || "Starting browser"}
           />
         </section>
@@ -132,6 +140,11 @@ export function LiveRun({ run, onClose }: { run: Run; onClose: () => void }) {
           {run.cancelRequested && (
             <LiveRunMessage tone="error" role="status">
               The runner was stopped. The current scenario may have been interrupted before cleanup completed.
+            </LiveRunMessage>
+          )}
+          {!run.done && run.evidenceUpload?.status === "uploading" && (
+            <LiveRunMessage tone="empty" role="status">
+              Scenario execution has finished. Evidence is still uploading.
             </LiveRunMessage>
           )}
           {run.done && run.evidenceUpload?.status === "uploaded" && (

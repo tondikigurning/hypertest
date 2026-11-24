@@ -2,7 +2,7 @@ export type RunSelection =
   | { kind: "scenario"; scenarioId: string }
   | { kind: "feature"; file: string }
   | { kind: "group"; path: string }
-  | { kind: "category"; file: string; category: string };
+  | { kind: "flow"; file: string; flow: string };
 export interface Run {
   id: string;
   scenarioId: string;
@@ -11,10 +11,11 @@ export interface Run {
   target: string;
   stage: string;
   status: string;
+  executionDone?: boolean;
   done: boolean;
   cancelRequested?: boolean;
   error?: string;
-  evidenceUpload?: { status: "uploaded" | "unavailable" | "failed"; scenarioIds: Array<string> };
+  evidenceUpload?: { status: "uploading" | "uploaded" | "unavailable" | "failed"; scenarioIds: Array<string> };
   tests: Array<{
     testId: string;
     scenarioId: string;

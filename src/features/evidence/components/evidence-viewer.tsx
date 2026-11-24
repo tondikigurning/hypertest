@@ -68,13 +68,13 @@ export function EvidenceViewer({
       } catch (error) {
         if (controller.signal.aborted) throw error;
       }
-      const driveUploadComplete = Boolean(
+      const evidenceUploadComplete = Boolean(
         current?.target === target &&
           current?.done &&
           current.evidenceUpload?.status === "uploaded" &&
           current.evidenceUpload.scenarioIds.includes(scenarioId),
       );
-      if (current?.target === target && current?.scenarioIds?.includes(scenarioId) && !driveUploadComplete) {
+      if (current?.target === target && current?.scenarioIds?.includes(scenarioId) && !evidenceUploadComplete) {
         const runId = current.id;
         const tests = current.tests.filter((test) => test.scenarioId === scenarioId);
         const localFiles = tests.flatMap((test, testIndex) =>

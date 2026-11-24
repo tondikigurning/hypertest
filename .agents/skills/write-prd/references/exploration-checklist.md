@@ -2,7 +2,7 @@
 
 What to check, and how to record it, during live exploration (Step 2B). Read this and the shared [playwright-cli exploration](../../write-e2e-scenarios/references/playwright-cli-exploration.md) and [data safety](../../write-e2e-scenarios/references/data-safety.md) references before the first interaction.
 
-Exploration finds possible journeys. It does not prove the PRD is complete. Every result goes into the PRD as `observed`, never as intent.
+Exploration finds possible journeys. It does not prove the PRD is complete. Relevant findings recorded in the PRD are `observed`, never intent without review.
 
 ## Contents
 
@@ -17,17 +17,18 @@ Exploration finds possible journeys. It does not prove the PRD is complete. Ever
 
 ## Before you start
 
+- [ ] Apply [exploration reuse](../../ask-qa/references/exploration-context.md): recover the menu record and prior context, mark applicable evidence, and list only missing or affected questions for live work. Existing observations count toward this checklist; skip browser setup when none are missing.
 - [ ] Scope is settled: module, menu, environment (Step 0).
-- [ ] Available context for roles, accounts, data, mutation permission and known issues has been gathered; gaps are recorded (Step 0b).
+- [ ] Available context for roles, accounts, production restrictions and known issues has been gathered; gaps are recorded (Step 0b). Discover required data during exploration.
 - [ ] Credentials come from the environment's configured variables. Never print or echo them.
-- [ ] You know whether E2E-owned records may be created or deleted here. If unknown, stay read-only.
-- [ ] The host's managed Q-Rex browser or an owned terminal CLI session is ready. Identify it accurately in the log; do not invent an unavailable session name.
+- [ ] E2E-owned operations are within the requested task and host approval rules; seed/shared data remains read-only without a scoped exception.
+- [ ] If live work remains, the host's managed Q-Rex browser or an owned terminal CLI session is ready. Identify it accurately in the log; do not invent an unavailable session name.
 - [ ] If reference material was supplied, list its statements so you can compare them with the live app.
 
 ## Ground rules
 
-1. Read-only by default. Open pages, dialogs and forms; do not submit.
-2. Mutate only E2E-owned records, named `E2E <relevant words> <DDMMYYYYHHmm>`, and only where the data-safety rules and the user's answer allow it. Seed data and shared settings are read-only.
+1. Explore E2E-owned records within task scope and host approvals; follow data safety for every mutation.
+2. Mutate E2E-owned records, named `E2E <relevant words> <DDMMYYYYHHmm>`, where data safety permits. Seed data and shared settings are read-only unless the specific record and operation receive the applicable scoped exception under data safety.
 3. If you cannot find or create the E2E data you need, stop and ask for explicit, scoped permission. Restoring state afterward is not permission.
 4. Navigate from the app's own navigation, not by guessing URLs.
 5. Snapshot first, then search the saved snapshot for the element you need. Do not read the whole tree.
@@ -38,7 +39,9 @@ Exploration finds possible journeys. It does not prove the PRD is complete. Ever
 
 ## Checklist by area
 
-Work through each area that exists for this menu. If an area does not exist, record "not present" with how you checked. If it exists but you cannot reach it, record it as unverified (see below).
+Use these areas as exploration prompts, not PRD sections or a requirement quota. Retain findings that define a business outcome, consequential branch, prerequisite or explicit requirement; routine control inventories stay in working notes. If an area does not exist, note how you checked; inaccessible areas remain unverified. Consolidate coverage limits in the PRD instead of copying this checklist into it.
+
+Before exploring, reconcile the saved inventory with all in-scope functions, actions and behavioral branches from every readable source, referencing the source. During exploration, add every newly found in-scope action in navigation, menus, tabs, dialogs, record states and available roles. Reuse applicable attempts and investigate only missing outcomes or branches, including permitted E2E-owned mutations. For each record the attempt and evidence or its specific blocker, pending user answer or explicit exclusion and next step in `.exploration.md`. Revisit affected entries as new controls and dependencies appear. Account for every item before review; do not mark blocked or untried actions as explored. This inventory does not turn every control into a PRD requirement or E2E scenario.
 
 ### 1. Entry and navigation
 
@@ -96,7 +99,7 @@ Only check validation that can be triggered without submitting data you must not
 
 ### 6. Messages and feedback
 
-- [ ] Every success, error, warning and info message seen, copied exactly.
+- [ ] Assertion-relevant success, error, warning and info messages, copied exactly.
 - [ ] For each: trigger, where it appears (toast, banner, inline, dialog), whether it auto-dismisses.
 - [ ] Tooltips and helper text on controls.
 - [ ] Differences between client-side messages and server-side messages, when distinguishable.
@@ -124,12 +127,12 @@ Only check validation that can be triggered without submitting data you must not
 ### 10. Cross-menu and platform journeys
 
 - [ ] Identify journeys owned by this menu that hand off to or receive results from another menu, module or platform, using the PRD sources, existing scenarios and reachable UI.
-- [ ] Record the participating areas, entry point, prerequisites, observable outcome, dependencies and relevant supporting PRDs in the owning menu's PRD. Follow accessible read-only steps within the established scope and data-safety rules.
+- [ ] Record the participating areas, entry point, prerequisites, observable outcome, dependencies and relevant supporting PRDs in the owning menu's PRD. Follow accessible steps, including permitted E2E-owned mutations, within the established scope and data-safety rules.
 - [ ] Mark any inaccessible or unverified handoff, upstream behavior or external outcome with its reason and what is needed to verify it. A mocked response does not verify the real integration.
 
 ## How to record an observation
 
-For each thing you saw, capture what you will need to write one requirement line:
+For each observation that affects a requirement or coverage gap, capture the relevant context below. Several observations may support one requirement; a control or label does not automatically become a requirement.
 
 | Field | Example |
 | --- | --- |
@@ -142,7 +145,9 @@ For each thing you saw, capture what you will need to write one requirement line
 | Request | POST, path, status (if an action) |
 | Evidence ref | `STL-create-01` |
 
-Then write the PRD line in the format from [prd-template.md](prd-template.md). Keep notes factual: what you saw, not why you think it behaves that way.
+Synthesize relevant findings into condition/action/outcome requirements using [prd-template.md](prd-template.md), with a shared evidence reference where possible. Keep notes factual: what you saw, not why you think it behaves that way. Request/locator details remain exploration evidence rather than PRD content unless explicitly required.
+
+Persist these notes and useful verified locator expressions in the shared `.exploration.md` as each meaningful chunk completes. Follow its record format, sanitization and per-item applicability rules; temporary snapshot refs are not reusable locators. Keep PRD evidence references aligned with the record.
 
 ## Evidence
 
@@ -153,7 +158,7 @@ Then write the PRD line in the format from [prd-template.md](prd-template.md). K
 
 ## Recording what you could not reach
 
-Absence from the current account or data is not evidence that a feature does not exist. Record it under the PRD's Review findings and gaps > Unverified, or the equivalent section in an existing PRD, with a reason:
+Absence from the current account or data is not evidence that a feature does not exist. Record consequential gaps under the PRD's Open issues, or the equivalent section in an existing PRD, with affected requirement IDs or the unexplored journey and a reason:
 
 | Reason | How to write it |
 | --- | --- |
@@ -169,17 +174,19 @@ Add what would be needed to verify it: an account, data, or explicit permission.
 
 Pause the affected interaction and ask the user when:
 
+- An item described in a PRD or source cannot be found or reached after checking available navigation, roles and data: explain what was tried and ask how to access it.
+- A required form value for a permitted mutation cannot be determined safely from the UI, sources or E2E data conventions: ask for a suitable value or how to obtain one without requesting secrets in chat.
 - A step would change data you are not sure you may change.
 - You need E2E data you cannot find or create within scope.
 - The UI shows real customer data and you are unsure how to handle it.
-- Live behavior contradicts the spec in a way that may be a real defect and you need a ticket ID. Never invent one.
+- A discrepancy is confirmed as a product defect but its ticket ID is missing. Never invent one.
 - You hit a login wall, MFA or a protected environment you were not cleared to use.
 - The product menu that owns the requested journey remains ambiguous after checking the request, navigation, PRDs and feature sources. A journey crossing another menu or platform is not by itself a change of ownership or a reason to stop documenting it in the owner's PRD.
 
 ## Coverage statement
 
-End every exploration pass with a short statement for the PRD's exploration log:
+End every exploration pass by saving the shared record and a short coverage statement for the PRD, distinguishing reused evidence from newly observed scope:
 
 - Covered: the areas and actions you exercised, per this checklist.
-- Not covered: the areas, roles, states and mutations you skipped, and why.
+- Not covered: each source item or discovered action not exercised, including the affected role, state or mutation, reason and next step.
 - Coverage is not exhaustive: it reflects the account, data and environment you used on that date.

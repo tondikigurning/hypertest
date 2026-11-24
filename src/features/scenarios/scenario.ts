@@ -14,7 +14,7 @@ export interface Scenario {
   steps: Array<string>;
   background: Array<string>;
   outline: boolean;
-  category: string;
+  flow: string;
   type: string;
   method: string;
   expect: string;
@@ -32,7 +32,23 @@ export const label = (value: string) =>
     .replace(/^_/, "")
     .replaceAll("-", " ")
     .replace(/\b\w/g, (c) => c.toUpperCase());
-export const category = (s: Scenario) => s.category || "Uncategorized";
+export const flow = (s: Scenario) => s.flow || "Unassigned flow";
+export const scenarioTagLabels = (scenario: Scenario) => {
+  const visibleTags = scenario.tags.filter(
+    (tag) =>
+      !/^@(flow|expect|type|ref):/.test(tag) &&
+      !/^@[A-Z]{2,4}_[A-Z0-9_]+_E2E_\d{3,4}$/.test(tag) &&
+      !["@smoke", "@regression", "@quarantine", "@fixme", "@mock"].includes(tag),
+  );
+  return [
+    ...scenario.catalogTags.map(label),
+    ...(scenario.type ? [label(scenario.type)] : []),
+    ...(scenario.tags.includes("@mock") ? ["Mock"] : []),
+    ...(scenario.tags.includes("@quarantine") ? ["Quarantined"] : []),
+    ...(scenario.tags.includes("@fixme") ? ["Fixme"] : []),
+    ...visibleTags.map((tag) => label(tag.slice(1))),
+  ];
+};
 const normalizeStepText = (value: string) =>
   value
     .trim()

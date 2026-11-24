@@ -2,6 +2,7 @@ import { Icon } from "@hyperscal/icons";
 import { useQueryClient } from "@tanstack/react-query";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { FormField, Modal, PrimaryButton, Spinner, TextInput } from "../../../components";
+import type { RunConfig } from "../run-environment-state";
 import { readVariables, storageKey } from "../run-variables";
 import type { Run, RunSelection } from "../types";
 import { activeRunKey, useActiveRun } from "../use-active-run";
@@ -15,13 +16,27 @@ function RunHint({ children }: { children: ReactNode }) {
   return <p className="muted">{children}</p>;
 }
 
+function defaultVariableValues(config?: RunConfig) {
+  return Object.fromEntries(
+    config?.variables.map(({ name, defaultValue }) => [name, defaultValue || ""] as const) || [],
+  );
+}
+
 export function EnvironmentVariables({ disabled = false }: { disabled?: boolean }) {
   const { config, variablesOpen, setVariablesOpen } = useRunEnvironment();
   const [values, setValues] = useState<Record<string, string>>({});
   const trigger = useRef<HTMLButtonElement>(null);
+  const initializedOpen = useRef(false);
   useEffect(() => {
-    if (variablesOpen) setValues(readVariables());
-  }, [variablesOpen]);
+    if (!variablesOpen) {
+      initializedOpen.current = false;
+      return;
+    }
+    if (!initializedOpen.current) {
+      setValues(readVariables(defaultVariableValues(config)));
+      initializedOpen.current = true;
+    }
+  }, [config, variablesOpen]);
   useEffect(() => {
     if (disabled && variablesOpen) setVariablesOpen(false);
   }, [disabled, variablesOpen, setVariablesOpen]);
@@ -71,7 +86,7 @@ export function EnvironmentVariables({ disabled = false }: { disabled?: boolean 
               >
                 <TextInput
                   id={variable.name}
-                  required
+                  required={variable.required}
                   type={variable.secret ? "password" : "text"}
                   autoComplete="off"
                   value={values[variable.name] || ""}
@@ -112,17 +127,19 @@ export function LocalRun({
   useEffect(() => {
     if (!variablesOpen && config) {
       const values = readVariables();
-      if (config.variables.every(({ name }) => values[name]?.trim())) {
-        setError((current) => (current === "Set the environment variables before starting a run." ? "" : current));
+      if (config.variables.every(({ name, required }) => !required || values[name]?.trim())) {
+        setError((current) =>
+          current === "Set the required environment variables before starting a run." ? "" : current,
+        );
       }
     }
   }, [config, variablesOpen]);
   const start = async (event: React.FormEvent) => {
     event.preventDefault();
     setError("");
-    const variables = readVariables();
-    if (config?.variables.some(({ name }) => !variables[name]?.trim())) {
-      setError("Set the environment variables before starting a run.");
+    const variables = readVariables(defaultVariableValues(config));
+    if (config?.variables.some(({ name, required }) => required && !variables[name]?.trim())) {
+      setError("Set the required environment variables before starting a run.");
       return;
     }
     setSubmitting(true);
@@ -179,7 +196,7 @@ export function LocalRun({
       {error && (
         <p className="run-form-error" role="alert">
           {error}
-          {error === "Set the environment variables before starting a run." && (
+          {error === "Set the required environment variables before starting a run." && (
             <>
               {" "}
               <button type="button" className="run-error-action" onClick={() => setVariablesOpen(true)}>
@@ -227,8 +244,8 @@ export function GroupRun({ selection, name, items }: { selection: RunSelection; 
             titleId="group-run-title"
             title={name}
             description={
-              selection.kind === "category"
-                ? "Run every scenario in this category"
+              selection.kind === "flow"
+                ? "Run every scenario in this flow"
                 : selection.kind === "group"
                   ? "Run every scenario in this group and its child files"
                   : "Run every scenario in this feature"

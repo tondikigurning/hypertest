@@ -24,7 +24,7 @@ import {
   scenarioPath,
   updateScenarioFilterParams,
 } from "../features/scenarios/navigation";
-import { category, featureTitle, label, type Scenario } from "../features/scenarios/scenario";
+import { flow, featureTitle, label, scenarioTagLabels, type Scenario } from "../features/scenarios/scenario";
 import {
   filterScenarios,
   findScenarioGroup,
@@ -57,7 +57,7 @@ export function App() {
   const navigationType = useNavigationType();
   const [searchParams, setSearchParams] = useSearchParams();
   const filters = scenarioFiltersFromSearchParams(searchParams);
-  const { search, status, priority, type } = filters;
+  const { search, status, tag } = filters;
   const isPrdView = isMenu && searchParams.get("view") === "prd";
   useEffect(() => {
     if (route?.id !== "scenario" || isMenu || searchParams.get("view") !== "prd" || !routeModule || !routeMenu) return;
@@ -122,13 +122,12 @@ export function App() {
     [scenarios, selectedGroup],
   );
   const scopeTitle = selectedGroup?.path.split("/").slice(1).map(label).join(" / ");
-  const types = useMemo(() => [...new Set(scenarios.map((s) => s.type).filter(Boolean))].sort(), [scenarios]);
-  const priorities = useMemo(
+  const tags = useMemo(
     () =>
-      [
-        ...new Set(scenarios.flatMap((s) => s.tags.filter((t) => t.startsWith("@priority:")).map((t) => t.slice(10)))),
-      ].sort(),
-    [scenarios],
+      selectedGroup?.file && !selectedGroup.children.length
+        ? [...new Set(scopedScenarios.flatMap(scenarioTagLabels))].sort()
+        : [],
+    [scopedScenarios, selectedGroup],
   );
   const statuses = useMemo(
     () => [...new Set(scenarios.map((scenario) => activeStatus(scenario)?.trim() || "Not run"))].sort(),
@@ -160,7 +159,7 @@ export function App() {
         file: item.file,
         module: item.module,
         feature: featureTitle(item),
-        category: item.category,
+        flow: item.flow,
         steps: item.steps,
         tags: item.tags,
       })),
@@ -171,8 +170,8 @@ export function App() {
     [scenarios, activeStatus],
   );
   const filtered = useMemo(
-    () => filterScenarios(filterableScenarios, { scopePath: selectedGroup?.path, status, priority, type, search }),
-    [filterableScenarios, selectedGroup, status, priority, type, search],
+    () => filterScenarios(filterableScenarios, { scopePath: selectedGroup?.path, status, tag, search }),
+    [filterableScenarios, selectedGroup, status, tag, search],
   );
   const chosen = scenarios.find((s) => s.key === selected);
   const references = useMemo(
@@ -190,13 +189,13 @@ export function App() {
     navigateToScenario(scenario.module, scenario.file, clearScenarioFilterParams(searchParams));
     setClosedFlows((previous) => {
       const next = new Set(previous);
-      next.delete(`${scenario.file}:${category(scenario)}`);
+      next.delete(`${scenario.file}:${flow(scenario)}`);
       return next;
     });
     setSelected(scenario.key);
   };
   const flows = useMemo(() => groupFlows(filtered), [filtered]);
-  const hasFilters = Boolean(search.trim() || status !== "all" || priority !== "all" || type !== "all");
+  const hasFilters = Boolean(search.trim() || status !== "all" || tag !== "all");
   const featureCount = scopedScenarios.length;
   const clearFilters = () => setSearchParams(clearScenarioFilterParams(searchParams), { replace: true });
   const goHome = () => {
@@ -349,22 +348,10 @@ export function App() {
                     />
                   </label>
                   <SelectInput
-                    label="Filter by priority"
-                    value={priority}
-                    onChange={(value) => updateFilter("priority", value)}
-                    options={[
-                      { value: "all", label: "All priorities" },
-                      ...priorities.map((p) => ({ value: p, label: p })),
-                    ]}
-                  />
-                  <SelectInput
-                    label="Filter by type"
-                    value={type}
-                    onChange={(value) => updateFilter("type", value)}
-                    options={[
-                      { value: "all", label: "All types" },
-                      ...types.map((t) => ({ value: t, label: label(t) })),
-                    ]}
+                    label="Filter by tag"
+                    value={tag}
+                    onChange={(value) => updateFilter("tag", value)}
+                    options={[{ value: "all", label: "All tags" }, ...tags.map((value) => ({ value, label: value }))]}
                   />
                   <SelectInput
                     label="Filter by status"
@@ -397,7 +384,7 @@ export function App() {
                     <ScenarioListState kind="empty" onClear={clearFilters} />
                   ))}
                 {flows.map(([flowKey, entries]) => {
-                  const categoryName = category(entries[0]);
+                  const flowName = flow(entries[0]);
                   const flowFile = entries[0].file;
                   const expanded = !closedFlows.has(flowKey);
                   return (
@@ -423,14 +410,14 @@ export function App() {
                                 /{" "}
                               </span>
                             )}
-                            {categoryName}
+                            {flowName}
                             <span className="flow-count">{entries.length}</span>
                           </span>
                         </button>
                         <GroupRun
-                          selection={{ kind: "category", file: flowFile, category: categoryName }}
-                          name={categoryName}
-                          items={scenarios.filter((s) => s.file === flowFile && category(s) === categoryName)}
+                          selection={{ kind: "flow", file: flowFile, flow: flowName }}
+                          name={flowName}
+                          items={scenarios.filter((s) => s.file === flowFile && flow(s) === flowName)}
                         />
                       </div>
                       <CollapsibleRegion expanded={expanded}>
@@ -543,9 +530,13 @@ export function App() {
                   {activeRun.tests.find((test) => test.status === "running")?.title ||
                     (activeRun.stage === "uploading evidence"
                       ? "Uploading evidence"
-                      : activeRun.cancelRequested
-                        ? "Stopping run"
-                        : "Preparing your run")}
+                      : activeRun.stage === "saving results"
+                        ? "Saving results"
+                        : activeRun.cancelRequested
+                          ? "Stopping run"
+                          : activeRun.executionDone
+                            ? "Finishing run"
+                            : "Preparing your run")}
                 </span>
               </span>
               <span className="floating-run-action">

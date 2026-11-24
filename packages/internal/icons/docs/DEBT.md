@@ -28,8 +28,6 @@ related:
 
 | ID      | Sev    | File                         | Problem                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | ------- | ------ | ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| ERR-1   | Medium | `scripts/generator.ts:14,61` | Icon-existence validation is **accidental**. `getIconsCSS` silently skips unknown names (emits `/* Could not find icon: x */` as a CSS comment — verified in `@iconify/utils/lib/css/icons.mjs`), and `generateTypes()` emits every uncommented `icon.mjs` name into the `IconName` union with no Tabler lookup. The only thing that fails a bad name today is the **dead** `generateSprite()` call at line 14 — unawaited, so its `throw` becomes an unhandled rejection that crashes `pnpm gen`. Scenario: delete the dead sprite code (the open question in [[icons-intent]]) → a typo'd/removed icon name typechecks, produces no CSS rule, and renders blank in production with zero diagnostics. Fix: add an explicit existence check (loop names against `iconSet.icons`, throw with a clear message) _before_ removing the sprite code. |
-| SMELL-1 | Low    | `scripts/generator.ts:14,29` | `generateSprite()` is fully implemented but its output is never written (`writer` call commented out). Documented as pending a keep-or-delete decision in [[icons-intent]] — but note ERR-1: deleting it without adding a real existence check silently removes the pipeline's only validation.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | SMELL-2 | Low    | `scripts/generator.ts:89-98` | The only mechanism to refresh the `icon.mjs` catalogue after a `@iconify-json/tabler` bump is a commented-out code block, and README documents no refresh workflow. After a Tabler bump, new icons are invisible to devs browsing `icon.mjs` and renamed/removed icons linger as valid-looking commented entries.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 
 ## Icon component
@@ -48,17 +46,11 @@ related:
 
 ## Suggested order
 
-1. **ERR-1 first** — add an explicit icon-existence check to
-   `generator.ts` (throw with a clear message listing the bad names).
-   This unblocks everything else in the generator.
-2. **Dead-code sweep once ERR-1 lands**: delete `generateSprite()`
-   (SMELL-1) and either delete or promote the catalogue-refresh block to
-   a documented script (SMELL-2 — a `pnpm gen:catalogue` script + one
-   README line).
-3. **Mechanical component fixes, one small PR**: BUG-1 (destructure
+1. Address SMELL-2 by documenting or removing the catalogue-refresh block.
+2. **Mechanical component fixes, one small PR**: BUG-1 (destructure
    `enlarged`), TYPE-1 (drop `customIcons`), TYPE-2 (peer range
    `>=17`).
-4. **ERR-2 needs an owner ruling** — a dev-only `console.warn`-style
+3. **ERR-2 needs an owner ruling** — a dev-only `console.warn`-style
    guard conflicts with Biome's `noConsole`; options are a dev-mode
    check behind `process.env.NODE_ENV`, or accepting compile-time-only
    safety and closing this as won't-fix.

@@ -22,17 +22,47 @@ interface PrdResult {
   loading: boolean;
 }
 
-const emptyPrd = "---\nstatus: draft\n---\n\n";
+const emptyPrd = "";
+
+function displayContent(content: string, menu: string) {
+  const markdown = content.replace(/^---\s*\r?\n[\s\S]*?\r?\n---(?:\r?\n|$)/, "");
+  return markdown.replace(/^\s*#\s+([^\r\n]+)\r?\n/, (heading, title: string) => {
+    const normalizedTitle = title
+      .trim()
+      .replace(/\s+prd$/i, "")
+      .toLowerCase();
+    return normalizedTitle === label(menu).toLowerCase() ? "" : heading;
+  });
+}
+
+function ActionIcon({ name }: { name: "rename" | "edit" | "agent" | "delete" }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.7"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      {name === "rename" && <path d="M4 7V4h16v3M12 4v16M8 20h8" />}
+      {name === "edit" && <path d="M4 20h4l11-11-4-4L4 16v4ZM13.5 6.5l4 4" />}
+      {name === "agent" && (
+        <path d="m12 3 1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3ZM19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8L19 16Z" />
+      )}
+      {name === "delete" && <path d="M4 7h16M9 7V4h6v3m3 0-1 13H7L6 7m4 4v5m4-5v5" />}
+    </svg>
+  );
+}
 
 function VersionItem({
   name,
-  status,
   active,
   selected,
   onSelect,
 }: {
   name: string;
-  status: string;
   active: boolean;
   selected: boolean;
   onSelect: () => void;
@@ -50,7 +80,6 @@ function VersionItem({
       </span>
       <span className="prd-version-item-copy">
         <strong>{name}</strong>
-        <small>{status}</small>
       </span>
       {active && <span className="prd-active-badge">Active</span>}
     </button>
@@ -144,8 +173,7 @@ export function PrdCatalog({
     if (busy) onClose();
     else leaveEditor(onClose);
   }
-  const frontMatter = selectedContent?.match(/^---\s*\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/);
-  const markdown = frontMatter ? selectedContent?.slice(frontMatter[0].length) : selectedContent;
+  const documentContent = selectedContent === undefined ? "" : displayContent(selectedContent, menu);
   const noVersions = !versions.loading && !versions.error && versions.items.length === 0;
 
   async function runAction(action: () => Promise<unknown>) {
@@ -180,7 +208,7 @@ export function PrdCatalog({
     event.preventDefault();
     if (!selectedVersion) return;
     await runAction(async () => {
-      await versions.update(selectedVersion.id, selectedVersion.name, contentDraft);
+      await versions.update(selectedVersion.id, undefined, contentDraft, selectedVersion.content);
     });
   }
 
@@ -239,13 +267,6 @@ export function PrdCatalog({
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
-  const hasValidatedRequirements = Boolean(
-    selectedVersion?.content.split(/\r?\n/).some((line) => /\[validated\]/i.test(line)),
-  );
-  const canEditContent = Boolean(
-    selectedVersion && selectedVersion.status.toLowerCase() !== "reviewed" && !hasValidatedRequirements,
-  );
-
   return (
     <Modal className="prd-dialog" labelledBy="prd-dialog-title" onClose={closeDialog} returnFocus={returnFocus}>
       <header className="prd-dialog-header">
@@ -284,7 +305,6 @@ export function PrdCatalog({
                 <li key={version.id}>
                   <VersionItem
                     name={version.name}
-                    status={version.status}
                     active={version.active}
                     selected={selectedVersion?.id === version.id}
                     onSelect={() => selectVersion(version.id)}
@@ -299,7 +319,7 @@ export function PrdCatalog({
         <div className="prd-version-content">
           {busy && (
             <p className="prd-review-note" role="status">
-              Saving changes. If Q-Rex requests a review, close this window to review it in the agent panel.
+              Saving changes…
             </p>
           )}
           {!loading && loadError && hasContent && (
@@ -339,37 +359,39 @@ export function PrdCatalog({
                   </div>
                 </div>
                 <div className="prd-reader-controls">
-                  <div className="prd-reader-badges">
-                    {selectedVersion?.active && <span className="prd-active-badge">Active</span>}
-                    {selectedVersion && (
-                      <span className="prd-status" data-reviewed={selectedVersion.status.toLowerCase() === "reviewed"}>
-                        <span className="prd-status-dot" aria-hidden="true" />
-                        {selectedVersion.status}
-                      </span>
-                    )}
-                  </div>
-                  {!editingContent && !editingName && (
-                    <button type="button" className="prd-action-button" onClick={downloadPrd} disabled={busy}>
-                      Download Markdown
-                    </button>
-                  )}
                   {selectedVersion && !editingContent && !editingName && (
                     <div className="prd-version-actions">
-                      <button type="button" className="prd-action-button" onClick={startRename} disabled={busy}>
-                        Rename
+                      <button
+                        type="button"
+                        className="prd-icon-action"
+                        onClick={startRename}
+                        disabled={busy}
+                        aria-label="Rename version"
+                        title="Rename version"
+                      >
+                        <ActionIcon name="rename" />
                       </button>
                       <button
                         type="button"
-                        className="prd-action-button"
-                        onClick={canEditContent ? startContentEdit : onEdit}
-                        disabled={busy || (!canEditContent && !selectedVersion.active)}
+                        className="prd-icon-action"
+                        onClick={startContentEdit}
+                        disabled={busy}
+                        aria-label="Edit content"
+                        title="Edit content"
+                      >
+                        <ActionIcon name="edit" />
+                      </button>
+                      <button
+                        type="button"
+                        className="prd-icon-action"
+                        onClick={onEdit}
+                        disabled={busy || !selectedVersion.active}
+                        aria-label="Edit with Q-Rex"
                         title={
-                          !canEditContent && !selectedVersion.active
-                            ? "Set this version active before editing reviewed requirements with Q-Rex."
-                            : undefined
+                          selectedVersion.active ? "Edit with Q-Rex" : "Set this version active to edit with Q-Rex"
                         }
                       >
-                        {canEditContent ? "Edit content" : "Edit with Q-Rex"}
+                        <ActionIcon name="agent" />
                       </button>
                       {!selectedVersion.active && (
                         <button
@@ -383,18 +405,19 @@ export function PrdCatalog({
                       )}
                       <button
                         type="button"
-                        className="prd-delete-button"
+                        className="prd-icon-action prd-icon-delete"
                         onClick={() =>
                           setConfirmation({ kind: "delete", id: selectedVersion.id, name: selectedVersion.name })
                         }
                         disabled={busy || (selectedVersion.active && versions.items.length > 1)}
+                        aria-label="Delete version"
                         title={
                           selectedVersion.active && versions.items.length > 1
                             ? "Set another version active before deleting this one."
-                            : undefined
+                            : "Delete version"
                         }
                       >
-                        Delete
+                        <ActionIcon name="delete" />
                       </button>
                     </div>
                   )}
@@ -408,10 +431,6 @@ export function PrdCatalog({
               )}
               {editingContent && selectedVersion ? (
                 <form className="prd-editor-form" onSubmit={(event) => void saveContent(event)}>
-                  <p className="prd-review-note">
-                    Saving reviewed content or adding validated requirements pauses for explicit PRD review in the Agent
-                    panel.
-                  </p>
                   <fieldset className="prd-editor-tabs">
                     <legend>Document view</legend>
                     <button type="button" aria-pressed={!showEditorPreview} onClick={() => setShowEditorPreview(false)}>
@@ -423,7 +442,7 @@ export function PrdCatalog({
                   </fieldset>
                   {showEditorPreview ? (
                     <div className="prd-editor-preview">
-                      <PrdMarkdown content={contentDraft.replace(/^---\s*\r?\n[\s\S]*?\r?\n---(?:\r?\n|$)/, "")} />
+                      <PrdMarkdown content={displayContent(contentDraft, menu)} />
                     </div>
                   ) : (
                     <FormField label="PRD Markdown" htmlFor="prd-version-content">
@@ -467,18 +486,7 @@ export function PrdCatalog({
                 </form>
               ) : null}
 
-              {selectedVersion?.active && !canEditContent && !editingContent && (
-                <p className="prd-review-note">
-                  Edit the active PRD with Q-Rex when it contains reviewed or validated requirements.
-                </p>
-              )}
-              {frontMatter && !editingContent && (
-                <details className="prd-frontmatter">
-                  <summary>Document details</summary>
-                  <pre>{frontMatter[1]}</pre>
-                </details>
-              )}
-              {!editingContent && <PrdMarkdown content={markdown || ""} />}
+              {!editingContent && <PrdMarkdown content={documentContent || ""} />}
             </div>
           )}
         </div>

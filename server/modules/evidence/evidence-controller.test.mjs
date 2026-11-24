@@ -6,7 +6,7 @@ import {
   r2EvidenceLocation,
   r2EvidencePrefix,
 } from "../../../packages/internal/test-utils/src/export/r2-client.mjs";
-import { createDriveEvidenceHandler } from "./evidence-controller.mjs";
+import { createEvidenceHandler } from "./evidence-controller.mjs";
 
 const scenario = {
   key: "case-management/survey-template-manager.feature:39",
@@ -41,7 +41,7 @@ test("evidence viewer reads both current and legacy R2 prefixes", async (t) => {
         },
         close() {},
       };
-      const handler = createDriveEvidenceHandler({
+      const handler = createEvidenceHandler({
         catalog: async () => [scenario],
         results: {
           list: async () => [

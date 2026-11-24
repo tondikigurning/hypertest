@@ -5,6 +5,13 @@ import type { AnyHandler } from "msw";
 import { AccessRolesPage } from "../pages/iam/AccessRolesPage";
 import { PermissionSetsPage } from "../pages/iam/PermissionSetsPage";
 import { CaseDashboardPage } from "../pages/case-management/CaseDashboardPage";
+import { CasesPage } from "../pages/case-management/CasesPage";
+import { CasesBulkPage } from "../pages/case-management/CasesBulkPage";
+import { CasesActivityPage } from "../pages/case-management/CasesActivityPage";
+import { CasesEvidencePage } from "../pages/case-management/CasesEvidencePage";
+import { CasesActionPage } from "../pages/case-management/CasesActionPage";
+import { CasesEmailPage } from "../pages/case-management/CasesEmailPage";
+import { CasesRelationPage } from "../pages/case-management/CasesRelationPage";
 import { SurveyTemplateManagerPage } from "../pages/case-management/SurveyTemplateManagerPage";
 import { LoginPage } from "../pages/auth/LoginPage";
 import { UserGroupsPage } from "../pages/user-management/UserGroupsPage";
@@ -29,6 +36,13 @@ type BddFixtures = {
     permissionSetsPage: PermissionSetsPage;
     surveyTemplateManagerPage: SurveyTemplateManagerPage;
     caseDashboardPage: CaseDashboardPage;
+    casesPage: CasesPage;
+    casesBulkPage: CasesBulkPage;
+    casesActivityPage: CasesActivityPage;
+    casesEvidencePage: CasesEvidencePage;
+    casesActionPage: CasesActionPage;
+    casesEmailPage: CasesEmailPage;
+    casesRelationPage: CasesRelationPage;
     workOrdersPage: WorkOrdersPage;
     workOrdersCreatePage: WorkOrdersCreatePage;
     organizationsPage: OrganizationsPage;
@@ -64,8 +78,13 @@ export const test = base.extend<BddFixtures>({
     handlers: [[], { option: true }],
 
     network: [
-        async ({ context, handlers }, use, testInfo) => {
+        async ({ context, handlers, baseURL }, use, testInfo) => {
             const isMocked = testInfo.tags.includes("@mock");
+            if (testInfo.tags.includes("@production-restricted")) {
+                const host = baseURL ? new URL(baseURL).hostname.toLowerCase() : "";
+                const allowed = /^converge\.(?:dev|stt\d*|pp|qa\d*|uat\d*|staging)\.hyperscal\.com$/.test(host);
+                testInfo.skip(!allowed, "Case customer-data mutations require a recognized non-production target.");
+            }
             const isQuarantined = testInfo.tags.includes("@quarantine");
             const runQuarantined = process.env.RUN_QUARANTINE === "1";
 
@@ -110,6 +129,29 @@ export const test = base.extend<BddFixtures>({
     },
     caseDashboardPage: async ({ page }, use) => {
         await use(new CaseDashboardPage(page));
+    },
+    casesPage: async ({ page }, use) => {
+        const casesPage = new CasesPage(page);
+        try { await use(casesPage); } finally { await casesPage.cleanupOwnedEdits(); }
+    },
+    casesBulkPage: async ({ page, casesPage }, use) => {
+        await use(new CasesBulkPage(page, casesPage));
+    },
+    casesActivityPage: async ({ page, casesPage }, use) => {
+        await use(new CasesActivityPage(page, casesPage));
+    },
+    casesEvidencePage: async ({ page, casesPage }, use) => {
+        await use(new CasesEvidencePage(page, casesPage));
+    },
+    casesActionPage: async ({ page, casesPage }, use) => {
+        await use(new CasesActionPage(page, casesPage));
+    },
+    casesEmailPage: async ({ page, casesPage }, use) => {
+        const composer = new CasesEmailPage(page, casesPage);
+        try { await use(composer); } finally { await composer.cleanup(); }
+    },
+    casesRelationPage: async ({ page, casesPage }, use) => {
+        await use(new CasesRelationPage(page, casesPage));
     },
     accessRolesPage: async ({ page }, use) => {
         await use(new AccessRolesPage(page));

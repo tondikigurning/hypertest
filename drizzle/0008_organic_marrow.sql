@@ -1,0 +1,1 @@
+ALTER TABLE "automation_agent_prds" DROP COLUMN "user_id";

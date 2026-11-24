@@ -10,7 +10,7 @@ For other browser-test scopes, inspect their existing runner, fixtures, test fil
 
 1. Establish the target environment and inspect data-safety requirements before a live interaction. Use a named session you own and reuse its relevant authentication setup.
 2. Snapshot the page, verify current roles, labels and locators, and record user-visible actions and outcomes. Inspect requests when needed, avoiding disclosure of credentials and sensitive data. Use tracing or screenshots where useful.
-3. Treat observed behavior as evidence, not automatically as the intended requirement. If it conflicts with an approved spec or known requirement, preserve the spec and report expected versus actual. Resolve uncertain intent with the user before changing assertions or scenario meaning.
+3. Treat observed behavior as evidence, not automatically as confirmed product intent. For tenant BDD source-versus-actual conflicts, follow `write-prd` and `write-e2e-scenarios`: preserve both sides in the PRD and use actual as the provisional baseline unless a product decision says otherwise. Change assertions or scenario meaning only through the applicable review gates.
 4. CLI output may offer locator and action code. Review and adapt it to the existing POM, component and fixture boundaries. Generated actions need meaningful assertions of the intended observable outcome. Preserve existing IDs and shared steps.
 
 ## Implement and verify

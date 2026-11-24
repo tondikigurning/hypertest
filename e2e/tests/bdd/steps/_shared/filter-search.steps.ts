@@ -15,7 +15,11 @@ import {
 
 const { Given, When, Then } = createBdd(test);
 
-Given("a list page with search is open", async ({ page, pageContext, $testInfo }) => {
+Given("a list page with search is open", async ({ page, pageContext, casesPage, $testInfo }) => {
+    if ($testInfo.tags.includes("@TEN_CAS_LST_E2E_001")) {
+        await casesPage.navigateTo();
+        return;
+    }
     syncPageContextFromScenario(pageContext, {
         url: page.url(),
         tags: $testInfo.tags,
@@ -61,7 +65,14 @@ When("the user searches for the first visible row {string}", async ({
     usersCreatePage,
     workOrdersPage,
     surveyTemplateManagerPage,
+    casesPage,
+    $testInfo,
 }, field: string) => {
+    if ($testInfo.tags.includes("@TEN_CAS_LST_E2E_001")) {
+        if (field !== "case_number") throw new Error("The Cases search contract expects case_number.");
+        await casesPage.searchForFirstCaseNumber();
+        return;
+    }
     const listPage = resolveFilterablePage({
         pageContext,
         usersPage,
@@ -79,7 +90,11 @@ When("the user searches for the first visible row {string}", async ({
     await listPage.searchFilterKeep(keyword);
 });
 
-Then("the search returns matching rows", async ({ page, pageContext, usersPage, userGroupsPage, accessRolesPage, permissionSetsPage, usersCreatePage, workOrdersPage, surveyTemplateManagerPage }) => {
+Then("the search returns matching rows", async ({ page, pageContext, usersPage, userGroupsPage, accessRolesPage, permissionSetsPage, usersCreatePage, workOrdersPage, surveyTemplateManagerPage, casesPage, $testInfo }) => {
+    if ($testInfo.tags.includes("@TEN_CAS_LST_E2E_001")) {
+        await casesPage.expectMatchingSearchRows();
+        return;
+    }
     const listPage = resolveFilterablePage({
         pageContext,
         usersPage,

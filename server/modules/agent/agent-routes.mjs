@@ -77,7 +77,7 @@ function sessionFor(id, draftId, draft) {
       key,
       createSession({
         userId: id,
-        prdStore: createPrdDatabase(id),
+        prdStore: createPrdDatabase(),
         stateFile,
         preferencesFile: join(sessionsRoot, id, "model-preferences.json"),
         refreshWorkspace: refreshDraftForTurn,
@@ -104,15 +104,6 @@ export function createAgentRouter({ resolveSession = sessionFor, resolveIdentity
     res.setHeader("Cache-Control", "no-store");
     if (!isLocalRequest(req) || (req.method !== "GET" && req.headers.origin !== `http://${req.headers.host}`)) {
       return res.status(403).json({ error: "Local requests only." });
-    }
-    return next();
-  });
-  router.use((req, res, next) => {
-    try {
-      req.agentIdentity = resolveIdentity(req);
-      if (!req.agentIdentity?.userId) return res.status(400).json({ error: "Invalid local preview identity." });
-    } catch (error) {
-      return res.status(400).json({ error: error.message });
     }
     return next();
   });
@@ -146,6 +137,83 @@ export function createAgentRouter({ resolveSession = sessionFor, resolveIdentity
       });
     }),
   );
+  const prdStore = createPrdDatabase();
+  router.get("/prds", async (_req, res) => {
+    try {
+      res.json(await prdStore.list());
+    } catch {
+      res.status(503).json({ error: "Could not read PRDs." });
+    }
+  });
+  router.get("/prd-versions", async (req, res) => {
+    try {
+      const module = new URL(req.url, "http://localhost").searchParams.get("module") || "";
+      const menu = new URL(req.url, "http://localhost").searchParams.get("menu") || "";
+      res.json(await prdStore.versions(module, menu));
+    } catch (error) {
+      res.status(400).json({ error: error.message || "Could not read PRD versions." });
+    }
+  });
+  router.post("/prd-versions", async (req, res) => {
+    try {
+      res.status(201).json(await prdStore.mutate("create", req.body || {}));
+    } catch (error) {
+      res.status(400).json({ error: error.message || "Could not create a PRD version." });
+    }
+  });
+  router.put("/prd-versions/:versionId", async (req, res) => {
+    try {
+      res.json(
+        await prdStore.mutate("update", {
+          module: req.body?.module,
+          menu: req.body?.menu,
+          versionId: req.params.versionId,
+          name: req.body?.name,
+          content: req.body?.content,
+          expectedContent: req.body?.expectedContent,
+        }),
+      );
+    } catch (error) {
+      res.status(400).json({ error: error.message || "Could not update the PRD version." });
+    }
+  });
+  router.post("/prd-versions/:versionId/activate", async (req, res) => {
+    try {
+      res.json(
+        await prdStore.mutate("activate", {
+          module: req.body?.module,
+          menu: req.body?.menu,
+          versionId: req.params.versionId,
+        }),
+      );
+    } catch (error) {
+      res.status(400).json({ error: error.message || "Could not activate the PRD version." });
+    }
+  });
+  router.delete("/prd-versions/:versionId", async (req, res) => {
+    try {
+      const module = new URL(req.url, "http://localhost").searchParams.get("module") || "";
+      const menu = new URL(req.url, "http://localhost").searchParams.get("menu") || "";
+      res.json(
+        await prdStore.mutate("delete", {
+          module,
+          menu,
+          versionId: req.params.versionId,
+        }),
+      );
+    } catch (error) {
+      res.status(400).json({ error: error.message || "Could not delete the PRD version." });
+    }
+  });
+  router.use((req, res, next) => {
+    try {
+      req.agentIdentity = resolveIdentity(req);
+      if (!req.agentIdentity?.userId) return res.status(400).json({ error: "Invalid local preview identity." });
+    } catch (error) {
+      return res.status(400).json({ error: error.message });
+    }
+    return next();
+  });
   router.get("/draft-targets", async (_req, res) => {
     try {
       res.json(await listDraftTargets());
@@ -228,72 +296,6 @@ export function createAgentRouter({ resolveSession = sessionFor, resolveIdentity
       return next();
     } catch (error) {
       return res.status(400).json({ error: error.message });
-    }
-  });
-  router.get("/prds", async (req, res) => {
-    try {
-      res.json(await req.agentSession.prds());
-    } catch {
-      res.status(503).json({ error: "Could not read draft PRDs." });
-    }
-  });
-  router.get("/prd-versions", async (req, res) => {
-    try {
-      const module = new URL(req.url, "http://localhost").searchParams.get("module") || "";
-      const menu = new URL(req.url, "http://localhost").searchParams.get("menu") || "";
-      res.json(await req.agentSession.prdVersions(module, menu));
-    } catch (error) {
-      res.status(400).json({ error: error.message || "Could not read PRD versions." });
-    }
-  });
-  router.post("/prd-versions", async (req, res) => {
-    try {
-      res.status(201).json(await req.agentSession.createPrdVersion(req.body || {}));
-    } catch (error) {
-      res.status(400).json({ error: error.message || "Could not create a PRD version." });
-    }
-  });
-  router.put("/prd-versions/:versionId", async (req, res) => {
-    try {
-      res.json(
-        await req.agentSession.updatePrdVersion({
-          module: req.body?.module,
-          menu: req.body?.menu,
-          versionId: req.params.versionId,
-          name: req.body?.name,
-          content: req.body?.content,
-        }),
-      );
-    } catch (error) {
-      res.status(400).json({ error: error.message || "Could not update the PRD version." });
-    }
-  });
-  router.post("/prd-versions/:versionId/activate", async (req, res) => {
-    try {
-      res.json(
-        await req.agentSession.activatePrdVersion({
-          module: req.body?.module,
-          menu: req.body?.menu,
-          versionId: req.params.versionId,
-        }),
-      );
-    } catch (error) {
-      res.status(400).json({ error: error.message || "Could not activate the PRD version." });
-    }
-  });
-  router.delete("/prd-versions/:versionId", async (req, res) => {
-    try {
-      const module = new URL(req.url, "http://localhost").searchParams.get("module") || "";
-      const menu = new URL(req.url, "http://localhost").searchParams.get("menu") || "";
-      res.json(
-        await req.agentSession.deletePrdVersion({
-          module,
-          menu,
-          versionId: req.params.versionId,
-        }),
-      );
-    } catch (error) {
-      res.status(400).json({ error: error.message || "Could not delete the PRD version." });
     }
   });
   router.get("/session", (req, res) => res.json({ ...req.agentSession.snapshot(), draft: req.agentDraft }));

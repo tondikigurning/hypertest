@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process";
-import { createHash, randomUUID } from "node:crypto";
+import { randomUUID } from "node:crypto";
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
@@ -16,35 +16,15 @@ const repoRoot = resolve(e2eWorkspace, "..");
 const require = createRequire(join(e2eWorkspace, "package.json"));
 const envFile = join(e2eWorkspace, ".env.local");
 const configured = existsSync(envFile) ? require("dotenv").parse(readFileSync(envFile)) : {};
-const configuredTarget = process.env.BASE_URL || configured.BASE_URL;
-const environments = [
-  { id: "dev", label: "DEV", target: "https://converge.dev.hyperscal.com/" },
-  { id: "stt", label: "STT", target: "https://converge.stt.hyperscal.com/" },
-  { id: "stt1", label: "STT1", target: "https://converge.stt1.hyperscal.com/" },
-  { id: "pp", label: "PP", target: "https://converge.pp.hyperscal.com/" },
-];
-const defaultEnvironment = "stt1";
-if (configuredTarget) {
-  const match = environments.find((item) => {
-    try {
-      return new URL(item.target).origin === new URL(configuredTarget).origin;
-    } catch {
-      return false;
-    }
-  });
-  if (match) {
-    match.target = configuredTarget;
-  } else {
-    let identity = configuredTarget;
-    try {
-      identity = new URL(configuredTarget).origin;
-    } catch {
-      /* Validation happens before execution. */
-    }
-    const id = `configured-${createHash("sha256").update(identity).digest("hex").slice(0, 12)}`;
-    environments.push({ id, label: "Configured", target: configuredTarget });
-  }
-}
+const configuredEnvironment = configured.ENV || "stt1";
+if (!/^[a-z0-9-]+$/.test(configuredEnvironment)) throw new Error("Invalid ENV in e2e/.env.local.");
+const environmentIds = [...new Set(["dev", "stt", "stt1", "pp", configuredEnvironment])];
+const environments = environmentIds.map((id) => ({
+  id,
+  label: id.toUpperCase(),
+  target: `https://converge.${id}.hyperscal.com/`,
+}));
+const defaultEnvironment = configuredEnvironment;
 const bddgen = join(dirname(require.resolve("playwright-bdd/package.json")), "dist/cli/index.js");
 const playwright = join(dirname(require.resolve("@playwright/test")), "cli.js");
 const tsx = require.resolve("tsx/cli");
@@ -100,6 +80,7 @@ export function createLocalRunService({
   workspaceRoot = repoRoot,
   configFile = "playwright.bdd.config.ts",
   skipEvidenceUpload = false,
+  evidenceUploadTimeoutMs = 60_000,
   maxRuntimeMs,
   safeProcessEnvironment = false,
   onFinished = async () => {},
@@ -110,6 +91,7 @@ export function createLocalRunService({
   const recovery = journal?.recover().catch(() => {});
   let run;
   let generatedFingerprint;
+  let generatedFilesKey;
   const collections = new Map();
 
   function events() {
@@ -119,13 +101,30 @@ export function createLocalRunService({
   function publicRun() {
     if (!run) return null;
     const progress = events();
+    const tests = Object.values(progress.tests);
+    const failedStepAwaitingTestEnd = tests.some(
+      (test) => test.status === "running" && test.steps?.some((step) => step.status === "failed"),
+    );
+    const hasRunningTest = tests.some((test) => test.status === "running");
+    const hasPendingTest = tests.some((test) => test.status === "pending");
+    const stage =
+      !run.executionDone && run.stage === "executing"
+        ? failedStepAwaitingTestEnd
+          ? "finishing scenario"
+          : tests.length > 0 && !hasRunningTest
+            ? hasPendingTest
+              ? "starting scenario"
+              : "finishing run"
+            : run.stage
+        : run.stage;
     return {
       id: run.id,
       scenarioId: run.scenarioId,
       scenarioIds: run.scenarioIds,
       selection: run.selection,
       target: run.target,
-      stage: run.stage,
+      stage,
+      executionDone: Boolean(run.executionDone),
       done: run.done,
       error: run.error,
       evidenceUpload: run.evidenceUpload,
@@ -155,15 +154,37 @@ export function createLocalRunService({
     };
   }
 
-  function command(script, args, env, cwd = e2eWorkspace) {
+  function command(script, args, env, cwd = e2eWorkspace, timeoutMs = 0) {
     return new Promise((resolvePromise) => {
       const child = spawnProcess(process.execPath, [script, ...args], { cwd, env, stdio: "ignore", windowsHide: true });
       run.child = child;
-      child.on("error", () => resolvePromise(false));
-      child.on("close", (code) => {
+      let settled = false;
+      let timedOut = false;
+      let timeoutTimer;
+      let forceKillTimer;
+      const finish = (ok) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timeoutTimer);
+        clearTimeout(forceKillTimer);
         if (run.child === child) run.child = undefined;
-        resolvePromise(code === 0);
-      });
+        resolvePromise(ok);
+      };
+      child.on("error", () => finish(false));
+      child.on("close", (code) => finish(!timedOut && code === 0));
+      if (timeoutMs > 0) {
+        timeoutTimer = setTimeout(() => {
+          timedOut = true;
+          forceKillTimer = setTimeout(() => child.kill("SIGKILL"), 5000);
+          forceKillTimer.unref?.();
+          if (process.platform === "win32" && child.pid) {
+            spawn("taskkill", ["/pid", String(child.pid), "/t", "/f"], { stdio: "ignore", windowsHide: true }).on(
+              "error",
+              () => child.kill(),
+            );
+          } else child.kill("SIGTERM");
+        }, timeoutMs);
+      }
     });
   }
 
@@ -171,8 +192,10 @@ export function createLocalRunService({
     const auth = join(run.dir, "auth.json");
     const env = {
       ...(safeProcessEnvironment ? runnerBaseEnvironment() : process.env),
-      BASE_URL: run.target,
       ...environment,
+      AUTOMATION_SELECTED_ENV: environments.find((item) => item.target === run.target)?.id || "",
+      AUTOMATION_RUN_TARGET: run.target,
+      AUTOMATION_BDD_FEATURES: JSON.stringify(run.files.map((file) => `tests/bdd/features/${file}`)),
       AUTOMATION_SETUP_AUTH_FILE: auth,
       AUTOMATION_OUTPUT_DIR: join(run.dir, "output"),
       AUTOMATION_REPORT_DIR: join(run.dir, "report"),
@@ -195,15 +218,18 @@ export function createLocalRunService({
       }
       run.stage = "generating";
       const fingerprintForRun = fingerprint();
-      if (generatedFingerprint !== fingerprintForRun) {
+      const filesKey = JSON.stringify([...run.files].sort());
+      if (generatedFingerprint !== fingerprintForRun || generatedFilesKey !== filesKey) {
         collections.clear();
         generatedFingerprint = undefined;
+        generatedFilesKey = undefined;
         if (!(await command(bddgen, [`--config=${configFile}`], env, workspaceE2e))) {
           if (run.cancelRequested) return;
           run.error = "Unable to generate BDD tests. Check the local runner configuration.";
           return;
         }
         generatedFingerprint = fingerprint();
+        generatedFilesKey = filesKey;
       }
       if (run.cancelRequested) return;
       run.stage = "checking collection";
@@ -244,6 +270,8 @@ export function createLocalRunService({
         env,
         workspaceE2e,
       );
+      run.executionDone = true;
+      run.stage = "saving results";
       if (run.cancelRequested) return;
       const progress = events();
       if (existsSync(env.BDD_RESULTS_FILE)) {
@@ -296,6 +324,7 @@ export function createLocalRunService({
       await onFinished().catch(() => {
         run.error ||= "Could not clean the isolated draft workspace.";
       });
+      run.executionDone = true;
       run.done = true;
       run.finishedAt = new Date().toISOString();
       run.stage = "finished";
@@ -310,14 +339,21 @@ export function createLocalRunService({
     }
 
     run.stage = "uploading evidence";
+    run.evidenceUpload = { status: "uploading", scenarioIds: [] };
     const environmentId = environments.find((item) => item.target === run.target)?.id;
     if (!environmentId) throw new Error("Unknown evidence environment.");
-    const uploaded = await command(
-      tsx,
-      [evidenceCli, "--push", "--auto", "--results", resultsPath, "--environment", environmentId, "--run-id", run.id],
-      env,
-      repoRoot,
-    );
+    let uploaded = false;
+    try {
+      uploaded = await command(
+        tsx,
+        [evidenceCli, "--push", "--auto", "--results", resultsPath, "--environment", environmentId, "--run-id", run.id],
+        env,
+        repoRoot,
+        evidenceUploadTimeoutMs,
+      );
+    } catch {
+      // Evidence failure must not change the test outcome or leave upload marked as active.
+    }
     let results = [];
     try {
       results = JSON.parse(readFileSync(resultsPath, "utf8"));
@@ -344,6 +380,7 @@ export function createLocalRunService({
       files: resolved.files,
       scenarioId: resolved.ids.length === 1 ? resolved.ids[0] : "",
       stage: "starting",
+      executionDone: false,
       done: false,
     };
     if (Number.isFinite(maxRuntimeMs) && maxRuntimeMs > 0) {
@@ -380,6 +417,9 @@ export function createLocalRunService({
     target: environments.find((item) => item.id === defaultEnvironment).target,
     environments,
     defaultEnvironment,
+    variableDefaults: {
+      E2E_CASE_CUSTOMER_ID: configured.E2E_CASE_CUSTOMER_ID || "",
+    },
     active() {
       return Boolean(run && !run.done);
     },

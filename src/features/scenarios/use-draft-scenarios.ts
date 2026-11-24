@@ -16,7 +16,7 @@ type Source = Pick<
   | "background"
   | "steps"
   | "outline"
-  | "category"
+  | "flow"
   | "type"
   | "method"
   | "catalogTags"
@@ -104,7 +104,7 @@ export function useDraftScenarios(official: Array<Scenario>) {
       const item: Scenario = {
         ...source,
         key: existing?.key || `draft:${source.key}`,
-        category: source.category || "Uncategorized",
+        flow: source.flow || "Unassigned flow",
         type: source.type,
         method: source.method,
         catalogTags: source.catalogTags,

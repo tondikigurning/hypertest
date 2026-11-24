@@ -1,10 +1,10 @@
 import { Router } from "express";
-import { driveEvidence } from "./evidence-controller.mjs";
+import { evidenceHandler } from "./evidence-controller.mjs";
 
-export function createEvidenceRouter(driveEvidenceHandler = driveEvidence) {
+export function createEvidenceRouter(handler = evidenceHandler) {
   const router = Router();
   router.use((req, res, next) => {
-    Promise.resolve(driveEvidenceHandler(req, res)).catch(next);
+    Promise.resolve(handler(req, res)).catch(next);
   });
   return router;
 }

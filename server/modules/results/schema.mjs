@@ -108,11 +108,10 @@ export const agentUsage = pgTable(
 export const agentPrds = pgTable(
   "automation_agent_prds",
   {
-    userId: text("user_id").notNull(),
     module: text("module").notNull(),
     menu: text("menu").notNull(),
     state: jsonb("state").notNull(),
     revision: integer("revision").notNull().default(1),
   },
-  (table) => [primaryKey({ columns: [table.userId, table.module, table.menu] })],
+  (table) => [primaryKey({ columns: [table.module, table.menu] })],
 );

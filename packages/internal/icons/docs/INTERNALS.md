@@ -40,7 +40,7 @@ graph LR
 | File                   | Role                                                                                                                                                                                                                                  |
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `icon.mjs`             | The **source of truth for which icons exist** — 5,996 lines, almost entirely commented-out Tabler icon names; a contributor uncomments the ones they want. Not generated; hand-maintained.                                            |
-| `scripts/generator.ts` | Reads `icon.mjs`'s active (uncommented) entries + `@iconify-json/tabler`'s icon data, emits `src/gen/icon.css` and `src/gen/types.ts`. Also _computes_ an SVG sprite (`generateSprite`) that is never written — see Design tradeoffs. |
+| `scripts/generator.ts` | Reads `icon.mjs`'s active (uncommented) entries + `@iconify-json/tabler`'s icon data, emits `src/gen/icon.css` and `src/gen/types.ts`. Validates icon names before generating output. |
 | `src/gen/icon.css`     | Generated CSS — one `.i-{name}` rule per opted-in icon (via `@iconify/utils`'s `getIconsCSS`). ~1,000 lines for the current opt-in set.                                                                                               |
 | `src/gen/types.ts`     | Generated — the `icons` const array and derived `IconName` union type.                                                                                                                                                                |
 | `src/icon.tsx`         | The `Icon` component — 28 lines, the only runtime logic in the package.                                                                                                                                                               |
@@ -62,12 +62,6 @@ graph LR
 
 ## Design tradeoffs
 
-- **SVG sprite generation is fully implemented but dead.**
-  `generator.ts`'s `generateSprite()` builds a complete `<svg><defs>` sprite
-  from the same icon set, but its result (`_sprite`) is never passed to
-  `writer(...)` — only CSS and types get written. This looks like an
-  abandoned alternative delivery mechanism, not a supported fallback.
-  _(observed — see [[icons-intent]])_
 - **`enlarged` isn't excluded from the `...props` spread.** `src/icon.tsx`
   destructures `as`, `name`, `className`, `customIcons` but not `enlarged`,
   so `enlarged` both drives the `text-[1.6em]` className logic _and_ gets
@@ -96,14 +90,8 @@ graph LR
 ## Known technical debt
 
 Recorded in [[icons-debt]] (`docs/DEBT.md`), created by the 2026-07-03 bug
-hunt. The four items previously listed here (the `enlarged` DOM leak, the
-dead `customIcons` prop, the unused `generateSprite()`, and the missing
-runtime fallback for an invalid icon name) moved there with IDs and
-verification evidence, joined by one **medium** generator-pipeline finding
-(ERR-1): icon-existence validation is accidental — the dead sprite code's
-unhandled rejection is the only thing that fails `pnpm gen` on a bad
-`icon.mjs` name, so deleting it without a replacement check would let a
-typo'd icon typecheck and render blank.
+hunt. The generator now validates icon names explicitly before writing CSS or types.
+Other component findings remain recorded in the debt document.
 
 ## Superseded
 
