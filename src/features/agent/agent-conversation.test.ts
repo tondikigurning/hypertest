@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { combineAnswer, groupBrowserApprovals } from "./agent-conversation";
+import { combineAnswer, groupAutomaticApprovals } from "./agent-conversation";
 
 test("consecutive automatic browser decisions stay inspectable without dominating the conversation", () => {
   const messages = [
@@ -8,12 +8,14 @@ test("consecutive automatic browser decisions stay inspectable without dominatin
     { id: "2", role: "assistant" as const, text: "Automatically allowed data-safety: fill · target: e196" },
     { id: "3", role: "assistant" as const, text: "Question about the result" },
     { id: "4", role: "assistant" as const, text: "Automatically allowed flow-review: LIST" },
+    { id: "4b", role: "assistant" as const, text: "Automatically allowed flow-review: CREATE" },
     { id: "5", role: "user" as const, text: "Automatically allowed data-safety: example" },
   ];
-  const groups = groupBrowserApprovals(messages);
-  assert.deepEqual(groups.map((group) => group.messages.map((message) => message.id)), [["1", "2"], ["3"], ["4"], ["5"]]);
-  assert.equal(groups[0].browserApprovals, true);
-  assert.equal(groups[1].browserApprovals, false);
+  const groups = groupAutomaticApprovals(messages);
+  assert.deepEqual(groups.map((group) => group.messages.map((message) => message.id)), [["1", "2"], ["3"], ["4", "4b"], ["5"]]);
+  assert.equal(groups[0].kind, "browser");
+  assert.equal(groups[1].kind, undefined);
+  assert.equal(groups[2].kind, "flow");
 });
 
 test("an answer can include both the selected choice and the guidance it requests", () => {

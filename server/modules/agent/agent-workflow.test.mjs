@@ -114,6 +114,7 @@ async function workflow(t, responses, runtime = {}, files = {}, prdStore) {
       const delta = response?.tool
         ? {
             role: "assistant",
+            ...(response.text ? { content: response.text } : {}),
             tool_calls: [
               {
                 index: 0,
@@ -123,7 +124,7 @@ async function workflow(t, responses, runtime = {}, files = {}, prdStore) {
               },
             ],
           }
-        : { role: "assistant", content: response?.text || "No more scripted responses." };
+        : { role: "assistant", content: response?.text ?? "No more scripted responses." };
       res.writeHead(200, { "content-type": "text/event-stream" });
       for (const [value, finish] of [
         [delta, null],
@@ -174,6 +175,69 @@ async function workflow(t, responses, runtime = {}, files = {}, prdStore) {
     },
   };
 }
+
+test("assistant progress after a tool call appears after the tool's visible event", async (t) => {
+  const { session } = await workflow(t, [
+    { tool: "use_skill", input: { skill: "write-prd" }, text: "I will inspect the PRD. " },
+    { text: "The PRD is ready." },
+  ]);
+  await session.send("Review the PRD.");
+  const done = await waitFor(session, (state) => !state.busy);
+  assert.deepEqual(
+    done.messages.filter((message) => message.role === "assistant").map((message) => message.text),
+    ["I will inspect the PRD. ", "Q-Rex is using /write-prd.", "The PRD is ready."],
+  );
+});
+
+test("a running tool reports its activity without exposing its input", async (t) => {
+  let release;
+  const gate = new Promise((resolve) => {
+    release = resolve;
+  });
+  t.after(() => release());
+  const store = {
+    read: async () => {
+      await gate;
+      return "# Orders";
+    },
+    list: async () => [],
+    write: async () => {},
+  };
+  const { session } = await workflow(
+    t,
+    [{ tool: "read_file", input: { path: prdPath } }, { text: "Done." }],
+    {},
+    {},
+    store,
+  );
+  await session.send("Read the PRD.");
+  const pending = await waitFor(session, (state) => state.activity?.phase === "Reading project files");
+  assert.doesNotMatch(JSON.stringify(pending.activity), /docs\/prd/);
+  release();
+  const done = await waitFor(session, (state) => !state.busy);
+  assert.equal(done.activity, undefined);
+});
+
+test("the next turn is told that the previous turn was stopped", async (t) => {
+  const responses = [
+    { tool: "ask_user", input: { question: "Continue?", options: [], isSecret: false } },
+    { text: "I will inspect the saved draft." },
+  ];
+  const { session, requests } = await workflow(t, responses);
+  await session.send("Prepare scenarios.");
+  await waitFor(session, (state) => state.userRequest);
+  await session.cancel();
+  await session.send("What happened?");
+  await waitFor(session, (state) => !state.busy);
+  assert.match(JSON.stringify(requests.at(-1).messages), /previous agent turn was stopped before completion/i);
+});
+
+test("an empty final response after tool work is reported instead of silently ending", async (t) => {
+  const { session } = await workflow(t, [{ tool: "list_files", input: { directory: "e2e" } }, { text: "" }]);
+  await session.send("Inspect the draft.");
+  const done = await waitFor(session, (state) => !state.busy);
+  assert.ok(done.messages.some((message) => /model returned no final response/i.test(message.text)));
+});
 
 test("baseline feature reader compares the immutable base with the draft and rejects unsafe paths", async (t) => {
   const baseline = `@original\nFeature: Orders\n  Background:\n    Given an order\n  @${scenarioId}\n  Scenario: List\n    Then the order is visible\n`;
@@ -429,7 +493,7 @@ test("chat hands off skills and reviews artifacts without running workspace scen
       },
     },
     { tool: "write_file", input: { path: implementation, content: "// reviewed implementation\n" } },
-    { text: "Implementation complete; workspace execution is unavailable." },
+    { text: "Implementation complete; draft execution has not been requested." },
   );
   await session.send(
     "Implement and verify the approved scenario.",
@@ -443,7 +507,7 @@ test("chat hands off skills and reviews artifacts without running workspace scen
   await waitFor(session, (state) => !state.busy);
   assert.equal(session.snapshot().error, "");
   assert.equal(runs, 0);
-  assert.ok(requests.every((request) => !request.tools?.some((item) => item.function?.name === "run_draft_scenario")));
+  assert.ok(requests.some((request) => request.tools?.some((item) => item.function?.name === "run_draft_scenario")));
   assert.equal(
     await readFile(join(workspace, featurePath), "utf8"),
     feature,

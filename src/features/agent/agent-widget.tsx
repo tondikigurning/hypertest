@@ -8,7 +8,7 @@ import { useRunEnvironment } from "../runs/use-run-environment";
 import { label as displayLabel } from "../scenarios/scenario";
 import { isScenarioInScope } from "../scenarios/selectors";
 import { agentFetch, getActiveDraftId, setActiveDraftId } from "./agent-api";
-import { combineAnswer, groupBrowserApprovals } from "./agent-conversation";
+import { combineAnswer, groupAutomaticApprovals } from "./agent-conversation";
 import { AgentSettings } from "./agent-settings";
 import { readAgentVariables } from "./agent-variables";
 import {
@@ -74,6 +74,7 @@ interface Session {
   messages: Array<Message>;
   history?: Array<{ title: string; url: string; number: number; status: string; createdAt: string }>;
   busy: boolean;
+  activity?: { phase: string; lastAction?: string; actions: number };
   explorationActive?: boolean;
   error: string;
   mode: string;
@@ -1575,12 +1576,12 @@ export function AgentWidget({
                   </div>
                 )}
 
-              {groupBrowserApprovals(session?.messages ?? []).map((group) =>
-                group.browserApprovals ? (
+              {groupAutomaticApprovals(session?.messages ?? []).map((group) =>
+                group.kind ? (
                   <details className="agent-message agent-browser-approvals" key={group.messages[0].id}>
                     <summary>
-                      {group.messages.length} browser {group.messages.length === 1 ? "action" : "actions"} automatically
-                      allowed
+                      {group.messages.length} {group.kind === "browser" ? "browser" : "flow review"}{" "}
+                      {group.messages.length === 1 ? "decision" : "decisions"} automatically allowed
                     </summary>
                     {group.messages.map((item) => (
                       <p key={item.id}>{item.text}</p>
@@ -1612,11 +1613,16 @@ export function AgentWidget({
                   <QRex mood="working" />
                   <div className="agent-working-copy">
                     <strong>
-                      Q-Rex is working
+                      {session.activity?.phase || "Q-Rex is working"}
                       <span className="agent-working-dots" aria-hidden="true">
                         ...
                       </span>
                     </strong>
+                    {session.activity?.lastAction && (
+                      <span>
+                        Last action: {session.activity.lastAction} · {session.activity.actions} actions
+                      </span>
+                    )}
                   </div>
                 </div>
               )}

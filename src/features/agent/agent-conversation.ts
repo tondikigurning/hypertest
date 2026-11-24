@@ -4,14 +4,20 @@ interface ConversationMessage {
   text: string;
 }
 
-export function groupBrowserApprovals<T extends ConversationMessage>(messages: Array<T>) {
-  const groups: Array<{ browserApprovals: boolean; messages: Array<T> }> = [];
+export function groupAutomaticApprovals<T extends ConversationMessage>(messages: Array<T>) {
+  const groups: Array<{ kind?: "browser" | "flow"; messages: Array<T> }> = [];
   for (const message of messages) {
-    const browserApproval =
-      message.role === "assistant" && message.text.startsWith("Automatically allowed data-safety:");
+    const kind =
+      message.role !== "assistant"
+        ? undefined
+        : message.text.startsWith("Automatically allowed data-safety:")
+          ? "browser"
+          : message.text.startsWith("Automatically allowed flow-review:")
+            ? "flow"
+            : undefined;
     const previous = groups.at(-1);
-    if (browserApproval && previous?.browserApprovals) previous.messages.push(message);
-    else groups.push({ browserApprovals: browserApproval, messages: [message] });
+    if (kind && previous?.kind === kind) previous.messages.push(message);
+    else groups.push({ kind, messages: [message] });
   }
   return groups;
 }
