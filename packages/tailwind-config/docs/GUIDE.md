@@ -31,9 +31,7 @@ Import the stylesheet **once**, in your app's root/entry file:
 import "@hyperscal/tailwind-config/backoffice.css";
 ```
 
-Use the `@tailwindcss/vite` plugin in your `vite.config.ts` (the pattern
-every current consumer uses — this package's own `postcss.config.js` is
-dead, don't wire up PostCSS instead):
+Use the `@tailwindcss/vite` plugin in your `vite.config.ts`:
 
 ```ts
 import tailwindcss from "@tailwindcss/vite";
@@ -102,10 +100,6 @@ flowchart TD
    consuming app's dev server (or Storybook). Update `docs/API.md`'s token
    and utility-class tables so the doc doesn't drift from the CSS.
 
-**Don't** add to `global.css` or `postcss.config.js` — both are dead (see
-[[tailwind-config-intent]]); anything you add there won't reach any
-consumer.
-
 ## Gotchas
 
 - **Adding a package without adding its `@source` line is the single most
@@ -120,25 +114,12 @@ consumer.
   blocks by hand, not passing a config value. Double-check which block is
   active (`[ACTIVE]` label in the source comment) before assuming your
   edit took effect.
-- **`global.css` looks like it should be safe "extra" CSS to import if you
-  need something from it — it isn't.** It defines some of the same class
-  names as `backoffice.css` with _different_ rules (see
-  [[tailwind-config-internals]]). If you find yourself wanting something
-  from `global.css`, port the specific rule into `backoffice.css`/a
-  `src/*.css` partial instead of importing the whole file.
 - **The Quill toolbar CSS block is duplicated within `backoffice.css`
   itself** — if you need to change Quill toolbar styling, check whether
   you're editing both copies or just one (see [[tailwind-config-internals]]).
 
 ## What not to do
 
-- **Don't wire up `postcss.config.js`** — no current consumer uses it; all
-  four apps use the `@tailwindcss/vite` plugin. If you think you need
-  PostCSS, that's a signal to check why the Vite plugin isn't working for
-  your case, not to route around it.
-- **Don't re-import `global.css`** — it's superseded, defines
-  conflicting/stale versions of some classes, and uses Tailwind v3 syntax
-  incompatible with this package's v4 setup.
 - **Don't add app-specific styling here** — this package is genuinely
   shared across every consumer; app-specific CSS belongs in that app.
 - **Don't hardcode pixel values for control/button sizing** — use the

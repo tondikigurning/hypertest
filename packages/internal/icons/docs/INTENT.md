@@ -86,13 +86,9 @@ a new icon.
 | Sanctioned replacement for ad-hoc `lucide-react` usage                            | See "Why a package" — confirmed by the `legacy-icons` deprecation comment plus owner confirmation.                                                                                                                                                           | Owner, 2026-07-02                                                        |
 | Curated opt-in set via `icon.mjs`, not the full Tabler catalogue                  | Bounds the generated CSS size; the workflow (uncomment → run `gen`) is documented in the package's own `README.md`.                                                                                                                                          | `confirmed` — `README.md`                                                |
 | `icon.css` must resolve to the **built** `dist/icon.css`, not source, in dev      | `src/gen/` is git-ignored — `e2e`/`apps/admin` both alias `@hyperscal/icons/icon.css` to `dist/icon.css` explicitly in `vite.config.ts`, with a comment explaining the JS/CSS resolution split.                                                     | `confirmed` — `e2e/vite.config.ts`, `apps/admin/vite.config.ts` |
-| SVG sprite generation exists in the generator but is unused                       | `generateSprite()` is fully implemented and called, but its result (`_sprite`) is never written to disk — the `writer(...)` call for it is commented out. CSS-class delivery won out; sprite output is dead code, not a second supported delivery mechanism. | `confirmed` — `scripts/generator.ts`                                     |
 
 ## Open questions
 
-- Is the unused `generateSprite()` function worth deleting, or kept as a
-  documented fallback in case CSS-class delivery ever needs to change?
-  Not yet decided — flagged here rather than silently removed.
 - Should `@hyperscal/icons` eventually vendor the full Tabler set (or add a
   fallback path) so consumers don't need a PR + `gen` run just to add one
   icon? Not raised as a problem yet at current usage volume.
