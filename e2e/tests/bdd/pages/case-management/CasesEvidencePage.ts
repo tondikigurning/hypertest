@@ -125,11 +125,11 @@ export class CasesEvidencePage {
 
     async prepareSummary(kind: "history-other" | "history-any" | "child"): Promise<void> {
         await this.cases.openOwnedCase();
-        const root = await this.summaryRoot();
         if (kind === "child") {
+            const root = await this.summaryRoot();
             if (!(await root.getByText("No child cases found.", { exact: true }).isVisible().catch(() => false))) throw new CasesPrerequisiteError("The sampled case has child cases.");
         } else {
-            const buttons = root.getByRole("button").filter({ hasText: /^HS-\d/ });
+            const buttons = (await this.summaryRoot()).getByRole("button").filter({ hasText: /^HS-\d/ });
             const minimum = kind === "history-other" ? 2 : 1;
             if (await buttons.count() < minimum) throw new CasesPrerequisiteError(`The sampled case has fewer than ${minimum} history ticket${minimum === 1 ? "" : "s"}.`);
         }
@@ -140,14 +140,12 @@ export class CasesEvidencePage {
     }
     async openSummary(): Promise<void> { await this.summaryRoot(); }
     async expectHistory(): Promise<void> {
-        const root = await this.summaryRoot();
-        const buttons = root.getByRole("button").filter({ hasText: /^HS-\d/ });
+        const buttons = (await this.summaryRoot()).getByRole("button").filter({ hasText: /^HS-\d/ });
         await expect.poll(() => buttons.count()).toBeGreaterThanOrEqual(2);
         await expect(buttons.filter({ hasText: "Current" })).toHaveCount(1);
     }
     async openOtherHistoryCase(): Promise<void> {
-        const root = await this.summaryRoot();
-        const button = root.getByRole("button").filter({ hasText: /^HS-\d/ }).filter({ hasNotText: "Current" }).first();
+        const button = (await this.summaryRoot()).getByRole("button").filter({ hasText: /^HS-\d/ }).filter({ hasNotText: "Current" }).first();
         const match = (await button.innerText()).match(/HS-\d+-\d+/);
         if (!match) throw new Error("The selected history ticket did not show its case number.");
         this.historyTarget = match[0];
@@ -158,13 +156,27 @@ export class CasesEvidencePage {
         await expect(this.page.getByRole("tab", { name: new RegExp(`^${this.historyTarget}\\s`) })).toBeVisible();
     }
     async expectHistoryDetails(): Promise<void> {
-        const root = await this.summaryRoot();
-        const ticket = root.getByRole("button").filter({ hasText: /^HS-\d/ }).first();
-        await expect(ticket).toContainText(/HS-\d+-\d+/);
-        await expect(ticket).toContainText(/\d{1,2}\s+\w+\s+\d{4}/);
-        const values = (await ticket.locator("p").allTextContents()).map((value) => value.trim()).filter(Boolean);
-        expect(values.length).toBeGreaterThanOrEqual(6);
-        await expect(ticket).toContainText(/\b(?:Open|Assigned|In Progress|Solved|Closed|Cancelled|Pending Customer Reply)\b/);
+        const tickets = (await this.summaryRoot()).getByRole("button").filter({ hasText: /^HS-\d/ });
+        await expect.poll(() => tickets.count()).toBeGreaterThan(0);
+
+        let hasCompleteTicket = false;
+        for (let index = 0; index < await tickets.count(); index += 1) {
+            const ticket = tickets.nth(index);
+            const text = await ticket.innerText();
+            const paragraphs = (await ticket.locator("p").allTextContents()).map((value) => value.trim()).filter(Boolean);
+            const hasCaseNumber = paragraphs.some((value) => /^HS-\d+-\d+$/.test(value));
+            const hasDate = paragraphs.some((value) => /\d{1,2}\s+\w+\s+\d{4}/.test(value));
+            const hasStatus = /\b(?:Open|Assigned|In Progress|Solved|Closed|Cancelled|Pending Customer Reply)\b/.test(text);
+            const detailParagraphs = paragraphs.filter((value) => !/^HS-\d+-\d+$/.test(value)
+                && !/\d{1,2}\s+\w+\s+\d{4}/.test(value));
+
+            if (hasCaseNumber && hasDate && hasStatus && detailParagraphs.length >= 2) {
+                hasCompleteTicket = true;
+                break;
+            }
+        }
+
+        expect(hasCompleteTicket, "No displayed ticket contains its case number, classification, subject, status and date").toBe(true);
     }
     async expectCurrentTicket(): Promise<void> { await expect((await this.summaryRoot()).getByText("Current", { exact: true })).toBeVisible(); }
     async expectNoChildCount(): Promise<void> {

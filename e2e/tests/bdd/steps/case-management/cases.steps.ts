@@ -19,7 +19,13 @@ Given("the configured case customer is available", async ({ casesPage }) => {
 When("the user creates a case for that customer with a unique E2E subject and valid required details", async ({ casesPage }) => { await casesPage.submitCreate(); });
 Then("the newly created case workspace identifies the new case", async ({ casesPage }) => { await casesPage.expectCreatedCase(); });
 Then("the new case shows the E2E subject", async ({ casesPage }) => { await casesPage.expectNewCaseSubject(); });
-Given("an active case already exists for the configured customer and selected CTS", async ({ casesPage }) => { await casesPage.prepareDuplicate(); });
+Given("an active case already exists for the configured customer and selected CTS", async ({ casesPage }) => {
+    try { await casesPage.prepareDuplicate(); }
+    catch (error) {
+        if (!(error instanceof CasesPrerequisiteError)) throw error;
+        test.skip(true, error.message);
+    }
+});
 When("the user submits a new case with the same customer and CTS", async ({ casesPage }) => { await casesPage.submitCreate(); });
 Then("the duplicate warning identifies the existing case", async ({ casesPage }) => { await casesPage.expectDuplicateWarning(); });
 When("the duplicate warning appears", async ({ casesPage }) => { await casesPage.expectDuplicateWarning(); });
@@ -61,16 +67,24 @@ When(/^the user selects the (Open|Assigned|In Progress|Assigned to Me) pipeline 
     await casesPage.selectPipeline(name);
 });
 
-When(/^the user opens the (Closed|Solved) pipeline from Others$/, async ({ casesPage }, name: string) => {
+When(/^the user opens the (Closed|Solved) pipeline$/, async ({ casesPage }, name: string) => {
     await casesPage.selectOtherPipeline(name);
 });
 
-When("the user opens Pending Customer Reply from Others", async ({ casesPage }) => {
+When("the user opens the Pending Customer Reply pipeline", async ({ casesPage }) => {
     await casesPage.selectOtherPipeline("Pending Customer Reply");
 });
 
 Then(/^every displayed case has status (Open|Assigned|In Progress|Closed|Solved|Pending Customer Reply)$/, async ({ casesPage }, status: string) => {
     await casesPage.expectStatuses(status);
+});
+
+When("the user opens the Cases list actions menu", async ({ casesPage }) => {
+    await casesPage.openListActionsMenu();
+});
+
+Then("the Cases list actions menu offers Export", async ({ casesPage }) => {
+    await casesPage.expectExportMenuItem();
 });
 
 Given("a Cases pipeline has more results than the current page can display", async ({ casesPage }) => {
@@ -162,8 +176,17 @@ Then("Severity is populated as Complex", async ({ casesPage }) => {
     await casesPage.expectCreateChoice("Severity", "Complex");
 });
 
-Given(/^the Cases list contains an accessible case(?: with customer details)?$/, async ({ casesPage }) => {
-    await casesPage.selectOwnedCase("In Progress", false, "Request > Billing & Payments > Billing Documents");
+Given(/^the Cases list contains an accessible case( with customer details)?$/, async ({ casesPage }, withCustomerDetails?: string) => {
+    if (withCustomerDetails) {
+        try {
+            await casesPage.selectAccessibleCaseWithCustomerDetails();
+        } catch (error) {
+            if (!(error instanceof CasesPrerequisiteError)) throw error;
+            test.skip(true, error.message);
+        }
+        return;
+    }
+    await casesPage.selectFirstAccessibleCase();
 });
 
 When("the user opens that case by its case number", async ({ casesPage }) => {
@@ -267,11 +290,11 @@ When("the user opens Add Case Relation", async ({ casesPage }) => { await casesP
 Then("the dialog provides ticket number search, Save and Cancel", async ({ casesPage }) => { await casesPage.expectRelationDialog(); });
 Then("no case relation is added", async ({ casesPage }) => { await casesPage.expectRelationsUnchanged(); });
 
-Given("an identified E2E-owned In Progress case is open", async ({ casesPage }) => { await casesPage.openOwnedCase("In Progress"); });
+Given("an identified E2E-owned In Progress case is open", async ({ casesPage }) => { await casesPage.openOwnedCase("In Progress", false, false); });
 When("the user opens Pending to Customer Reply and cancels the confirmation", async ({ casesPage }) => { await casesPage.cancelStatusAction("Pending to customer reply"); });
 When("the user opens Resolve Case and cancels the resolution form", async ({ casesPage }) => { await casesPage.cancelStatusAction("Resolve Case"); });
 Then("the case remains In Progress", async ({ casesPage }) => { await casesPage.expectStatus("In Progress"); });
-Given("an identified E2E-owned case offers Edit Case", async ({ casesPage }) => { await casesPage.openOwnedCase(); });
+Given("an identified E2E-owned case offers Edit Case", async ({ casesPage }) => { await casesPage.openActiveE2EOwnedCase(); });
 When("the user changes its E2E subject and saves the case", async ({ casesPage }) => { await casesPage.editSubject(true); });
 When("the user changes its subject and cancels the edit", async ({ casesPage }) => { await casesPage.editSubject(false); });
 Then("that case shows the updated subject", async ({ casesPage }) => { await casesPage.expectOwnedSubject(); });

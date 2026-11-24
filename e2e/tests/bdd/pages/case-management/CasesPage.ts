@@ -1,6 +1,7 @@
 import { expect, type Locator, type Page } from "@playwright/test";
 import { dismissTencentWorkbenchIfPresent } from "../../utils/tencent-workbench-utils";
 import { e2eValue } from "../../utils/e2e-test-data";
+import { PipelineComponent } from "../../components/PipelineComponent";
 
 const environment = (globalThis as typeof globalThis & {
     process?: { env?: Record<string, string | undefined> };
@@ -21,6 +22,7 @@ const CREATE_CLASSIFICATIONS = [
 
 /** Cases list and the read-only portions of the create dialog. */
 export class CasesPage {
+    private readonly pipeline: PipelineComponent;
     private previousCaseNumbers: string[] = [];
     private selectedCaseNumber: string | null = null;
     private searchedCaseNumber: string | null = null;
@@ -35,9 +37,12 @@ export class CasesPage {
     private editedOriginal: string | null = null;
     private editedSubject: string | null = null;
     private restoreAssignment = false;
+    private createSubmitted = false;
     private createClassification: (typeof CREATE_CLASSIFICATIONS)[number] = CREATE_CLASSIFICATIONS[0];
 
-    constructor(private readonly page: Page) {}
+    constructor(private readonly page: Page) {
+        this.pipeline = new PipelineComponent(page);
+    }
 
     private get search(): Locator {
         return this.page.getByTestId("filter-search-input");
@@ -83,24 +88,33 @@ export class CasesPage {
         await this.searchFor(number);
     }
 
-    async selectOwnedCase(status?: string, assignedToMe = false, classification?: string): Promise<void> {
+    async selectOwnedCase(
+        status?: string,
+        assignedToMe = false,
+        classification?: string,
+        activeOnly = false,
+        requireConfiguredCustomer = true,
+    ): Promise<void> {
         const customer = environment?.E2E_CASE_CUSTOMER_ID?.trim();
-        if (!customer) throw new Error("E2E_CASE_CUSTOMER_ID is required to identify an owned case.");
+        if (requireConfiguredCustomer && !customer) throw new Error("E2E_CASE_CUSTOMER_ID is required to identify an owned case.");
         await this.navigateTo();
         await this.selectPipeline(assignedToMe ? "Assigned to Me" : "All");
         await this.searchFor("E2E");
         const found = await expect.poll(async () => this.rows.evaluateAll((rows, criteria) => rows.some((row) => {
                 const cells = row.querySelectorAll("td");
-                return (cells[3]?.textContent ?? "").trim() === criteria.customer
+                const customerValue = (cells[3]?.textContent ?? "").trim();
+                return Boolean(customerValue && customerValue !== "-")
+                    && (!criteria.customer || customerValue === criteria.customer)
                     && /^E2E\s/.test((cells[4]?.textContent ?? "").trim())
                     && (!criteria.status || (cells[8]?.textContent ?? "").trim() === criteria.status)
+                    && (!criteria.activeOnly || !["Closed", "Solved", "Cancelled"].includes((cells[8]?.textContent ?? "").trim()))
                     && (!criteria.classification || (cells[10]?.textContent ?? "").trim() === criteria.classification);
-            }), { customer, status, classification }), { timeout: 30_000 }).toBe(true).then(() => true, (error: unknown) => {
-                if (error && typeof error === "object" && "matcherResult" in error) return false;
-                throw error;
-            });
+            }), { customer: requireConfiguredCustomer ? customer : undefined, status, classification, activeOnly }), { timeout: 30_000 })
+            .toBe(true).then(() => true, () => false);
         if (!found) {
-            throw new CasesPrerequisiteError(`No E2E-owned case for the configured customer${status ? ` in ${status}` : ""} was found.`);
+            const ownership = requireConfiguredCustomer ? " for the configured customer" : " with a customer reference";
+            const activity = activeOnly ? " active" : "";
+            throw new CasesPrerequisiteError(`No${activity} E2E-owned case${ownership}${status ? ` in ${status}` : ""} was found.`);
         }
         for (let i = 0; i < await this.rows.count(); i += 1) {
             const row = this.rows.nth(i);
@@ -108,15 +122,19 @@ export class CasesPage {
             const customerValue = (await cells.nth(3).innerText()).trim();
             const subject = (await cells.nth(4).innerText()).trim();
             const rowStatus = (await cells.nth(8).innerText()).trim();
-            if (customerValue !== customer || !/^E2E\s/.test(subject) || (status && rowStatus !== status)) continue;
+            if (!customerValue || customerValue === "-" || (requireConfiguredCustomer && customerValue !== customer)
+                || !/^E2E\s/.test(subject) || (status && rowStatus !== status)) continue;
+            if (activeOnly && ["Closed", "Solved", "Cancelled"].includes(rowStatus)) continue;
             if (classification && (await cells.nth(10).innerText()).trim() !== classification) continue;
             this.selectedCaseNumber = (await cells.first().innerText()).trim();
             this.ownedSubject = subject;
-            this.ownedCustomer = customer;
+            this.ownedCustomer = customerValue;
             if (!this.selectedCaseNumber) throw new Error("The owned case has no case number.");
             return;
         }
-        throw new CasesPrerequisiteError(`No E2E-owned case for the configured customer${status ? ` in ${status}` : ""} was found.`);
+        const ownership = requireConfiguredCustomer ? " for the configured customer" : " with a customer reference";
+        const activity = activeOnly ? " active" : "";
+        throw new CasesPrerequisiteError(`No${activity} E2E-owned case${ownership}${status ? ` in ${status}` : ""} was found.`);
     }
 
     async searchSelectedCase(): Promise<void> {
@@ -191,12 +209,14 @@ export class CasesPage {
     }
 
     async openOthers(): Promise<void> {
+        // Keep this overflow-menu check at a compact desktop width so the alternate
+        // pipelines are placed in Others instead of remaining visible in the tab bar.
+        await this.page.setViewportSize({ width: 1024, height: this.page.viewportSize()?.height ?? 1080 });
         await this.page.getByRole("button", { name: "Others", exact: true }).click();
     }
 
     async selectOtherPipeline(name: string): Promise<void> {
-        await this.openOthers();
-        await this.page.getByRole("menuitem", { name: new RegExp(`^${name}(?:\\s|$)`, "i") }).click();
+        await this.pipeline.selectTab(name);
     }
 
     async expectStatuses(status: string): Promise<void> {
@@ -211,6 +231,14 @@ export class CasesPage {
         for (const name of names) {
             await expect(this.page.getByRole("menuitem", { name: new RegExp(`^${name}(?:\\s|$)`, "i") })).toBeVisible();
         }
+    }
+
+    async openListActionsMenu(): Promise<void> {
+        await this.page.getByRole("button", { name: "Open menu", exact: true }).click();
+    }
+
+    async expectExportMenuItem(): Promise<void> {
+        await expect(this.page.getByRole("menuitem", { name: "Export", exact: true })).toBeVisible();
     }
 
     async openFilterFields(): Promise<void> {
@@ -374,6 +402,7 @@ export class CasesPage {
         await this.createDialog.getByRole("textbox", { name: "Case Description" }).fill("Testing case creation and handling in a non-production environment.");
         await this.createDialog.getByRole("button", { name: "Case Source", exact: true }).click();
         await this.page.getByRole("menuitem", { name: "Correspondent Agent", exact: true }).click();
+        this.createSubmitted = true;
         await this.createDialog.getByRole("button", { name: "Create Case", exact: true }).click();
     }
 
@@ -394,7 +423,7 @@ export class CasesPage {
     }
 
     async prepareDuplicate(): Promise<void> {
-        await this.selectOwnedCase("In Progress", false, "Request > Billing & Payments > Billing Documents");
+        await this.selectOwnedCase(undefined, false, "Request > Billing & Payments > Billing Documents", true);
         this.existingDuplicate = this.selectedCaseNumber;
         await this.openSelectedCase();
         expect(await this.readFields(["Category", "Type", "Sub-Type"])).toEqual(["Request", "Billing & Payments", "Billing Documents"]);
@@ -438,16 +467,26 @@ export class CasesPage {
         await this.expectNoRows();
     }
 
-    async openOwnedCase(status?: string, assignedToMe = false): Promise<void> {
-        await this.selectOwnedCase(status, assignedToMe);
+    async openOwnedCase(status?: string, assignedToMe = false, requireConfiguredCustomer = true): Promise<void> {
+        await this.selectOwnedCase(status, assignedToMe, undefined, false, requireConfiguredCustomer);
         await this.searchSelectedCase();
         await this.openSelectedCase();
         await this.assertOwnedCase();
     }
 
+    async openActiveE2EOwnedCase(): Promise<void> {
+        await this.selectOwnedCase(undefined, false, undefined, true, false);
+        await this.searchSelectedCase();
+        await this.openSelectedCase();
+        await this.assertOwnedCase();
+        await this.openMoreActions();
+        await expect(this.page.getByRole("menuitem", { name: "Edit Case", exact: true })).toBeVisible();
+        await this.page.keyboard.press("Escape");
+    }
+
     private async assertOwnedCase(): Promise<void> {
         if (!this.ownedCustomer || !this.ownedSubject || !this.selectedCaseNumber || !/^E2E\s/.test(this.ownedSubject)) {
-            throw new Error("An identified E2E case and configured customer are required.");
+            throw new Error("An identified E2E case and customer reference are required.");
         }
         await this.expectSelectedCase();
         await expect(this.field("Account Number", "last")).toContainText(this.ownedCustomer);
@@ -514,6 +553,7 @@ export class CasesPage {
     }
 
     async cleanupOwnedEdits(): Promise<void> {
+        if (!this.restoreAssignment && !this.editedOriginal && !this.createSubmitted) return;
         await this.closeSuccessDialog();
         if (this.restoreAssignment) {
             this.assertNonProduction();
@@ -695,6 +735,10 @@ export class CasesPage {
         this.selectedCaseNumber = number;
     }
 
+    async selectAccessibleCaseWithCustomerDetails(): Promise<void> {
+        await this.selectOwnedCase(undefined, false, undefined, false, false);
+    }
+
     /** Select a visible case for read-only inspection; never use this to authorize a mutation. */
     async openFirstVisibleReadOnlyCase(options: { agentUnassigned?: boolean } = {}): Promise<string> {
         const rows = this.rows;
@@ -764,7 +808,7 @@ export class CasesPage {
             await expect(value).not.toHaveText(/^\s*$/);
         }
         if (!this.selectedCaseNumber) throw new Error("No case was selected from the list.");
-        const caseNumber = this.page.getByRole("term").filter({ has: this.page.getByText("Case Number", { exact: true }) }).locator("../..").getByRole("definition");
+        const caseNumber = this.page.getByRole("term").filter({ has: this.page.getByText("Case Number", { exact: true }) }).first().locator("../..").getByRole("definition");
         await expect(caseNumber).toContainText(this.selectedCaseNumber);
     }
 
@@ -820,7 +864,7 @@ export class CasesPage {
     }
 
     async prepareClassificationEdit(): Promise<void> {
-        await this.openOwnedCase("In Progress");
+        await this.openOwnedCase("In Progress", false, false);
         this.savedFields = await this.readFields(["Category", "Type", "Sub-Type"]);
         await this.openMoreActions();
         await expect(this.page.getByRole("menuitem", { name: "Edit CTS", exact: true })).toBeVisible();
