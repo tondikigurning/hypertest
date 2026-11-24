@@ -2,7 +2,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { Modal, TextAreaInput, TextInput } from "../../components";
-import { readVariables } from "../runs/run-variables";
 import { useActiveRun } from "../runs/use-active-run";
 import { useDraftRuns } from "../runs/use-draft-runs";
 import { useRunEnvironment } from "../runs/use-run-environment";
@@ -10,6 +9,7 @@ import { label as displayLabel } from "../scenarios/scenario";
 import { isScenarioInScope } from "../scenarios/selectors";
 import { agentFetch, getActiveDraftId, setActiveDraftId } from "./agent-api";
 import { AgentSettings } from "./agent-settings";
+import { readAgentVariables } from "./agent-variables";
 import {
   AgentContextAction,
   AgentContextError,
@@ -830,7 +830,7 @@ export function AgentWidget({
           skill: selectedSkill,
           contexts,
           environment,
-          variables: readVariables(),
+          variables: readAgentVariables(),
           effort,
           effortTarget: { provider: session.provider, model: session.model },
         }),
@@ -1087,7 +1087,12 @@ export function AgentWidget({
       const response = await agentFetch(`${endpoint}/answers`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ requestId: session.userRequest.id, answers, environment, variables: readVariables() }),
+        body: JSON.stringify({
+          requestId: session.userRequest.id,
+          answers,
+          environment,
+          variables: readAgentVariables(),
+        }),
       });
       const result = (await response.json()) as Session & { error: string };
       if (!response.ok) throw new Error(result.error);
