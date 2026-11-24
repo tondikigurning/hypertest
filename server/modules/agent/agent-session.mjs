@@ -1417,8 +1417,10 @@ export function createSession({
     try {
       await ensureWorkspace();
       await verifyHead();
+      let sourceChanged = false;
       if (refreshWorkspace) {
         const refreshed = await refreshWorkspace({ workspace, baseCommit, baseBranch, branch });
+        sourceChanged = refreshed.sourceChanged === true;
         if (refreshed.updated) {
           if (refreshed.baseCommit !== baseCommit) expectedHead = refreshed.baseCommit;
           baseCommit = refreshed.baseCommit;
@@ -1695,6 +1697,11 @@ export function createSession({
           "All menu PRDs are stored in the database. The identifier docs/prd/<module>/<menu>.md is virtual and available through PRD tools; it is never a workspace file. Use the database PRD review flow.",
           agentWorkflowInstructions,
           `Active skill: ${activeSkill}. Work only in this session's draft worktree on branch ${branch || "not assigned"}, based on ${baseBranch || "not selected"} at ${baseCommit}. Never access other drafts, commit or push.`,
+          ...(sourceChanged
+            ? [
+                "The local checkout branch has changed since this draft's base. The draft remains on its existing base to preserve its changes. Tell the user when relevant and compare current local source before relying on it; do not claim the draft includes newer commits.",
+              ]
+            : []),
           ...(refreshWorkspace
             ? [
                 "For current local source, use list_local_files and read_local_file: they include uncommitted checkout changes. Draft files and the scenario review snapshot are separate; use list_files and read_file to inspect draft edits. Identify discrepancies before designing or changing scenarios; do not claim a draft contains checkout changes without checking.",

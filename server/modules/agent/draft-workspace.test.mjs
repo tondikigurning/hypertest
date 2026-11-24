@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
 import { randomUUID } from "node:crypto";
-import { copyFile, mkdir, mkdtemp, rm } from "node:fs/promises";
+import { copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -37,7 +37,9 @@ test("workspace startup uses the cached target when origin is unreachable", asyn
   const head = (await git("git", ["rev-parse", "HEAD"], cwd)).stdout.trim();
   await git("git", ["remote", "add", "origin", join(root, "missing-origin.git")], cwd);
   await git("git", ["update-ref", "refs/remotes/origin/development", head], cwd);
-  const { createDraftWorkspace } = await import(pathToFileURL(join(moduleDir, "draft-workspace.mjs")).href);
+  const { createDraftWorkspace, refreshDraftForTurn } = await import(
+    pathToFileURL(join(moduleDir, "draft-workspace.mjs")).href
+  );
   const result = await createDraftWorkspace({
     userId: randomUUID(),
     draftId: randomUUID(),
@@ -45,4 +47,26 @@ test("workspace startup uses the cached target when origin is unreachable", asyn
     targetBranch: "development",
   });
   assert.equal(result.baseCommit, head);
+  await writeFile(join(result.workspace, "exploration.md"), "Existing exploration evidence\n");
+  await git(
+    "git",
+    [
+      "-c",
+      "user.name=Test",
+      "-c",
+      "user.email=test@example.invalid",
+      "-c",
+      "commit.gpgsign=false",
+      "commit",
+      "--allow-empty",
+      "-qm",
+      "source change",
+    ],
+    cwd,
+  );
+  const refreshed = await refreshDraftForTurn(result);
+  assert.equal(refreshed.sourceChanged, true);
+  assert.equal(refreshed.baseCommit, head);
+  assert.equal((await git("git", ["rev-parse", "HEAD"], { cwd: result.workspace })).stdout.trim(), head);
+  assert.equal(await readFile(join(result.workspace, "exploration.md"), "utf8"), "Existing exploration evidence\n");
 });

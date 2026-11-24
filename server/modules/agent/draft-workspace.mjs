@@ -195,15 +195,11 @@ export async function refreshDraftForTurn({ workspace, baseCommit, baseBranch, b
   if (target.commit === baseCommit)
     return { baseCommit, baseBranch: currentBranch, branch, updated: currentBranch !== baseBranch };
   const head = (await git(["rev-parse", "HEAD"], workspace)).stdout.trim();
-  if (head !== baseCommit)
-    throw new Error(
-      "The workspace contains committed draft changes and the local source branch changed. Review the draft before continuing.",
-    );
   const status = await git(["status", "--porcelain", "--untracked-files=normal"], workspace);
-  if (status.stdout.trim() || (await mergeIsInProgress(workspace)))
-    throw new Error(
-      "The workspace has draft changes and the local source branch changed. Review the draft before continuing.",
-    );
+  if (await mergeIsInProgress(workspace))
+    throw new Error("The workspace has an unfinished merge. Resolve it before continuing.");
+  if (head !== baseCommit || status.stdout.trim())
+    return { baseCommit, baseBranch, branch, updated: false, sourceChanged: true };
   try {
     await git(["switch", "--detach", target.commit], workspace);
   } catch (cause) {
