@@ -1,4 +1,4 @@
-import { flow, label, scenarioTagLabels, type Scenario } from "./scenario";
+import { flow, label, type Scenario, scenarioTagLabels } from "./scenario";
 
 export interface ScenarioFilters {
   scopePath?: string;
@@ -18,6 +18,7 @@ export interface ScenarioGroup {
 export interface ScenarioModule {
   name: string;
   menus: Array<ScenarioGroup>;
+  rootMenu?: ScenarioGroup;
 }
 
 /** A menu's flat feature and descendant feature files form one selectable scope. */
@@ -59,19 +60,37 @@ export function groupModules(
     const node = ensureGroup(scenario.module, segments, 1);
     if (node) node.file = scenario.file;
   }
-  for (const prd of prds) ensureGroup(prd.module, [prd.menu], 0);
+  const rootMenus = new Set<string>();
+  for (const prd of prds) {
+    if (prd.menu === prd.module) {
+      rootMenus.add(prd.module);
+      ensureGroup(prd.module, [], 0);
+    } else ensureGroup(prd.module, [prd.menu], 0);
+  }
   function sortGroups(groups: Array<ScenarioGroup>) {
     groups.sort((a, b) => a.title.localeCompare(b.title));
     for (const group of groups) sortGroups(group.children);
   }
   for (const module of modules.values()) sortGroups(module.menus);
+  for (const name of rootMenus) {
+    const module = modules.get(name);
+    if (!module) continue;
+    module.rootMenu = {
+      path: name,
+      title: label(name),
+      count: module.menus.reduce((count, menu) => count + menu.count, 0),
+      children: module.menus,
+    };
+  }
   return [...modules.values()].sort((a, b) => a.name.localeCompare(b.name));
 }
 
 export function findScenarioGroup(modules: Array<ScenarioModule>, path: string | undefined) {
   if (!path) return undefined;
   const [module, ...segments] = path.split("/");
-  let children = modules.find((item) => item.name === module)?.menus;
+  const currentModule = modules.find((item) => item.name === module);
+  if (segments.length === 0) return currentModule?.rootMenu;
+  let children = currentModule?.menus;
   let currentPath = module;
   let group: ScenarioGroup | undefined;
   for (const segment of segments) {

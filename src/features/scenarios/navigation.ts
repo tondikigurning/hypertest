@@ -22,7 +22,8 @@ export function scenarioPath(module: string, file: string) {
   const prefix = `${module}/`;
   const relativeFile = file.startsWith(prefix) ? file.slice(prefix.length) : file;
   const scope = relativeFile.replace(/\.feature$/i, "");
-  return `/${[module, ...scope.split("/")].map(encodeURIComponent).join("/")}`;
+  const segments = scope === module ? [module] : [module, ...scope.split("/")];
+  return `/${segments.map(encodeURIComponent).join("/")}`;
 }
 
 export function scenarioMenu(module: string, file: string) {

@@ -38,7 +38,9 @@ export default class AutomationReporter {
 
   onStepBegin(test, _result, step) {
     const scenario = this.scenario(test);
-    if (!scenario || step.category !== "test.step" || step.parent?.category === "test.step") return;
+    const isLowLevelPollAssertion = /^Expect ["']poll toBe["']$/.test(step.title);
+    if (!scenario || step.category !== "test.step" || step.parent?.category === "test.step" || isLowLevelPollAssertion)
+      return;
     const stepId = ++this.nextStepId;
     this.stepIds.set(step, stepId);
     this.emit({ type: "step-started", testId: scenario.testId, stepId, title: step.title });

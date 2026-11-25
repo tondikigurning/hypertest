@@ -11,7 +11,12 @@ export function resolveSelection(input, features, catalog) {
     (selection.kind === "group" &&
       typeof selection.path === "string" &&
       /^[^./\\][^/\\]*\/[^/\\]+(?:\/[^/\\]+)*$/.test(selection.path) &&
-      selection.path.split("/").every((part) => part !== "." && part !== ".." && !part.endsWith(".feature")))
+      selection.path.split("/").every((part) => part !== "." && part !== ".." && !part.endsWith(".feature"))) ||
+    (selection.kind === "module" &&
+      typeof selection.path === "string" &&
+      /^[^./\\][^/\\]*$/.test(selection.path) &&
+      selection.path !== ".." &&
+      !selection.path.endsWith(".feature"))
   ) {
     const matches = (item) =>
       selection.kind === "feature"
@@ -32,11 +37,7 @@ export function resolveSelection(input, features, catalog) {
         "The feature catalog does not match its scenarios. Refresh the catalog before running this selection.",
       );
     }
-  } else if (
-    selection.kind === "flow" &&
-    typeof selection.file === "string" &&
-    typeof selection.flow === "string"
-  ) {
+  } else if (selection.kind === "flow" && typeof selection.file === "string" && typeof selection.flow === "string") {
     const rows = catalog.filter(
       (item) => item.file === selection.file && (item.flow || "Unassigned flow") === selection.flow,
     );

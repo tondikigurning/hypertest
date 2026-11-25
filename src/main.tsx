@@ -20,6 +20,7 @@ const router = createBrowserRouter([
     Component: App,
     children: [
       { id: "home", index: true, element: routeMarker },
+      { id: "scenario-root", path: ":module", element: routeMarker },
       { id: "scenario", path: ":module/:menu/*", element: routeMarker },
     ],
   },

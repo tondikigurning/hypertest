@@ -24,7 +24,7 @@ import {
   scenarioPath,
   updateScenarioFilterParams,
 } from "../features/scenarios/navigation";
-import { flow, featureTitle, label, scenarioTagLabels, type Scenario } from "../features/scenarios/scenario";
+import { featureTitle, flow, label, type Scenario, scenarioTagLabels } from "../features/scenarios/scenario";
 import {
   filterScenarios,
   findScenarioGroup,
@@ -38,19 +38,30 @@ import { useScenarioCatalog } from "../features/scenarios/use-scenario-catalog";
 export function App() {
   const matches = useMatches();
   const route = matches.at(-1);
+  const prds = usePrds();
   const routeModule = route?.params.module;
-  const routeScope =
-    routeModule && route?.params.menu
+  const isScenarioRoute = route?.id === "scenario" || route?.id === "scenario-root";
+  const routeScope = routeModule
+    ? route?.params.menu
       ? `${routeModule}/${route.params.menu}${route.params["*"] ? `/${route.params["*"]}` : ""}`
+      : routeModule
+    : undefined;
+  const routeMenu =
+    routeModule && routeScope
+      ? routeScope === routeModule
+        ? routeModule
+        : scenarioMenu(routeModule, routeScope)
       : undefined;
-  const routeMenu = routeModule && routeScope ? scenarioMenu(routeModule, routeScope) : undefined;
+  const hasRootPrd = Boolean(
+    routeModule && prds.draftPrds.items.some((prd) => prd.module === routeModule && prd.menu === routeModule),
+  );
   const isHome = route?.id === "home";
   const isMenu = Boolean(
-    route?.id === "scenario" &&
+    isScenarioRoute &&
       routeModule &&
       routeModule !== "_components" &&
       routeScope &&
-      isMenuScope(routeModule, routeScope),
+      (hasRootPrd ? routeScope === routeModule : routeScope !== routeModule && isMenuScope(routeModule, routeScope)),
   );
   const location = useLocation();
   const navigate = useNavigate();
@@ -60,7 +71,8 @@ export function App() {
   const { search, status, tag } = filters;
   const isPrdView = isMenu && searchParams.get("view") === "prd";
   useEffect(() => {
-    if (route?.id !== "scenario" || isMenu || searchParams.get("view") !== "prd" || !routeModule || !routeMenu) return;
+    if (!isScenarioRoute || isMenu || searchParams.get("view") !== "prd" || !routeModule || !routeMenu) return;
+    if (prds.draftPrds.loading) return;
     if (routeModule === "_components") {
       const next = new URLSearchParams(searchParams);
       next.delete("view");
@@ -68,11 +80,24 @@ export function App() {
       return;
     }
     navigate(
-      { pathname: scenarioPath(routeModule, `${routeModule}/${routeMenu}`), search: location.search },
+      {
+        pathname: scenarioPath(routeModule, hasRootPrd ? routeModule : `${routeModule}/${routeMenu}`),
+        search: location.search,
+      },
       { replace: true },
     );
-  }, [isMenu, location.pathname, location.search, navigate, route?.id, routeModule, routeMenu, searchParams]);
-  const prds = usePrds();
+  }, [
+    hasRootPrd,
+    isMenu,
+    isScenarioRoute,
+    location.pathname,
+    location.search,
+    navigate,
+    prds.draftPrds.loading,
+    routeModule,
+    routeMenu,
+    searchParams,
+  ]);
   const prdButton = useRef<HTMLButtonElement>(null);
   const activeRun = useActiveRun(true);
   const { config, environment, setEnvironment } = useRunEnvironment();
@@ -116,12 +141,49 @@ export function App() {
     }
   }, [location.pathname, navigationType, routeModule]);
   const modules = useMemo(() => groupModules(scenarios, prds.draftPrds.items), [scenarios, prds.draftPrds.items]);
+  useEffect(() => {
+    if (!isScenarioRoute || !routeModule || (route?.id !== "scenario-root" && routeMenu !== routeModule)) return;
+    if (loading || prds.draftPrds.loading) return;
+    const module = modules.find((item) => item.name === routeModule);
+    if (module?.rootMenu) {
+      if (route?.id !== "scenario-root") {
+        navigate({ pathname: scenarioPath(routeModule, routeModule), search: location.search }, { replace: true });
+      }
+      return;
+    }
+    const firstMenu = module?.menus[0];
+    if (firstMenu) {
+      const searchParams = new URLSearchParams(location.search);
+      searchParams.delete("view");
+      const search = searchParams.toString();
+      navigate(
+        { pathname: scenarioPath(routeModule, firstMenu.path), search: search ? `?${search}` : "" },
+        { replace: true },
+      );
+    } else {
+      navigate({ pathname: "/", search: location.search }, { replace: true });
+    }
+  }, [
+    isScenarioRoute,
+    loading,
+    location.search,
+    modules,
+    navigate,
+    prds.draftPrds.loading,
+    route?.id,
+    routeMenu,
+    routeModule,
+  ]);
   const selectedGroup = useMemo(() => findScenarioGroup(modules, routeScope), [modules, routeScope]);
   const scopedScenarios = useMemo(
     () => (selectedGroup ? scenarios.filter((item) => isScenarioInScope(item.file, selectedGroup.path)) : []),
     [scenarios, selectedGroup],
   );
-  const scopeTitle = selectedGroup?.path.split("/").slice(1).map(label).join(" / ");
+  const scopeTitle = selectedGroup
+    ? selectedGroup.path === routeModule
+      ? selectedGroup.title
+      : selectedGroup.path.split("/").slice(1).map(label).join(" / ")
+    : undefined;
   const tags = useMemo(
     () =>
       selectedGroup?.file && !selectedGroup.children.length
@@ -326,9 +388,11 @@ export function App() {
                       <GroupRun
                         key={selectedGroup.path}
                         selection={
-                          selectedGroup.file && !selectedGroup.children.length
-                            ? { kind: "feature", file: selectedGroup.file }
-                            : { kind: "group", path: selectedGroup.path }
+                          selectedGroup.path === routeModule
+                            ? { kind: "module", path: selectedGroup.path }
+                            : selectedGroup.file && !selectedGroup.children.length
+                              ? { kind: "feature", file: selectedGroup.file }
+                              : { kind: "group", path: selectedGroup.path }
                         }
                         name={scopeTitle || selectedGroup.title}
                         items={scopedScenarios}

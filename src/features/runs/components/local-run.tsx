@@ -246,9 +246,11 @@ export function GroupRun({ selection, name, items }: { selection: RunSelection; 
             description={
               selection.kind === "flow"
                 ? "Run every scenario in this flow"
-                : selection.kind === "group"
-                  ? "Run every scenario in this group and its child files"
-                  : "Run every scenario in this feature"
+                : selection.kind === "module"
+                  ? "Run every scenario in this module"
+                  : selection.kind === "group"
+                    ? "Run every scenario in this group and its child files"
+                    : "Run every scenario in this feature"
             }
             closeLabel="Close run form"
             onClose={close}
@@ -269,7 +271,9 @@ export function GroupRun({ selection, name, items }: { selection: RunSelection; 
                     <strong>{item.title}</strong>
                     <small>
                       {item.id || "ID unavailable"}
-                      {selection.kind === "group" && item.file ? ` · ${item.file}` : ""}
+                      {(selection.kind === "group" || selection.kind === "module") && item.file
+                        ? ` · ${item.file}`
+                        : ""}
                     </small>
                   </span>
                   {item.availability === "unavailable" && <span className="group-unavailable">Unavailable</span>}

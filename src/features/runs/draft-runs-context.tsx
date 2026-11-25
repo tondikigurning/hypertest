@@ -1,8 +1,8 @@
 ﻿import { type ReactNode, useCallback, useEffect, useState } from "react";
 import { agentFetch, getActiveDraftId } from "../agent/agent-api";
+import { readAgentVariables } from "../agent/agent-variables";
 import { type DraftRunState, saveDraftRun } from "./draft-evidence-store";
 import { DraftRunsContext } from "./draft-runs-state";
-import { readVariables } from "./run-variables";
 
 export function DraftRunsProvider({ children }: { children: ReactNode }) {
   const [run, setRun] = useState<DraftRunState | null>(null);
@@ -98,7 +98,7 @@ export function DraftRunsProvider({ children }: { children: ReactNode }) {
       window.clearTimeout(timer);
     };
   }, [activeDraftId]);
-  const start = useCallback(async (scenarioId: string, environment: string) => {
+  const start = useCallback(async (scenarioId: string, file: string, environment: string) => {
     const draftId = getActiveDraftId();
     if (!draftId) throw new Error("Select a local draft before running a draft scenario.");
     const headers = { "X-Automation-Draft-Id": draftId };
@@ -113,8 +113,9 @@ export function DraftRunsProvider({ children }: { children: ReactNode }) {
         headers: { "Content-Type": "application/json", ...headers },
         body: JSON.stringify({
           scenarioId,
+          file,
           environment,
-          variables: readVariables(),
+          variables: readAgentVariables(),
           digest: snapshot.digest,
           safetyAcknowledged: true,
         }),
