@@ -70,6 +70,7 @@ const AUTOMATION_BDD_FEATURES = process.env.AUTOMATION_BDD_FEATURES
         "tests/bdd/features/case-management/cases/integrations.feature",
         "tests/bdd/features/workforce-management/**/*.feature",
         "tests/bdd/features/system-settings/**/*.feature",
+        "tests/bdd/features/reports/report-templates.feature",
     ];
 const EVIDENCE_SIZE = { width: 1920, height: 1080 };
 

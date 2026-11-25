@@ -23,6 +23,7 @@ import { OrganizationsPage } from "../pages/organization-management/Organization
 import { EntitiesPage } from "../pages/organization-management/EntitiesPage";
 import { EntityDetailPage } from "../pages/organization-management/EntityDetailPage";
 import { ProfanityPage } from "../pages/system-settings/ProfanityPage";
+import { ReportTemplatesPage } from "../pages/reports/ReportTemplatesPage";
 import type { ActivePage, PageContext } from "./page-context";
 import { startLivePreview } from "./live-preview";
 
@@ -49,6 +50,7 @@ type BddFixtures = {
     entitiesPage: EntitiesPage;
     entityDetailPage: EntityDetailPage;
     profanityPage: ProfanityPage;
+    reportTemplatesPage: ReportTemplatesPage;
     pageContext: PageContext;
     /** Base MSW request handlers. Defaults to empty; @mock step definitions call network.use(). */
     handlers: AnyHandler[];
@@ -173,6 +175,9 @@ export const test = base.extend<BddFixtures>({
     },
     entityDetailPage: async ({ page }, use) => {
         await use(new EntityDetailPage(page));
+    },
+    reportTemplatesPage: async ({ page }, use) => {
+        await use(new ReportTemplatesPage(page));
     },
     profanityPage: async ({ page, network }, use, testInfo) => {
         const profanityPage = new ProfanityPage(page);
