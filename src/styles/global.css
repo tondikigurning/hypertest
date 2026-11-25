@@ -3756,14 +3756,8 @@ body:has(dialog[open]) .floating-run {
   border-radius: 7px;
   line-height: 1.4;
 }
-.sidebar .feature-nav-item span:last-child {
-  flex: none;
-  color: #8b95a5;
-  font-size: 10px;
-  font-variant-numeric: tabular-nums;
-}
-.sidebar .feature-nav-item.active span:last-child {
-  color: #765daf;
+.sidebar .scenario-count.active {
+  background: transparent;
 }
 
 /* Module navigation */
@@ -3872,7 +3866,7 @@ body:has(dialog[open]) .floating-run {
   color: #5c419f;
   font-weight: 600;
 }
-.sidebar .feature-nav-item span:last-child {
+.sidebar .scenario-count {
   min-width: 24px;
   padding: 2px 5px;
   border-radius: 5px;
@@ -3880,10 +3874,9 @@ body:has(dialog[open]) .floating-run {
   color: #7b8798;
   text-align: center;
   line-height: 1.3;
-}
-.sidebar .feature-nav-item.active span:last-child {
-  background: transparent;
-  color: #7b8798;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  flex: none;
 }
 .navigation-group-row {
   display: flex;
@@ -4124,6 +4117,77 @@ body:has(dialog[open]) .floating-run {
   opacity: 0.5;
   cursor: not-allowed;
 }
+.draft-run-blockers {
+  margin-top: 10px;
+  color: #9b5c21;
+}
+.draft-run-blockers p {
+  margin: 3px 0;
+}
+.draft-run-progress,
+.draft-run-error {
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #f4f1fb;
+  color: #584479;
+}
+.draft-run-progress button {
+  margin-left: 8px;
+}
+.draft-run-error {
+  background: #fff2f1;
+  color: #a23636;
+}
+.draft-run-results {
+  display: grid;
+  gap: 10px;
+  margin-top: 22px;
+}
+.detail .draft-run-results h3 {
+  margin: 0;
+}
+.draft-run-results-note {
+  margin: 0;
+  color: #748096;
+}
+.draft-run-result {
+  display: grid;
+  gap: 7px;
+  padding: 13px;
+  border: 1px solid #e7e9ef;
+  border-radius: 9px;
+  background: #fff;
+}
+.draft-run-result p {
+  margin: 0;
+  color: #748096;
+  overflow-wrap: anywhere;
+}
+.draft-run-result-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.draft-run-result-top time {
+  color: #8993a2;
+  font-size: 11px;
+}
+.draft-run-result ul {
+  display: grid;
+  gap: 6px;
+  margin: 4px 0 0;
+  padding-left: 18px;
+}
+.draft-run-result a {
+  color: #6043a2;
+  font-weight: 600;
+}
+.draft-run-result a:hover {
+  text-decoration: underline;
+}
 .draft-run-confirm-dialog {
   box-sizing: border-box;
   width: min(440px, calc(100vw - 32px));
@@ -4149,6 +4213,40 @@ body:has(dialog[open]) .floating-run {
   font-size: 13px;
   line-height: 1.5;
   overflow-wrap: anywhere;
+}
+.draft-run-confirm-details {
+  display: grid;
+  gap: 4px;
+  padding: 14px;
+  border: 1px solid #e9e5f1;
+  border-radius: 9px;
+  background: #faf9fd;
+  overflow-wrap: anywhere;
+}
+.draft-run-confirm-details span {
+  margin-top: 8px;
+  color: #7b8697;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.draft-run-confirm-details span:first-child {
+  margin-top: 0;
+}
+.draft-run-confirm-details strong {
+  color: #344157;
+  font-size: 13px;
+}
+.draft-run-confirm-details small {
+  color: #7b8697;
+}
+.draft-run-confirm-dialog .draft-run-confirm-safety {
+  margin: 16px 0 20px;
+  padding: 12px;
+  border-left: 3px solid #b6a5d7;
+  background: #f8f5fc;
+  color: #594c6d;
 }
 .draft-run-confirm-actions {
   display: flex;

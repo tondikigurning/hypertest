@@ -53,7 +53,7 @@ When("the user opens the create work order wizard", async ({ workOrdersPage }) =
     await workOrdersPage.clickCreate();
 });
 
-When("the user selects the {string} job type", async ({ workOrdersCreatePage }) => {
+When('the user selects the "Repair" job type', async ({ workOrdersCreatePage }) => {
     await workOrdersCreatePage.selectRepairJobType();
 });
 

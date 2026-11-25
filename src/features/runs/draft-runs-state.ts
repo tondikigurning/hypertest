@@ -6,7 +6,7 @@ export interface DraftRunsState {
   starting: boolean;
   error: string;
   revision: number;
-  start: (scenarioId: string, environment: string) => Promise<void>;
+  start: (scenarioId: string, file: string, environment: string) => Promise<void>;
   cancel: () => Promise<void>;
   discard: () => Promise<void>;
 }

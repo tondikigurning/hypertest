@@ -1,6 +1,7 @@
 import { Icon } from "@hyperscal/icons";
 import { type ReactNode, useState } from "react";
 import { BrowserPreview, CloseButton, Modal, SectionEyebrow, Spinner } from "../../../components";
+import { scenarioFailureExplanation } from "../scenario-failure-explanation";
 import type { Run } from "../types";
 
 const stageLabels: Record<string, string> = {
@@ -195,6 +196,11 @@ export function LiveRun({ run, onClose }: { run: Run; onClose: () => void }) {
                     : test.status === "running"
                       ? "Preparing test…"
                       : "No step details were recorded."}
+                </LiveRunMessage>
+              )}
+              {scenarioFailureExplanation(test.status, test.steps || []) && (
+                <LiveRunMessage tone="error">
+                  {scenarioFailureExplanation(test.status, test.steps || [])}
                 </LiveRunMessage>
               )}
             </div>

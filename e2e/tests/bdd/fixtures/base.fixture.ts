@@ -24,6 +24,7 @@ import { EntitiesPage } from "../pages/organization-management/EntitiesPage";
 import { EntityDetailPage } from "../pages/organization-management/EntityDetailPage";
 import { ProfanityPage } from "../pages/system-settings/ProfanityPage";
 import { ReportTemplatesPage } from "../pages/reports/ReportTemplatesPage";
+import { KnowledgeManagementPage } from "../pages/knowledge-management/KnowledgeManagementPage";
 import type { ActivePage, PageContext } from "./page-context";
 import { startLivePreview } from "./live-preview";
 
@@ -51,6 +52,7 @@ type BddFixtures = {
     entityDetailPage: EntityDetailPage;
     profanityPage: ProfanityPage;
     reportTemplatesPage: ReportTemplatesPage;
+    knowledgeManagementPage: KnowledgeManagementPage;
     pageContext: PageContext;
     /** Base MSW request handlers. Defaults to empty; @mock step definitions call network.use(). */
     handlers: AnyHandler[];
@@ -189,6 +191,14 @@ export const test = base.extend<BddFixtures>({
             await network.disable();
         }
         await profanityPage.cleanupAfterScenario();
+    },
+    knowledgeManagementPage: async ({ page }, use) => {
+        const knowledgeManagementPage = new KnowledgeManagementPage(page);
+        try {
+            await use(knowledgeManagementPage);
+        } finally {
+            await knowledgeManagementPage.cleanupOwnedArticles();
+        }
     },
     pageContext: async ({ }, use) => {
         const state: PageContext = {

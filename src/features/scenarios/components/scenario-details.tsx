@@ -124,10 +124,7 @@ export function ScenarioDetails({
           {scenario.draft && scenario.draft !== "deleted" ? (
             <>
               {scenario.availabilityReasons.length > 0 && (
-                <ExecutionState>
-                  Draft preview:{" "}
-                  {scenario.availabilityReasons.join(" ")}
-                </ExecutionState>
+                <ExecutionState>Draft preview: {scenario.availabilityReasons.join(" ")}</ExecutionState>
               )}
               <ScenarioDetailsDivider />
               <DraftRun key={scenario.key} scenario={scenario} />

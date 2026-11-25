@@ -3,6 +3,10 @@ import { CollapsibleRegion } from "../../../components";
 import { label } from "../scenario";
 import type { ScenarioGroup, ScenarioModule } from "../selectors";
 
+function ScenarioCount({ count, active = false }: { count: number; active?: boolean }) {
+  return <span className={["scenario-count", active && "active"].filter(Boolean).join(" ")}>{count}</span>;
+}
+
 function NavigationGroup({
   group,
   scopePath,
@@ -31,7 +35,7 @@ function NavigationGroup({
           onClick={() => onSelect(group.path)}
         >
           <span>{group.title}</span>
-          <span>{group.count}</span>
+          <ScenarioCount count={group.count} active={active} />
         </button>
         {hasChildren && (
           <button
@@ -134,13 +138,25 @@ export function ScenarioNavigation({
           <div className="module-group" key={group.name}>
             <button
               type="button"
-              className={["module-toggle", scopePath?.startsWith(`${group.name}/`) && "has-active-feature"]
+              className={[
+                "module-toggle",
+                (scopePath === group.name || scopePath?.startsWith(`${group.name}/`)) && "has-active-feature",
+              ]
                 .filter(Boolean)
                 .join(" ")}
               aria-expanded={openModules.has(group.name)}
-              onClick={() => onToggleModule(group.name)}
+              aria-current={group.rootMenu && scopePath === group.name ? "page" : undefined}
+              onClick={() => {
+                if (!group.rootMenu) {
+                  onToggleModule(group.name);
+                  return;
+                }
+                onSelectGroup(group.name, group.name);
+                if (scopePath === group.name && openModules.has(group.name)) onToggleModule(group.name);
+              }}
             >
               <span className="module-name">{label(group.name)}</span>
+              {group.rootMenu && <ScenarioCount count={group.rootMenu.count} active={scopePath === group.name} />}
               <svg className="module-chevron" aria-hidden="true" viewBox="0 0 16 16" fill="none">
                 <path d="m6 4 4 4-4 4" />
               </svg>
