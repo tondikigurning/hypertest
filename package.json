@@ -15,7 +15,8 @@
     "build": "vite build",
     "preview": "vite preview --port 3110",
     "typecheck": "tsc --noEmit",
-    "test:evidence": "tsx packages/internal/test-utils/src/export/evidence-cli.ts"
+    "test:evidence": "tsx packages/internal/test-utils/src/export/evidence-cli.ts",
+    "test:bdd": "pnpm --filter e2e test:bdd"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^4.0.99",

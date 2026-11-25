@@ -34,7 +34,7 @@ import path from "path";
 import { defineBddProject } from "playwright-bdd";
 
 const ENV_FILE = path.resolve(import.meta.dirname, ".env.local");
-dotenv.config({ path: ENV_FILE });
+dotenv.config({ path: ENV_FILE, quiet: true });
 
 const fileEnvironment = existsSync(ENV_FILE) ? dotenv.parse(readFileSync(ENV_FILE)) : {};
 const ENV = process.env.AUTOMATION_SELECTED_ENV || fileEnvironment.ENV;
@@ -70,6 +70,7 @@ const AUTOMATION_BDD_FEATURES = process.env.AUTOMATION_BDD_FEATURES
         "tests/bdd/features/case-management/cases/integrations.feature",
         "tests/bdd/features/workforce-management/**/*.feature",
         "tests/bdd/features/system-settings/**/*.feature",
+        "tests/bdd/features/knowledge-management/**/*.feature",
     ];
 const EVIDENCE_SIZE = { width: 1920, height: 1080 };
 

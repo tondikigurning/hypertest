@@ -8,6 +8,13 @@ const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const appDir = path.resolve(scriptDir, "..");
 const repoRoot = path.resolve(appDir, "..");
 const args = process.argv.slice(2);
+const nodeMajorVersion = Number(process.versions.node.split(".")[0]);
+const bddEnvironment = { ...process.env };
+if (nodeMajorVersion >= 26) {
+  bddEnvironment.NODE_OPTIONS = [bddEnvironment.NODE_OPTIONS, "--no-experimental-webstorage"]
+    .filter(Boolean)
+    .join(" ");
+}
 const environment = process.env.AUTOMATION_ENVIRONMENT_ID;
 if (environment && (!/^[a-z0-9-]+$/.test(environment) || !process.env.AUTOMATION_DATABASE_URL))
   throw new Error("Set a valid AUTOMATION_ENVIRONMENT_ID and AUTOMATION_DATABASE_URL together.");
@@ -31,7 +38,7 @@ if (process.env.AUTOMATION_DATABASE_URL) {
   if (syncCatalog.status !== 0) process.exit(syncCatalog.status ?? 1);
 }
 
-const generate = run("pnpm", ["exec", "bddgen", "--config=playwright.bdd.config.ts"], appDir);
+const generate = run("pnpm", ["exec", "bddgen", "--config=playwright.bdd.config.ts"], appDir, bddEnvironment);
 if (generate.error) throw generate.error;
 if (generate.status !== 0) process.exit(generate.status ?? 1);
 
@@ -47,7 +54,7 @@ const playwright = run(
   "pnpm",
   ["exec", "playwright", "test", "--config=playwright.bdd.config.ts", ...args],
   appDir,
-  { ...process.env, AGGREGATE_REPORT: process.env.AGGREGATE_REPORT || "1", BDD_RESULTS_FILE: runResults,
+  { ...bddEnvironment, AGGREGATE_REPORT: process.env.AGGREGATE_REPORT || "1", BDD_RESULTS_FILE: runResults,
     ...(environment ? { AUTOMATION_EVENTS_FILE: eventsPath } : {}) },
 );
 if (playwright.error) throw playwright.error;
