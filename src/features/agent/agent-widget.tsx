@@ -986,14 +986,17 @@ export function AgentWidget({
   };
 
   const syncDraft = async () => {
-    if (!reviewDigest || !commitMessage.trim() || sending) return;
+    if (!reviewDigest || sending) return;
     setSending(true);
     setError("");
     try {
       const response = await agentFetch(`${endpoint}/sync`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: commitMessage, digest: reviewDigest }),
+        body: JSON.stringify({
+          message: commitMessage.trim() || "Sync draft with target branch",
+          digest: reviewDigest,
+        }),
       });
       const result = (await response.json()) as {
         status?: string;
@@ -1190,6 +1193,8 @@ export function AgentWidget({
   const reviewBlocked = Boolean(
     (scenarioReview?.hasChanges && !scenarioReview.approved && !session?.allowAll) || session?.syncConflicts?.length,
   );
+  const syncApprovalBlocked = Boolean(scenarioReview?.hasChanges && !scenarioReview.approved && !session?.allowAll);
+  const automaticApprovalNeeded = Boolean(syncApprovalBlocked && scenarioReview?.hasImplementation);
   const statusLabel =
     selectedDraft?.status === "archived" && mood !== "offline"
       ? "Draft archived"
@@ -1783,8 +1788,8 @@ export function AgentWidget({
                     <p>Approved for the current scenario version. Changes to it will require another review.</p>
                   ) : scenarioReview.hasImplementation ? (
                     <p>
-                      Approval is blocked by E2E implementation changes in this workspace. Preserve them separately and
-                      remove them from the workspace before approving scenarios.
+                      Manual approval is unavailable because implementation code is already in this draft. The approval
+                      control and its scope are shown beside Sync below.
                     </p>
                   ) : (
                     <>
@@ -1822,21 +1827,43 @@ export function AgentWidget({
                     maxLength={200}
                     placeholder="e.g. Add checkout validation scenarios"
                   />
-                  {scenarioReview?.hasChanges && !scenarioReview.approved && !session?.allowAll && (
-                    <p>Approve scenario changes above to continue.</p>
-                  )}
                   <p>
                     Check the conversation for test results. Creating a PR does not mean tests passed. The PR uses the
                     GitHub CLI account on this computer and appears in PR history.
                   </p>
+                  {automaticApprovalNeeded && (
+                    <fieldset className="agent-sync-approval-gate">
+                      <legend id="agent-sync-approval-title">Approval needed before syncing</legend>
+                      <p>
+                        This draft already has implementation code, so its scenario changes cannot be manually approved
+                        here. Turn on automatic approvals for this session to continue.
+                      </p>
+                      <label className="agent-sync-approval-toggle">
+                        <input
+                          type="checkbox"
+                          checked={Boolean(session?.allowAll)}
+                          disabled={sending}
+                          onChange={(event) => void setAllowAll(event.target.checked)}
+                        />
+                        <span>Allow all agent approvals for this session</span>
+                      </label>
+                      <p className="agent-sync-approval-scope">
+                        This also allows PRD, flow and live-data approvals for the selected environment. It turns off
+                        when the API restarts or the chat resets.
+                      </p>
+                    </fieldset>
+                  )}
+                  {syncApprovalBlocked && !automaticApprovalNeeded && (
+                    <p className="agent-sync-approval-hint" role="status">
+                      Approve the scenario changes above before syncing.
+                    </p>
+                  )}
                   <AgentWorkspaceButton
                     type="button"
-                    disabled={
-                      sending || draftRunStarting || Boolean(draftRun) || !reviewDigest || !commitMessage.trim()
-                    }
+                    disabled={sending || draftRunStarting || Boolean(draftRun) || !reviewDigest || syncApprovalBlocked}
                     onClick={() => void syncDraft()}
                   >
-                    {sending ? "Working…" : "Sync now (optional)"}
+                    {sending ? "Syncing…" : "Sync now (optional)"}
                   </AgentWorkspaceButton>
                   <AgentWorkspaceButton
                     type="submit"
