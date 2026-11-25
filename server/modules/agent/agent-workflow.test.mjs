@@ -603,6 +603,42 @@ test("draft selection rejects missing, duplicate and moved scenario identities",
   );
 });
 
+test("the draft run endpoint requires the selected scenario source", async (t) => {
+  let runs = 0;
+  const { session, workspace } = await workflow(t, [{ text: "Ready." }], {
+    startIsolatedDraftRun: async () => {
+      runs++;
+      return {
+        active: () => false,
+        publicRun: () => ({ id: "fixture", scenarioId, status: "passed", done: true, tests: [] }),
+        dispose: async () => {},
+      };
+    },
+  });
+  await session.send("Prepare a draft.");
+  await waitFor(session, (state) => !state.busy);
+  const featureFile = join(workspace, featurePath);
+  await mkdir(join(featureFile, ".."), { recursive: true });
+  await writeFile(
+    featureFile,
+    `Feature: Orders\n  @${scenarioId}\n  Scenario: List orders\n    Given the orders page is open\n`,
+  );
+  const review = await session.diff();
+  await session.approveScenarios(review.digest);
+  const environment = { target: "https://example.invalid" };
+  const variables = { E2E_USERNAME: "user", E2E_PASSWORD: "password" };
+  const input = { scenarioId, digest: review.digest, safetyAcknowledged: true };
+  await assert.rejects(session.runDraft(input, environment, variables), /known source file/);
+  await assert.rejects(
+    session.runDraft({ ...input, file: "other/orders.feature" }, environment, variables),
+    /source changed/,
+  );
+  assert.equal(runs, 0);
+  await session.runDraft({ ...input, file: "example/orders.feature" }, environment, variables);
+  assert.equal(runs, 1);
+  await session.discardDraftRun();
+});
+
 test("relative browser navigation forwards its validated absolute URL", async () => {
   let args;
   const tools = createAgentTools({

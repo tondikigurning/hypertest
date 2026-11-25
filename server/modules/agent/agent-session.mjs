@@ -1089,6 +1089,11 @@ export function createSession({
     }
   }
   async function runDraft(input, environment, variables) {
+    if (typeof input?.file !== "string" || !input.file)
+      throw new Error("Select a draft scenario with a known source file before running it.");
+    if (!workspace) throw new Error("The draft workspace is unavailable or busy.");
+    const catalog = automationCatalog(join(workspace, "e2e/tests/bdd/features"));
+    selectDraftScenario(catalog, { scenarioId: input.scenarioId, file: input.file });
     return startDraft(input, environment, variables);
   }
   async function runDraftForAgent(selectedScenario, environment, variables, dataOwner, signal) {

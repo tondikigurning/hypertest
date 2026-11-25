@@ -1,4 +1,4 @@
-import { cp, lstat, mkdir, rm, symlink } from "node:fs/promises";
+import { cp, mkdir, readdir, realpath, symlink } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { createInterface } from "node:readline";
 import { startDraftRunInProcess } from "/agent-draft-run.mjs";
@@ -18,6 +18,7 @@ function publish(run) {
 }
 
 let service;
+let stage = "validating request";
 try {
   if (inputTooLarge) throw new Error("Sandbox request is too large.");
   const input = JSON.parse(chunks.join("\n"));
@@ -31,10 +32,12 @@ try {
   )
     throw new Error("Sandbox request is invalid.");
   const workspace = "/draft";
-  await cp("/snapshot", workspace, { recursive: true, force: false, errorOnExist: true });
+  stage = "copying the draft";
+  // /draft is an empty tmpfs mount, so the destination directory already exists.
+  await cp("/snapshot", workspace, { recursive: true, force: false });
+  stage = "preparing draft dependencies";
   const dependencyLinks = [
     ["/workspace/node_modules", join(workspace, "node_modules")],
-    ["/workspace/e2e/node_modules", join(workspace, "e2e/node_modules")],
     [
       "/workspace/packages/internal/test-utils/node_modules",
       join(workspace, "packages/internal/test-utils/node_modules"),
@@ -44,11 +47,23 @@ try {
     await mkdir(dirname(link), { recursive: true });
     await symlink(target, link, "dir");
   }
-  const testUtilsPackage = "/workspace/e2e/node_modules/@hyperscal/test-utils";
-  if ((await lstat(testUtilsPackage).catch(() => undefined))?.isSymbolicLink()) {
-    await rm(testUtilsPackage);
-    await symlink(join(workspace, "packages/internal/test-utils"), testUtilsPackage, "dir");
+  // Keep the image read-only while resolving the workspace package to the draft copy.
+  const imageModules = "/workspace/e2e/node_modules";
+  const draftModules = join(workspace, "e2e/node_modules");
+  await mkdir(draftModules, { recursive: true });
+  for (const name of await readdir(imageModules)) {
+    if (name === "@hyperscal") continue;
+    await symlink(await realpath(join(imageModules, name)), join(draftModules, name), "dir");
   }
+  const imageScope = join(imageModules, "@hyperscal");
+  const draftScope = join(draftModules, "@hyperscal");
+  await mkdir(draftScope, { recursive: true });
+  for (const name of await readdir(imageScope)) {
+    const target =
+      name === "test-utils" ? join(workspace, "packages/internal/test-utils") : await realpath(join(imageScope, name));
+    await symlink(target, join(draftScope, name), "dir");
+  }
+  stage = "starting the draft test";
   service = await startDraftRunInProcess({
     workspace,
     scenarioId: input.scenarioId,
@@ -62,7 +77,7 @@ try {
   publish(service.publicRun());
 } catch {
   process.stdout.write(
-    `${JSON.stringify({ type: "error", error: "The isolated draft runner could not complete." })}\n`,
+    `${JSON.stringify({ type: "error", error: `The isolated draft runner failed while ${stage}.` })}\n`,
   );
   if (service) {
     try {

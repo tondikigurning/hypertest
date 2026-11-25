@@ -68,7 +68,9 @@ async function docker(args, timeout = 30000, signal) {
   } catch (cause) {
     throw new Error(
       args[0] === "info"
-        ? "Docker is required to run draft scenarios in the isolated agent sandbox."
+        ? cause.killed
+          ? "Docker did not respond in time. Check Docker Desktop and its Linux container engine, then retry."
+          : "Docker is unavailable. Start Docker Desktop with Linux containers, then retry."
         : "The Docker sandbox command failed. Check container resources and registry access.",
       { cause },
     );
@@ -110,8 +112,15 @@ async function buildSandboxImage(baseCommit, image, signal) {
     );
   } catch (cause) {
     if (signal?.aborted) throw new Error("The isolated draft run was cancelled.", { cause });
-    if (cause instanceof Error && cause.message.startsWith("Docker is required")) throw cause;
-    throw new Error("A sandbox image could not be built from the committed repository version.", { cause });
+    if (
+      cause instanceof Error &&
+      (cause.message.startsWith("Docker is unavailable") || cause.message.startsWith("Docker did not respond"))
+    )
+      throw cause;
+    throw new Error(
+      "Could not build the isolated sandbox image. Check Docker Desktop, network access and available disk space, then retry.",
+      { cause },
+    );
   } finally {
     if (safeToRemove) await rm(tempRoot, { recursive: true, force: true });
   }
@@ -291,7 +300,13 @@ export async function startIsolatedDraftRun({ workspace, scenarioId, target, var
     if (networkCreated) await docker(["network", "rm", networkName]).catch(() => {});
     await rm(artifactRoot, { recursive: true, force: true });
     if (signal?.aborted) throw new Error("The isolated draft run was cancelled.", { cause });
-    if (cause instanceof Error && cause.message.startsWith("Docker is required")) throw cause;
+    if (
+      cause instanceof Error &&
+      (cause.message.startsWith("Docker is unavailable") ||
+        cause.message.startsWith("Docker did not respond") ||
+        cause.message.startsWith("Could not build the isolated sandbox image"))
+    )
+      throw cause;
     throw new Error("The isolated test sandbox could not be prepared. Check Docker and the local network.", { cause });
   }
 
