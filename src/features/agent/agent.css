@@ -1349,6 +1349,56 @@ body:has(dialog[open]) .agent-widget:not(:has(.agent-confirm-dialog[open])) {
 .agent-scenario-review button {
   justify-self: start;
 }
+.agent-sync-approval-gate {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0;
+  padding: 14px;
+  min-width: 0;
+  border: 1px solid #e8c979;
+  border-left: 4px solid #bf8700;
+  border-radius: 9px;
+  background: #fff9e9;
+}
+.agent-sync-approval-gate legend {
+  margin: 0;
+  padding: 0 4px;
+  color: var(--agent-ink);
+  font-size: 12px;
+  font-weight: 600;
+}
+.agent-sync-approval-gate p,
+.agent-sync-approval-hint {
+  margin: 0;
+  color: var(--agent-muted);
+  font-size: 11px;
+  line-height: 1.6;
+}
+.agent-sync-approval-toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 10px;
+  border: 1px solid #d8bd73;
+  border-radius: 7px;
+  background: white;
+  color: var(--agent-ink);
+  cursor: pointer;
+  line-height: 1.45;
+}
+.agent-sync-approval-toggle input {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  margin: 0;
+  accent-color: var(--agent-accent);
+}
+.agent-commit p.agent-sync-approval-scope {
+  font-size: 10px;
+}
+.agent-commit p.agent-sync-approval-hint {
+  margin: -4px 0 10px;
+}
 .agent-commit .agent-section-heading {
   margin-bottom: 2px;
 }
