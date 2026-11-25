@@ -145,6 +145,7 @@ From the repository root (use `pnpm.cmd` if PowerShell blocks the `.ps1` shim):
 node --test server/modules/agent/*.test.mjs
 node --import tsx --test src/features/agent/*.test.ts
 node --import tsx --test src/features/scenarios/*.test.ts server/modules/runs/*.test.mjs
+node --test server/modules/runs/failed-scenario.smoke.mjs
 node --test server/modules/agent/exploration-browser.smoke.mjs
 pnpm exec biome check src server vite.config.ts drizzle.config.ts
 pnpm typecheck
@@ -159,6 +160,14 @@ For skill changes, the [decision exercise protocol and recorded comparison](agen
 
 The scenario and run-selection tests cover nested menu grouping, parent PRD identity, source-path filtering,
 and server rejection of stale, missing or ambiguous group selections. They use local fixtures and do not run tenant BDD.
+
+The failed-scenario smoke test needs the installed Playwright Chromium. It uses the real BDD fixture,
+live preview and evidence settings with a locally fulfilled large response, checking prompt finalization,
+complete trace ZIPs, screenshots, videos and continuation to the next scenario. It does not generate BDD,
+access a tenant or upload evidence. Keep both Playwright dependencies and the test-utils peer version
+aligned: 1.61.1 includes the [ZIP stream lifecycle fix](https://github.com/microsoft/playwright/pull/40747)
+needed on newer Node versions. Older versions can
+stall while retaining a failed test's trace until the 180-second teardown timeout.
 
 The separate browser smoke test uses real Playwright, the installed CLI and the origin-restricted
 proxy against a synthetic loopback login/dashboard. It needs no provider, database or tenant account.

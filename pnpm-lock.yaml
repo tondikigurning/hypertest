@@ -124,8 +124,8 @@ importers:
         specifier: ^0.6.7
         version: 0.6.7(msw@2.15.0(@types/node@22.20.5)(typescript@5.9.3))
       '@playwright/test':
-        specifier: 1.55.1
-        version: 1.55.1
+        specifier: 1.61.1
+        version: 1.61.1
       dotenv:
         specifier: ^17.2.3
         version: 17.4.2
@@ -133,11 +133,11 @@ importers:
         specifier: ^2.14.6
         version: 2.15.0(@types/node@22.20.5)(typescript@5.9.3)
       playwright:
-        specifier: 1.55.1
-        version: 1.55.1
+        specifier: 1.61.1
+        version: 1.61.1
       playwright-bdd:
         specifier: ^8.4.1
-        version: 8.5.1(@playwright/test@1.55.1)
+        version: 8.5.1(@playwright/test@1.61.1)
       tsx:
         specifier: ^4.20.3
         version: 4.23.15
@@ -184,8 +184,8 @@ importers:
         specifier: ^3.1165.0
         version: 3.1165.0
       '@playwright/test':
-        specifier: 1.55.1
-        version: 1.55.1
+        specifier: 1.61.1
+        version: 1.61.1
       dotenv:
         specifier: ^17.4.2
         version: 17.4.2
@@ -1177,8 +1177,8 @@ packages:
   '@oxc-project/types@0.156.0':
     resolution: {integrity: sha512-1Duyg48TdJNdyhEB8Xn1L36bT9Pv6GUtlKjHxOys8xkaF/rQq3XJE+bAurSK/AgIz5mGFsb77cn9Pb20+WCScw==}
 
-  '@playwright/test@1.55.1':
-    resolution: {integrity: sha512-IVAh/nOJaw6W9g+RJVlIQJ6gSiER+ae6mKQ5CX1bERzQgbC1VSeBlwdvczT7pxb0GWiyrxH4TGKbMfDb4Sq/ig==}
+  '@playwright/test@1.61.1':
+    resolution: {integrity: sha512-8nKv6+0RJSL9FE4jYOEGXnPeM/Hg12qZpmqzZjRh3qM0Y7c3z1mrOTfFLids72RDQYVh9WpLEfR5WdpNX4fkig==}
     engines: {node: '>=18'}
     hasBin: true
 
@@ -3464,13 +3464,13 @@ packages:
     peerDependencies:
       '@playwright/test': '>=1.44'
 
-  playwright-core@1.55.1:
-    resolution: {integrity: sha512-Z6Mh9mkwX+zxSlHqdr5AOcJnfp+xUWLCt9uKV18fhzA8eyxUd8NUWzAjxUh55RZKSYwDGX0cfaySdhZJGMoJ+w==}
+  playwright-core@1.61.1:
+    resolution: {integrity: sha512-h7Qlt6m4REp25qvIdvbDtVmD4LqVXfpRxhORv9L0jzETM05p4fuPJ3dKyuSXQxDSbXnmS79HAgi9589lGSpLkg==}
     engines: {node: '>=18'}
     hasBin: true
 
-  playwright@1.55.1:
-    resolution: {integrity: sha512-cJW4Xd/G3v5ovXtJJ52MAOclqeac9S/aGGgRzLabuF8TnIb6xHvMzKIa6JmrRzUkeXJgfL1MhukP0NK6l39h3A==}
+  playwright@1.61.1:
+    resolution: {integrity: sha512-DWnY5o3YbLWK4GovuAVwpqL+1VwGNdUGrRr++8j8PtQQzvAVZUIMjKQ90fY689sEJZJBbZVw1rXaOKSTitkzPQ==}
     engines: {node: '>=18'}
     hasBin: true
 
@@ -5115,9 +5115,9 @@ snapshots:
 
   '@oxc-project/types@0.156.0': {}
 
-  '@playwright/test@1.55.1':
+  '@playwright/test@1.61.1':
     dependencies:
-      playwright: 1.55.1
+      playwright: 1.61.1
 
   '@quansync/fs@1.1.0':
     dependencies:
@@ -7496,7 +7496,7 @@ snapshots:
       exsolve: 1.2.0
       pathe: 2.0.3
 
-  playwright-bdd@8.5.1(@playwright/test@1.55.1):
+  playwright-bdd@8.5.1(@playwright/test@1.61.1):
     dependencies:
       '@cucumber/cucumber-expressions': 18.0.1
       '@cucumber/gherkin': 32.2.0
@@ -7505,18 +7505,18 @@ snapshots:
       '@cucumber/junit-xml-formatter': 0.7.1(@cucumber/messages@27.2.0)
       '@cucumber/messages': 27.2.0
       '@cucumber/tag-expressions': 6.2.0
-      '@playwright/test': 1.55.1
+      '@playwright/test': 1.61.1
       cli-table3: 0.6.5
       commander: 13.1.0
       fast-glob: 3.3.3
       mime-types: 3.0.2
       xmlbuilder: 15.1.1
 
-  playwright-core@1.55.1: {}
+  playwright-core@1.61.1: {}
 
-  playwright@1.55.1:
+  playwright@1.61.1:
     dependencies:
-      playwright-core: 1.55.1
+      playwright-core: 1.61.1
     optionalDependencies:
       fsevents: 2.3.2
 
