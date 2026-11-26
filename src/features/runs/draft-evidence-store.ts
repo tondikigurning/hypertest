@@ -19,16 +19,20 @@ export interface SavedDraftRun {
 }
 export type DraftRunState = Run & { taskId: string; digest: string };
 
-function database(): Promise<IDBDatabase> {
+function database(principalId: string): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open("automation-draft-evidence", 1);
+    if (!principalId) {
+      reject(new Error("Workspace session unavailable."));
+      return;
+    }
+    const request = indexedDB.open(`automation-draft-evidence:v1:${principalId}`, 1);
     request.onupgradeneeded = () => request.result.createObjectStore("runs", { keyPath: "id" });
     request.onerror = () => reject(request.error);
     request.onsuccess = () => resolve(request.result);
   });
 }
-export async function saveDraftRun(run: SavedDraftRun): Promise<void> {
-  const db = await database();
+export async function saveDraftRun(principalId: string, run: SavedDraftRun): Promise<void> {
+  const db = await database(principalId);
   try {
     await new Promise<void>((resolve, reject) => {
       const transaction = db.transaction("runs", "readwrite");
@@ -41,8 +45,12 @@ export async function saveDraftRun(run: SavedDraftRun): Promise<void> {
     db.close();
   }
 }
-export async function listDraftRuns(taskId: string, scenarioId?: string): Promise<Array<SavedDraftRun>> {
-  const db = await database();
+export async function listDraftRuns(
+  principalId: string,
+  taskId: string,
+  scenarioId?: string,
+): Promise<Array<SavedDraftRun>> {
+  const db = await database(principalId);
   try {
     return await new Promise((resolve, reject) => {
       const request = db.transaction("runs", "readonly").objectStore("runs").getAll();

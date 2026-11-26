@@ -237,3 +237,40 @@ export function updateLocalPullRequests(userId, pullRequests) {
   saveData(userId, data);
   return data.pullRequests;
 }
+
+// Read only finalized PR metadata; draft state and conversations remain private.
+export function listSharedPullRequests(userIds) {
+  const results = [];
+  for (const userId of userIds) {
+    if (!userIdPattern.test(userId)) continue;
+    let data;
+    try {
+      data = JSON.parse(readFileSync(indexPath(userId), "utf8"));
+    } catch {
+      continue;
+    }
+    if (!Array.isArray(data?.pullRequests)) continue;
+    for (const item of data.pullRequests) {
+      if (
+        !item ||
+        typeof item.url !== "string" ||
+        !/^https:\/\/github\.com\//i.test(item.url) ||
+        !Number.isInteger(item.number)
+      )
+        continue;
+      results.push({
+        title: item.title,
+        url: item.url,
+        number: item.number,
+        branch: item.branch,
+        baseBranch: item.baseBranch,
+        status: item.status,
+        createdAt: item.createdAt,
+        updatedAt: item.updatedAt,
+        mergedAt: item.mergedAt,
+        closedAt: item.closedAt,
+      });
+    }
+  }
+  return results;
+}

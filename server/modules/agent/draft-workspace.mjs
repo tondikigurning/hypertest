@@ -44,10 +44,10 @@ function normalizeTargetBranch(value) {
   return branch;
 }
 
-async function resolveTarget(targetBranch, { refresh = true } = {}) {
+async function resolveTarget(targetBranch, { refresh = true, preferRemote = false } = {}) {
   const branch = normalizeTargetBranch(targetBranch);
   await git(["check-ref-format", "--branch", branch]);
-  if (!refresh && (await localBranchExists(branch))) {
+  if (!refresh && !preferRemote && (await localBranchExists(branch))) {
     const ref = `refs/heads/${branch}`;
     const result = await git(["rev-parse", "--verify", `${ref}^{commit}`]);
     return { branch, ref, commit: result.stdout.trim(), remote: false };
@@ -210,7 +210,7 @@ export async function refreshDraftForTurn({ workspace, baseCommit, baseBranch, b
   return { baseCommit: target.commit, baseBranch: currentBranch, branch: undefined, updated: true };
 }
 
-export async function synchronizeDraftWorkspace({ workspace, branch, targetBranch }) {
+export async function synchronizeDraftWorkspace({ workspace, branch, targetBranch, fetchTarget }) {
   workspace = validateWorktreePath(workspace);
   if (typeof targetBranch !== "string" || !targetBranch) throw new Error("This draft has no target branch.");
   const currentBranch = (await git(["branch", "--show-current"], workspace)).stdout.trim();
@@ -224,7 +224,8 @@ export async function synchronizeDraftWorkspace({ workspace, branch, targetBranc
     branch = currentBranch;
   }
 
-  const target = await resolveTarget(targetBranch);
+  if (fetchTarget) await fetchTarget({ workspace, targetBranch });
+  const target = await resolveTarget(targetBranch, { refresh: !fetchTarget, preferRemote: Boolean(fetchTarget) });
   const mergeInProgress = await mergeIsInProgress(workspace);
   if (mergeInProgress) {
     const conflicts = await listConflicts(workspace);

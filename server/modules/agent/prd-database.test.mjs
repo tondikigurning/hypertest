@@ -106,42 +106,18 @@ test("terminal PRD access shares database records without an identity and reject
   );
 });
 
-test("terminal PRD read resolves only a unique active document for the exact menu", async (t) => {
-  const first = randomUUID();
-  const second = randomUUID();
-  const menu = `cases-${randomUUID()}`;
-  const path = `docs/prd/example/${menu}.md`;
-  const content = "---\nstatus: reviewed\n---\n# Cases\n";
+test("terminal PRD read selects only the exact shared menu", async (t) => {
+  const module = `test_${randomUUID().replaceAll("-", "")}`;
+  const path = `docs/prd/${module}/cases.md`;
   t.after(async () => {
-    await database().delete(agentPrds).where(eq(agentPrds.userId, first));
-    await database().delete(agentPrds).where(eq(agentPrds.userId, second));
+    await database().delete(agentPrds).where(eq(agentPrds.module, module));
     await closeDatabase();
   });
-  assert.match((await runCli(undefined, ["read", path])).error, /not found/);
-  await createPrdDatabase(first).mutate(
-    "create",
-    { module: "example", menu, initialContent: content },
-    {
-      requestApproval: async () => true,
-      redact: (value) => value,
-    },
-  );
-  assert.equal((await runCli(undefined, ["read", path])).output, content);
-  await createPrdDatabase(second).mutate(
-    "create",
-    { module: "example", menu, initialContent: content },
-    {
-      requestApproval: async () => true,
-      redact: (value) => value,
-    },
-  );
-  const ambiguous = await runCli(undefined, ["read", path]);
-  assert.notEqual(ambiguous.code, 0);
-  assert.match(ambiguous.error, /Multiple PRDs/);
-  assert.equal(ambiguous.output, "");
-  assert.equal((await runCli(first, ["read", path])).output, content);
-  assert.notEqual((await runCli(undefined, ["list"])).code, 0);
-  assert.notEqual((await runCli(undefined, ["write", path], { content, expected: null })).code, 0);
+  assert.match((await runCli(["read", path])).error, /not found/);
+  const content = "# Cases\n";
+  assert.equal((await runCli(["write", path], { content, expected: null })).code, 0);
+  assert.equal((await runCli(["read", path])).output, content);
+  assert.match((await runCli(["read", `docs/prd/${module}/other.md`])).error, /not found/);
 });
 
 test("PRDs and versions persist in the database without writing a repository file", async (t) => {
@@ -257,6 +233,10 @@ test("PRD HTTP operations work without browser identity or a draft", async (t) =
     else process.env.WEB_ALLOWED_HOSTS = previousHosts;
   });
   const origin = base;
+  const unauthenticatedDrafts = await fetch(`${base}/agent/drafts`, {
+    headers: { host, "X-Automation-Dummy-User": randomUUID() },
+  });
+  assert.equal(unauthenticatedDrafts.status, 401);
   const created = await fetch(`${base}/agent/prd-versions`, {
     method: "POST",
     headers: { origin, host, "content-type": "application/json" },

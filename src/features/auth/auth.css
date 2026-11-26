@@ -1,0 +1,775 @@
+.auth-screen {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 28px 16px;
+  background: radial-gradient(circle at 12% 6%, #e9eefc, transparent 36%), #f7f8fa;
+}
+.auth-card {
+  width: min(100%, 448px);
+  padding: 36px;
+  border: 1px solid #e5e9f1;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 18px 55px #29354812;
+}
+.auth-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 17px;
+  font-weight: 700;
+  color: #293548;
+}
+.auth-eyebrow {
+  margin: 38px 0 10px;
+  color: #6677aa;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+.auth-card h1 {
+  margin: 0;
+  color: #202a3c;
+  font-size: 28px;
+  letter-spacing: -0.035em;
+  text-wrap: balance;
+}
+.auth-intro {
+  margin: 10px 0 26px;
+  color: #68758a;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.auth-github,
+.auth-submit {
+  display: flex;
+  width: 100%;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border: 1px solid #253249;
+  border-radius: 8px;
+  background: #253249;
+  color: white;
+  font-weight: 600;
+  text-decoration: none;
+}
+.auth-github:hover,
+.auth-submit:hover {
+  background: #34445e;
+}
+.auth-github span {
+  margin-left: auto;
+}
+.auth-github {
+  padding: 0 16px;
+}
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 22px 0;
+  color: #8a95a6;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.auth-divider::before,
+.auth-divider::after {
+  flex: 1;
+  height: 1px;
+  background: #e9edf3;
+  content: "";
+}
+.auth-form {
+  display: grid;
+  gap: 16px;
+}
+.auth-form label,
+.members-form label {
+  display: grid;
+  gap: 7px;
+  color: #43516a;
+  font-size: 13px;
+  font-weight: 600;
+}
+.auth-form input,
+.members-form input {
+  min-width: 0;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid #d5dce7;
+  border-radius: 8px;
+  color: #263449;
+  background: #fff;
+}
+.auth-form input:focus-visible,
+.members-form input:focus-visible,
+.auth-card :focus-visible,
+.account-controls button:focus-visible {
+  outline: 3px solid #a9bbf9;
+  outline-offset: 2px;
+}
+.auth-submit {
+  margin-top: 4px;
+  background: #4264d0;
+  border-color: #4264d0;
+  cursor: pointer;
+}
+.auth-submit:hover {
+  background: #3654b6;
+}
+.auth-submit:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+.auth-hint {
+  color: #7b889b;
+  font-size: 12px;
+  font-weight: 400;
+}
+.auth-error {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  color: #9f3030;
+  background: #fff1f0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.auth-footer {
+  margin: 24px 0 0;
+  color: #7b889b;
+  font-size: 12px;
+  text-align: center;
+  line-height: 1.5;
+}
+.auth-signout {
+  display: block;
+  margin: 18px auto 0;
+  padding: 4px;
+  border: 0;
+  background: transparent;
+  color: #526baf;
+}
+.account-controls {
+  position: relative;
+  min-width: 0;
+}
+.account-menu summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  list-style: none;
+}
+.account-menu summary::-webkit-details-marker {
+  display: none;
+}
+.account-menu summary:hover,
+.account-menu[open] summary {
+  background: #f2f5fb;
+}
+.account-menu summary:focus-visible,
+.account-menu button:focus-visible {
+  outline: 3px solid #a9bbf9;
+  outline-offset: 2px;
+}
+.topbar .account-menu .account-avatar {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  flex: none;
+  place-items: center;
+  margin: 0;
+  border-radius: 50%;
+  color: #4760a3;
+  background: #edf1ff;
+  font-size: 13px;
+  font-weight: 700;
+}
+.topbar .account-menu .account-identity {
+  display: grid;
+  min-width: 0;
+  max-width: 130px;
+  line-height: 1.25;
+}
+.account-identity strong {
+  overflow: hidden;
+  color: #293548;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.account-identity small {
+  color: #8490a2;
+  font-size: 10px;
+  text-transform: capitalize;
+}
+.account-menu-panel {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 6px);
+  right: 0;
+  width: 190px;
+  padding: 6px;
+  border: 1px solid #e4e9f1;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 12px 30px #2935481c;
+}
+.account-menu-panel button {
+  display: block;
+  width: 100%;
+  padding: 10px;
+  border: 0;
+  border-radius: 6px;
+  color: #43516a;
+  background: transparent;
+  text-align: left;
+  font-size: 13px;
+}
+.account-menu-panel button:hover {
+  background: #f2f5fb;
+}
+.members-dialog {
+  padding: 24px;
+  width: min(680px, calc(100vw - 32px));
+  max-height: min(80vh, 760px);
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.members-dialog-header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 16px;
+}
+.members-dialog-header h2 {
+  margin: 0;
+  font-size: 20px;
+}
+.members-description {
+  color: #6c798d;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.members-list {
+  display: grid;
+  gap: 8px;
+  padding: 0;
+  list-style: none;
+}
+.members-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid #e8ecf2;
+  border-radius: 9px;
+}
+.members-name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.members-name strong,
+.members-name span {
+  display: block;
+}
+.members-name span {
+  margin-top: 3px;
+  color: #778499;
+  font-size: 12px;
+  text-transform: capitalize;
+}
+.members-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.members-actions button,
+.members-close,
+.members-cancel {
+  min-height: 34px;
+  padding: 6px 10px;
+  border: 1px solid #dce3ed;
+  border-radius: 7px;
+  background: #fff;
+  color: #43516a;
+}
+.members-actions button:hover,
+.members-close:hover,
+.members-cancel:hover {
+  background: #f2f5fb;
+}
+.members-form {
+  display: grid;
+  gap: 12px;
+  margin-top: 14px;
+}
+.members-form .auth-submit {
+  max-width: 200px;
+}
+@media (max-width: 700px) {
+  .auth-card {
+    padding: 28px 24px;
+  }
+  .topbar .account-menu .account-identity {
+    display: none;
+  }
+
+  .members-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+.members-create {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid #e8ecf2;
+}
+.members-create h3 {
+  margin: 0;
+  font-size: 15px;
+}
+.members-form-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.members-success {
+  margin: 0;
+  color: #247356;
+  font-size: 13px;
+}
+
+.viewer-welcome {
+  max-width: 600px;
+  margin: 10vh auto 0;
+  padding: 32px;
+  border: 1px solid #e5e9f1;
+  border-radius: 16px;
+  background: #fff;
+}
+.viewer-welcome .auth-eyebrow {
+  margin: 0 0 12px;
+}
+.viewer-welcome h1 {
+  margin: 0;
+  color: #202a3c;
+  font-size: 26px;
+  letter-spacing: -0.03em;
+  overflow-wrap: anywhere;
+}
+.viewer-welcome > p:not(.auth-eyebrow) {
+  color: #68758a;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.viewer-welcome-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-top: 24px;
+  color: #78859a;
+  font-size: 13px;
+}
+.viewer-welcome-meta strong {
+  color: #4264d0;
+  font-size: 22px;
+}
+
+.members-form-actions .primary-button {
+  width: auto;
+  min-width: 150px;
+}
+
+/* Shared account management surfaces */
+.account-section-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 22px 0 10px;
+}
+.account-section-heading h3 {
+  margin: 0;
+  color: #293548;
+  font-size: 14px;
+}
+.account-section-heading > span {
+  color: #78859a;
+  font-size: 12px;
+}
+.account-state {
+  margin: 20px 0;
+  padding: 20px;
+  border: 1px solid #e8ecf2;
+  border-radius: 10px;
+  background: #f9fafc;
+  color: #68758a;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.account-state p {
+  margin: 6px 0;
+}
+.account-state strong {
+  color: #293548;
+}
+.account-request-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.account-request {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px;
+  border: 1px solid #e8ecf2;
+  border-radius: 10px;
+}
+.account-request-content {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+}
+.account-request-number {
+  color: #8490a2;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.account-request a {
+  color: #344f9d;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+  text-decoration: none;
+}
+.account-request a:hover {
+  text-decoration: underline;
+}
+.account-external {
+  white-space: nowrap;
+}
+.account-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.account-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 7px;
+}
+.account-badge {
+  flex: none;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #edf1f8;
+  color: #53637d;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.3;
+  text-transform: capitalize;
+}
+.account-badge-active {
+  background: #e8f6ee;
+  color: #247356;
+}
+.account-badge-muted {
+  background: #f1f3f6;
+  color: #68758a;
+}
+.members-person {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 10px;
+}
+.members-avatar {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  flex: none;
+  place-items: center;
+  border-radius: 50%;
+  background: #edf1ff;
+  color: #4760a3;
+  font-size: 13px;
+  font-weight: 700;
+}
+.members-name .account-badge {
+  display: inline-block;
+  margin: 0;
+  font-size: 11px;
+}
+.members-actions .members-disable {
+  color: #a33c3c;
+}
+.members-dialog :focus-visible {
+  outline: 3px solid #a9bbf9;
+  outline-offset: 2px;
+}
+.members-create {
+  padding: 18px;
+  border: 1px solid #e8ecf2;
+  border-radius: 10px;
+  background: #f9fafc;
+}
+.members-create .members-description {
+  margin-bottom: 0;
+}
+@media (max-width: 700px) {
+  .members-dialog {
+    max-height: calc(100dvh - 32px);
+    padding: 20px;
+  }
+  .account-request {
+    align-items: flex-start;
+  }
+}
+
+/* Pull request history */
+.pr-empty {
+  margin-top: 22px;
+  padding: 38px 24px 24px;
+  border: 1px solid #e5eaf2;
+  border-radius: 14px;
+  background: #fbfcfe;
+  text-align: center;
+}
+.pr-empty-art {
+  display: grid;
+  width: 76px;
+  height: 76px;
+  place-items: center;
+  margin: 0 auto 20px;
+  border: 1px solid #dce5fa;
+  border-radius: 24px;
+  background: #eef3ff;
+}
+.pr-empty-branch {
+  position: relative;
+  width: 32px;
+  height: 38px;
+}
+.pr-empty-branch::before {
+  position: absolute;
+  top: 8px;
+  bottom: 8px;
+  left: 7px;
+  width: 2px;
+  background: #6b81c5;
+  content: "";
+}
+.pr-empty-branch::after {
+  position: absolute;
+  top: 8px;
+  right: 6px;
+  width: 17px;
+  height: 19px;
+  border-right: 2px solid #6b81c5;
+  border-bottom: 2px solid #6b81c5;
+  border-radius: 0 0 10px 0;
+  content: "";
+}
+.pr-empty-branch i {
+  position: absolute;
+  z-index: 1;
+  width: 10px;
+  height: 10px;
+  border: 2px solid #6b81c5;
+  border-radius: 50%;
+  background: #eef3ff;
+}
+.pr-empty-branch i:first-child {
+  top: 1px;
+  left: 3px;
+}
+.pr-empty-branch i:nth-child(2) {
+  bottom: 1px;
+  left: 3px;
+}
+.pr-empty-branch i:last-child {
+  top: 1px;
+  right: 2px;
+}
+.pr-empty h3 {
+  margin: 0;
+  color: #293548;
+  font-size: 16px;
+}
+.pr-empty > p {
+  max-width: 360px;
+  margin: 9px auto 0;
+  color: #69778b;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.pr-empty-note {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 8px;
+  max-width: 420px;
+  margin: 26px auto 0;
+  padding-top: 18px;
+  border-top: 1px solid #e6ebf3;
+  color: #748199;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.pr-empty-note-dot {
+  width: 6px;
+  height: 6px;
+  flex: none;
+  border-radius: 50%;
+  background: #869ad2;
+}
+.pr-error {
+  padding: 26px;
+}
+.pr-error button {
+  margin-top: 16px;
+}
+.pr-loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 130px;
+  justify-content: center;
+  color: #69778b;
+  font-size: 13px;
+}
+.pr-history {
+  margin-top: 24px;
+}
+.pr-history-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.pr-history-heading h3 {
+  margin: 0;
+  color: #34415a;
+  font-size: 13px;
+}
+.pr-history-heading > span {
+  color: #8490a2;
+  font-size: 12px;
+}
+.pr-history-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.pr-history-item {
+  padding: 15px 16px;
+  border: 1px solid #e6ebf2;
+  border-radius: 10px;
+  background: #fff;
+}
+.pr-history-main {
+  min-width: 0;
+}
+.pr-history-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 7px;
+  color: #7d8a9c;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.pr-status {
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #f0f2f6;
+  color: #69778b;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+.pr-status[data-status="open"] {
+  background: #e7f5ed;
+  color: #26744c;
+}
+.pr-status[data-status="merged"] {
+  background: #f0eafa;
+  color: #7455a9;
+}
+.pr-status[data-status="closed"] {
+  background: #fbeeed;
+  color: #a04a4a;
+}
+.pr-history-item a {
+  color: #354f9a;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+  text-decoration: none;
+}
+.pr-history-item a:hover {
+  text-decoration: underline;
+}
+.pr-history-item a:focus-visible {
+  outline: 3px solid #a9bbf9;
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+.pr-history-item a svg {
+  width: 13px;
+  height: 13px;
+  vertical-align: -2px;
+}
+.pr-history-detail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  margin-top: 9px;
+  color: #78869a;
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.pr-history-detail code {
+  font-size: 11px;
+}
+.pr-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+@media (max-width: 700px) {
+  .pr-empty {
+    padding: 30px 18px 20px;
+  }
+}

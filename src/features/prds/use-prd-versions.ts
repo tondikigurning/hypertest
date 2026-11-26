@@ -20,13 +20,9 @@ interface PrdVersionsResult {
 const empty: PrdVersionsResult = { items: [], activeVersionId: "", error: "", loading: false };
 
 export function usePrdVersions(module: string, menu: string, draft: string) {
-  const [result, setResult] = useState<PrdVersionsResult>({ ...empty, loading: Boolean(draft) });
+  const [result, setResult] = useState<PrdVersionsResult>({ ...empty, loading: true });
 
   useEffect(() => {
-    if (!draft) {
-      setResult(empty);
-      return;
-    }
     const controller = new AbortController();
     async function load() {
       setResult({ ...empty, loading: true });

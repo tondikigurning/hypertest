@@ -55,8 +55,8 @@ export function usePrds() {
           }));
       }
     }
-    setDraftPrds(draft ? { ...empty, loading: true } : empty);
-    if (draft) {
+    setDraftPrds({ ...empty, loading: true });
+    {
       const poll = async () => {
         await load("/api/agent/prds", setDraftPrds, draft);
         if (!controller.signal.aborted) timer = window.setTimeout(poll, 2000);

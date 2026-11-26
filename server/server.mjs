@@ -1,3 +1,4 @@
+import "./load-env.mjs";
 import { createApp } from "./app.mjs";
 import { syncScenarioCatalog } from "./modules/catalog/catalog-sync.mjs";
 import { localApiHost, localApiPort } from "./shared/local-api-config.mjs";

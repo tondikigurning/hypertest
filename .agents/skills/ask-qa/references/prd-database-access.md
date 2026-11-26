@@ -2,7 +2,7 @@
 
 PRDs are shared by all clients using the configured PostgreSQL database. Configure `DATABASE_URL` as for the API; no browser identity is needed. If access is unavailable, report the blocker instead of creating a repository PRD.
 
-From the repository root, `node server/modules/agent/prd-cli.mjs read docs/prd/<module>/<menu>.md` reads one. `list` and `write` require the intended identity explicitly, even after a unique read. These paths are virtual identifiers. `write <identifier>` reads a JSON object from stdin with `content` and `expected` (the exact previously read content, or null if absent). It rejects stale changes. A draft must preserve unchanged validations and leave new or changed items without `[validated]`.
+From the repository root, `node server/modules/agent/prd-cli.mjs read docs/prd/<module>/<menu>.md` reads one. `list`, `versions`, `write`, and `delete` use the same shared menu records. These paths are virtual identifiers. `write <identifier>` reads a JSON object from stdin with `content` and `expected` (the exact previously read content, or null if absent). It rejects stale changes. A draft must preserve unchanged validations and leave new or changed items without `[validated]`.
 
 For terminal flow-confirmation source comparisons, hash the exact UTF-8 output of `prd-cli.mjs read` as bytes. The identifier is not a physical file: `Get-FileHash` applies to workspace feature files, not this virtual PRD. Preserve the read bytes without adding or normalizing a newline, and hash the actual active content again after the user's decision and when resuming. A digest identifies content; it does not grant review approval. Never print the PRD when it contains material that should not enter the terminal transcript.
 

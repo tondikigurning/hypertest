@@ -128,6 +128,7 @@ export function PrdCatalog({
   draft,
   onCreate,
   onEdit,
+  canEdit,
   onClose,
   returnFocus,
 }: {
@@ -135,6 +136,7 @@ export function PrdCatalog({
   menu: string;
   draftPrds: PrdResult;
   draft: string;
+  canEdit: boolean;
   onCreate: () => void;
   onEdit: () => void;
   onClose: () => void;
@@ -289,7 +291,7 @@ export function PrdCatalog({
             <h3>Versions</h3>
             {draft && <span>{versions.items.length}</span>}
           </div>
-          {draft && (
+          {canEdit && draft && (
             <button
               type="button"
               className="prd-action-button prd-new-version"
@@ -299,7 +301,7 @@ export function PrdCatalog({
               + New version
             </button>
           )}
-          {draft && versions.items.length > 0 && (
+          {versions.items.length > 0 && (
             <ul className="prd-version-list">
               {versions.items.map((version) => (
                 <li key={version.id}>
@@ -313,7 +315,7 @@ export function PrdCatalog({
               ))}
             </ul>
           )}
-          {draft && noVersions && <p className="prd-version-empty">No versions yet.</p>}
+          {noVersions && <p className="prd-version-empty">No versions yet.</p>}
         </aside>
 
         <div className="prd-version-content">
@@ -340,9 +342,11 @@ export function PrdCatalog({
           {!loading && !loadError && !hasContent && (
             <PrdState icon={<PrdDocumentIcon />} title="No PRD yet">
               <p>Create or import a document to get started.</p>
-              <PrimaryButton className="prd-primary" onClick={onCreate}>
-                Create or import with Q-Rex
-              </PrimaryButton>
+              {canEdit && (
+                <PrimaryButton className="prd-primary" onClick={onCreate}>
+                  Create or import with Q-Rex
+                </PrimaryButton>
+              )}
             </PrdState>
           )}
           {actionError && !hasContent && (
@@ -359,7 +363,7 @@ export function PrdCatalog({
                   </div>
                 </div>
                 <div className="prd-reader-controls">
-                  {selectedVersion && !editingContent && !editingName && (
+                  {canEdit && selectedVersion && !editingContent && !editingName && (
                     <div className="prd-version-actions">
                       <button
                         type="button"

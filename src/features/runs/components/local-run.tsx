@@ -3,7 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { FormField, Modal, PrimaryButton, Spinner, TextInput } from "../../../components";
 import type { RunConfig } from "../run-environment-state";
-import { readVariables, storageKey } from "../run-variables";
+import { clearVariableSecrets, readVariables, writeVariables } from "../run-variables";
 import type { Run, RunSelection } from "../types";
 import { activeRunKey, useActiveRun } from "../use-active-run";
 import { useRunEnvironment } from "../use-run-environment";
@@ -38,9 +38,16 @@ export function EnvironmentVariables({ disabled = false }: { disabled?: boolean 
     }
   }, [config, variablesOpen]);
   useEffect(() => {
-    if (disabled && variablesOpen) setVariablesOpen(false);
+    if (disabled && variablesOpen) {
+      setValues({});
+      setVariablesOpen(false);
+    }
   }, [disabled, variablesOpen, setVariablesOpen]);
   if (!config) return null;
+  const closeVariables = () => {
+    setValues({});
+    setVariablesOpen(false);
+  };
   return (
     <>
       <button
@@ -59,20 +66,21 @@ export function EnvironmentVariables({ disabled = false }: { disabled?: boolean 
         <Modal
           className="group-run-dialog environment-dialog"
           labelledBy="environment-title"
-          onClose={() => setVariablesOpen(false)}
+          onClose={closeVariables}
           returnFocus={trigger}
         >
           <RunDialogHeading
             titleId="environment-title"
             title="Variables"
-            description="Used for every run."
+            description="Passwords and case customer IDs stay in this tab and are cleared after a run or agent request."
             closeLabel="Close environment variables"
-            onClose={() => setVariablesOpen(false)}
+            onClose={closeVariables}
           />
           <form
             onSubmit={(event) => {
               event.preventDefault();
-              sessionStorage.setItem(storageKey, JSON.stringify(values));
+              writeVariables(values, config.variables);
+              setValues({});
               setVariablesOpen(false);
             }}
           >
@@ -158,6 +166,7 @@ export function LocalRun({
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to start the run.");
     } finally {
+      clearVariableSecrets();
       setSubmitting(false);
     }
   };

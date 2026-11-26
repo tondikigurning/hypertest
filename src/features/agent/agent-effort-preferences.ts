@@ -11,9 +11,9 @@ export function effortPresetKey(provider: string, model: string) {
   return JSON.stringify([provider, model]);
 }
 
-export function readEffortPresets(storage: PreferenceStorage): Record<string, EffortLevel> {
+export function readEffortPresets(storage: PreferenceStorage, key = storageKey): Record<string, EffortLevel> {
   try {
-    const value: unknown = JSON.parse(storage.getItem(storageKey) || "{}");
+    const value: unknown = JSON.parse(storage.getItem(key) || "{}");
     if (!value || typeof value !== "object" || Array.isArray(value)) return {};
     const presets: Record<string, EffortLevel> = {};
     for (const [key, effort] of Object.entries(value)) {
@@ -25,11 +25,17 @@ export function readEffortPresets(storage: PreferenceStorage): Record<string, Ef
   }
 }
 
-export function writeEffortPreset(storage: PreferenceStorage, provider: string, model: string, effort: EffortLevel) {
-  const presets = readEffortPresets(storage);
+export function writeEffortPreset(
+  storage: PreferenceStorage,
+  provider: string,
+  model: string,
+  effort: EffortLevel,
+  key = storageKey,
+) {
+  const presets = readEffortPresets(storage, key);
   presets[effortPresetKey(provider, model)] = effort;
   try {
-    storage.setItem(storageKey, JSON.stringify(presets));
+    storage.setItem(key, JSON.stringify(presets));
   } catch {
     // A storage restriction must not stop changes in the current tab.
   }

@@ -1,10 +1,12 @@
 import { createHash, randomUUID } from "node:crypto";
 import { join, resolve } from "node:path";
+import { eq } from "drizzle-orm";
 import { Router } from "express";
+import { database } from "../../database.mjs";
 import { isLocalRequest } from "../../shared/local-request.mjs";
+import { workspaceUsers } from "../results/schema.mjs";
 import { resolveAgentEnvironment, sendRunEvidence } from "../runs/run-controller.mjs";
 import { initializeAgentEncryption, isAgentEncryptionConfigured } from "./agent-crypto.mjs";
-import { resolveLocalPreviewIdentity } from "./agent-identity.mjs";
 import {
   agentProviders,
   createAgentLanguageModel,
@@ -31,11 +33,18 @@ import {
   getLocalDraft,
   listLocalDrafts,
   listLocalPullRequests,
+  listSharedPullRequests,
   restoreLocalDraft,
   touchLocalDraft,
   updateLocalPullRequests,
 } from "./draft-store.mjs";
-import { createDraftWorkspace, listDraftTargets, refreshDraftForTurn } from "./draft-workspace.mjs";
+import {
+  createDraftWorkspace,
+  listDraftTargets,
+  refreshDraftForTurn,
+  synchronizeDraftWorkspace,
+} from "./draft-workspace.mjs";
+import { createGithubOperations } from "./github-operations.mjs";
 import { createPrdDatabase } from "./prd-database.mjs";
 import { refreshPullRequests } from "./publish-draft.mjs";
 
@@ -59,7 +68,7 @@ function resolveAgentVariables(value) {
   return variables;
 }
 
-function sessionFor(id, draftId, draft) {
+function sessionFor(id, draftId, draft, authenticated = false) {
   if (id === "local-preview-user" && draftId === "default") return agentSession;
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)) return undefined;
   if (
@@ -67,7 +76,7 @@ function sessionFor(id, draftId, draft) {
     !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(draftId || "")
   )
     return undefined;
-  const key = `${id}:${draftId}`;
+  const key = `${id}:${draftId}:${authenticated}`;
   if (!sessions.has(key)) {
     const stateFile =
       draftId === "default"
@@ -81,6 +90,13 @@ function sessionFor(id, draftId, draft) {
         stateFile,
         preferencesFile: join(sessionsRoot, id, "model-preferences.json"),
         refreshWorkspace: refreshDraftForTurn,
+        ...(authenticated
+          ? {
+              publish: createGithubOperations(id).publish,
+              synchronize: (options) =>
+                synchronizeDraftWorkspace({ ...options, fetchTarget: createGithubOperations(id).fetchTarget }),
+            }
+          : {}),
         ...(draftId !== "default" && draft
           ? {
               prepareWorkspace: () =>
@@ -108,7 +124,11 @@ export function sendDraftRunFrame(service, req, res) {
   return res.type("image/jpeg").send(frame);
 }
 
-export function createAgentRouter({ resolveSession = sessionFor, resolveIdentity = resolveLocalPreviewIdentity } = {}) {
+export function createAgentRouter({
+  resolveSession = sessionFor,
+  resolveIdentity = (req) =>
+    req.workspacePrincipal ? { userId: req.workspacePrincipal.id, authenticated: true } : undefined,
+} = {}) {
   const router = Router();
   router.use((req, res, next) => {
     res.setHeader("Cache-Control", "no-store");
@@ -218,7 +238,7 @@ export function createAgentRouter({ resolveSession = sessionFor, resolveIdentity
   router.use((req, res, next) => {
     try {
       req.agentIdentity = resolveIdentity(req);
-      if (!req.agentIdentity?.userId) return res.status(400).json({ error: "Invalid local preview identity." });
+      if (!req.agentIdentity?.userId) return res.status(401).json({ error: "Sign in required." });
     } catch (error) {
       return res.status(400).json({ error: error.message });
     }
@@ -281,10 +301,27 @@ export function createAgentRouter({ resolveSession = sessionFor, resolveIdentity
       res.status(400).json({ error: error.message });
     }
   });
-  router.get("/pull-requests", (req, res) => res.json(listLocalPullRequests(req.agentIdentity.userId)));
+  router.get("/pull-requests", async (req, res, next) => {
+    if (!req.workspacePrincipal) return res.json(listLocalPullRequests(req.agentIdentity.userId));
+    try {
+      const engineers = await database()
+        .select({ id: workspaceUsers.id })
+        .from(workspaceUsers)
+        .where(eq(workspaceUsers.role, "engineer"));
+      return res.json(listSharedPullRequests(engineers.map((user) => user.id)));
+    } catch (error) {
+      return next(error);
+    }
+  });
   router.post("/pull-requests/refresh", async (req, res) => {
     try {
-      const pullRequests = await refreshPullRequests(listLocalPullRequests(req.agentIdentity.userId));
+      const history = listLocalPullRequests(req.agentIdentity.userId);
+      const pullRequests = req.workspacePrincipal
+        ? await createGithubOperations(req.agentIdentity.userId).refresh({
+            workspace: resolve(import.meta.dirname, "../../../"),
+            pullRequests: history,
+          })
+        : await refreshPullRequests(history);
       res.json(updateLocalPullRequests(req.agentIdentity.userId, pullRequests));
     } catch (error) {
       res.status(503).json({ error: error.message || "Could not refresh pull-request status from GitHub." });
@@ -300,7 +337,7 @@ export function createAgentRouter({ resolveSession = sessionFor, resolveIdentity
           .status(409)
           .json({ error: "This draft is archived or finalized. Restore an archived draft to continue." });
       req.agentDraft = draft;
-      req.agentSession = resolveSession(req.agentIdentity.userId, draftId, draft);
+      req.agentSession = resolveSession(req.agentIdentity.userId, draftId, draft, req.agentIdentity.authenticated);
       if (!req.agentSession) return res.status(400).json({ error: "Invalid local draft identity." });
       req.agentDraftId = draftId;
       return next();

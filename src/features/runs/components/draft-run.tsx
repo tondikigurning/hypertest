@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Modal, PrimaryButton, Spinner } from "../../../components";
 import { agentFetch, getActiveDraftId } from "../../agent/agent-api";
 import { readAgentVariables } from "../../agent/agent-variables";
+import { useWorkspaceUser } from "../../auth/auth-context";
 import { RunStatus } from "../../scenarios/components/run-status";
 import type { Scenario } from "../../scenarios/scenario";
 import { listDraftRuns, type SavedDraftRun } from "../draft-evidence-store";
@@ -13,6 +14,7 @@ import { RunDialogHeading } from "./run-dialog-heading";
 import { RunPanel } from "./run-panel";
 
 export function DraftRun({ scenario }: { scenario: Scenario }) {
+  const user = useWorkspaceUser();
   const { run, error, revision, start, cancel, discard } = useDraftRuns();
   const { config, environment, setVariablesOpen } = useRunEnvironment();
   const [saved, setSaved] = useState<Array<SavedDraftRun>>([]);
@@ -59,7 +61,7 @@ export function DraftRun({ scenario }: { scenario: Scenario }) {
           return;
         }
         const [results, review] = await Promise.all([
-          listDraftRuns(info.taskId, scenario.id),
+          listDraftRuns(user.id, info.taskId, scenario.id),
           agentFetch("/api/agent/diff", { cache: "no-store", headers, signal: controller.signal }).then(
             (response) => response.json() as Promise<{ digest?: string }>,
           ),
@@ -77,7 +79,7 @@ export function DraftRun({ scenario }: { scenario: Scenario }) {
       cancelled = true;
       controller.abort();
     };
-  }, [scenario.id, revision, activeDraftId]);
+  }, [scenario.id, revision, activeDraftId, user.id]);
   const [links, setLinks] = useState<Array<{ key: string; title: string; url: string; type: string }>>([]);
   useEffect(() => {
     const urls = saved.flatMap((item) =>

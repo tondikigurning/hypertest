@@ -1,13 +1,14 @@
-﻿import { Icon } from "@hyperscal/icons";
+import { Icon } from "@hyperscal/icons";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { Modal, TextAreaInput, TextInput } from "../../components";
+import { clearVariableSecrets } from "../runs/run-variables";
 import { useActiveRun } from "../runs/use-active-run";
 import { useDraftRuns } from "../runs/use-draft-runs";
 import { useRunEnvironment } from "../runs/use-run-environment";
 import { label as displayLabel } from "../scenarios/scenario";
 import { isScenarioInScope } from "../scenarios/selectors";
-import { agentFetch, getActiveDraftId, setActiveDraftId } from "./agent-api";
+import { agentFetch, agentStorageKey, getActiveDraftId, setActiveDraftId } from "./agent-api";
 import { combineAnswer, groupAutomaticApprovals } from "./agent-conversation";
 import { AgentSettings } from "./agent-settings";
 import { readAgentVariables } from "./agent-variables";
@@ -150,7 +151,7 @@ function summarizePatch(patch: string | undefined) {
   return { files: [...new Set(files)], additions, deletions };
 }
 
-const contextStorageKey = "automation-agent-contexts";
+const contextStorageKey = () => agentStorageKey("contexts");
 const commands = [
   { name: "ask-qa", description: "Ask about testing or investigate a scenario." },
   { name: "write-prd", description: "Import, explore, or review a menu PRD." },
@@ -176,7 +177,7 @@ function isContextAttachment(item: unknown): item is ContextAttachment {
 
 function readContexts(): Array<ContextAttachment> | undefined {
   try {
-    const raw = localStorage.getItem(contextStorageKey);
+    const raw = localStorage.getItem(contextStorageKey());
     if (raw === null) return undefined;
     const value = JSON.parse(raw);
     return Array.isArray(value)
@@ -337,11 +338,11 @@ export function AgentWidget({
     composerRef.current?.focus();
   };
   useEffect(() => {
-    if (home && sessionStorage.getItem("automation-prd-start")) {
-      const prompt = sessionStorage.getItem("automation-prd-start") || "Help me create or import a PRD for ";
-      sessionStorage.removeItem("automation-prd-start");
-      const storedContext = sessionStorage.getItem("automation-prd-context");
-      sessionStorage.removeItem("automation-prd-context");
+    if (home && sessionStorage.getItem(agentStorageKey("prd-start"))) {
+      const prompt = sessionStorage.getItem(agentStorageKey("prd-start")) || "Help me create or import a PRD for ";
+      sessionStorage.removeItem(agentStorageKey("prd-start"));
+      const storedContext = sessionStorage.getItem(agentStorageKey("prd-context"));
+      sessionStorage.removeItem(agentStorageKey("prd-context"));
       if (storedContext) {
         try {
           const contextValue: unknown = JSON.parse(storedContext);
@@ -501,7 +502,10 @@ export function AgentWidget({
 
   useEffect(() => {
     try {
-      localStorage.setItem(contextStorageKey, JSON.stringify(contexts.filter((item) => item.kind !== "upload")));
+      localStorage.setItem(
+        contextStorageKey(),
+        JSON.stringify(contexts.filter((item) => item.kind !== "upload" && item.kind !== "note")),
+      );
     } catch {
       setContextError("Context changes could not be saved in this browser.");
     }
@@ -509,7 +513,7 @@ export function AgentWidget({
 
   useEffect(() => {
     const onStorage = (event: StorageEvent) => {
-      if (event.key !== contextStorageKey || !event.newValue) return;
+      if (event.key !== contextStorageKey() || !event.newValue) return;
       try {
         const value = JSON.parse(event.newValue);
         if (Array.isArray(value)) setContexts(value.filter(isContextAttachment).slice(0, 8));
@@ -849,6 +853,7 @@ export function AgentWidget({
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Could not send message.");
     } finally {
+      clearVariableSecrets();
       setSending(false);
     }
   };

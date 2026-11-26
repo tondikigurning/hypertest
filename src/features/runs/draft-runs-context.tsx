@@ -1,10 +1,13 @@
-﻿import { type ReactNode, useCallback, useEffect, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useState } from "react";
 import { agentFetch, getActiveDraftId } from "../agent/agent-api";
 import { readAgentVariables } from "../agent/agent-variables";
+import { useWorkspaceUser } from "../auth/auth-context";
 import { type DraftRunState, saveDraftRun } from "./draft-evidence-store";
 import { DraftRunsContext } from "./draft-runs-state";
+import { clearVariableSecrets } from "./run-variables";
 
 export function DraftRunsProvider({ children }: { children: ReactNode }) {
+  const user = useWorkspaceUser();
   const [run, setRun] = useState<DraftRunState | null>(null);
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState("");
@@ -62,7 +65,7 @@ export function DraftRunsProvider({ children }: { children: ReactNode }) {
                 blob: await file.blob(),
               });
             }
-          await saveDraftRun({
+          await saveDraftRun(user.id, {
             id: current.id,
             taskId: current.taskId,
             scenarioId: current.scenarioId,
@@ -97,7 +100,7 @@ export function DraftRunsProvider({ children }: { children: ReactNode }) {
       controller.abort();
       window.clearTimeout(timer);
     };
-  }, [activeDraftId]);
+  }, [activeDraftId, user.id]);
   const start = useCallback(async (scenarioId: string, file: string, environment: string) => {
     const draftId = getActiveDraftId();
     if (!draftId) throw new Error("Select a local draft before running a draft scenario.");
@@ -125,6 +128,7 @@ export function DraftRunsProvider({ children }: { children: ReactNode }) {
       setRun(result);
       setError("");
     } finally {
+      clearVariableSecrets();
       setStarting(false);
     }
   }, []);

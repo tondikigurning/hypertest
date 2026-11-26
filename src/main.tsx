@@ -7,6 +7,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { createBrowserRouter, redirect } from "react-router";
 import { RouterProvider } from "react-router/dom";
 import { App } from "./app/app";
+import { AuthGate } from "./features/auth/auth-gate";
 import { DraftRunsProvider } from "./features/runs/draft-runs-context";
 import { RunEnvironmentProvider } from "./features/runs/run-environment-context";
 import { RunMonitorProvider } from "./features/runs/run-monitor-context";
@@ -35,12 +36,14 @@ rootCache.__automationReactRoot = reactRoot;
 const queryClient = new QueryClient();
 reactRoot.render(
   <QueryClientProvider client={queryClient}>
-    <RunEnvironmentProvider>
-      <RunMonitorProvider>
-        <DraftRunsProvider>
-          <RouterProvider router={router} />
-        </DraftRunsProvider>
-      </RunMonitorProvider>
-    </RunEnvironmentProvider>
+    <AuthGate>
+      <RunEnvironmentProvider>
+        <RunMonitorProvider>
+          <DraftRunsProvider>
+            <RouterProvider router={router} />
+          </DraftRunsProvider>
+        </RunMonitorProvider>
+      </RunEnvironmentProvider>
+    </AuthGate>
   </QueryClientProvider>,
 );

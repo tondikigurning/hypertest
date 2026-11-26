@@ -418,6 +418,7 @@ export function createSession({
   stateFile = sessionFile,
   preferencesFile,
   publish = publishDraft,
+  synchronize = synchronizeDraftWorkspace,
   runtime = {},
 } = {}) {
   const getCredential = runtime.getProviderCredential || getProviderCredential;
@@ -1206,7 +1207,7 @@ export function createSession({
         throw new Error("Review the latest draft changes before synchronizing.");
     }
     if (mergeWasInProgress) {
-      const mergeState = await synchronizeDraftWorkspace({ workspace, branch, targetBranch: baseBranch });
+      const mergeState = await synchronize({ workspace, branch, targetBranch: baseBranch });
       branch = mergeState.branch;
       baseBranch = mergeState.targetBranch;
       expectedHead = (
@@ -1234,7 +1235,7 @@ export function createSession({
     committing = true;
     let result;
     try {
-      result = await synchronizeDraftWorkspace({ workspace, branch, targetBranch: baseBranch });
+      result = await synchronize({ workspace, branch, targetBranch: baseBranch });
       branch = result.branch;
       baseBranch = result.targetBranch;
       baseCommit = result.baseCommit;

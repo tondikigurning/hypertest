@@ -1,36 +1,11 @@
 import { createHash } from "node:crypto";
-import { and, eq } from "drizzle-orm";
-import { closeDatabase, database } from "../../database.mjs";
-import { agentPrds } from "../results/schema.mjs";
+import { closeDatabase } from "../../database.mjs";
 import { createPrdDatabase } from "./prd-database.mjs";
 import { prdIdentity } from "./prd-identity.mjs";
 
-const identity = process.env.PRD_IDENTITY;
-const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-
 async function main() {
   const [action, path] = process.argv.slice(2);
-  if (identity && !uuid.test(identity)) throw new Error("PRD_IDENTITY must be a valid browser identity.");
-  if (!identity && action === "read") {
-    const id = typeof path === "string" && prdIdentity(path);
-    if (!id) throw new Error("Choose a valid PRD identifier.");
-    const rows = await database()
-      .select({ state: agentPrds.state })
-      .from(agentPrds)
-      .where(and(eq(agentPrds.module, id.module), eq(agentPrds.menu, id.menu)));
-    const matches = rows.flatMap(({ state }) => {
-      const active = state.versions.find((version) => version.id === state.activeVersionId);
-      return active ? [active.content] : [];
-    });
-    if (!matches.length) throw new Error("PRD not found.");
-    if (matches.length > 1)
-      throw new Error(
-        "Multiple PRDs match this menu. Set PRD_IDENTITY to select the intended browser identity.",
-      );
-    return process.stdout.write(matches[0]);
-  }
-  if (!identity) throw new Error("Set PRD_IDENTITY to the intended browser identity for list or write.");
-  const store = createPrdDatabase(identity);
+  const store = createPrdDatabase();
   if (action === "list") return process.stdout.write(`${JSON.stringify(await store.list())}\n`);
   if (action === "read") {
     const content = await store.read(path);

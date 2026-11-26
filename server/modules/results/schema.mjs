@@ -115,3 +115,55 @@ export const agentPrds = pgTable(
   },
   (table) => [primaryKey({ columns: [table.module, table.menu] })],
 );
+
+// Workspace identities are separate from the preview's browser partition IDs.
+export const workspaceUsers = pgTable(
+  "automation_workspace_users",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    role: text("role").notNull(),
+    status: text("status").notNull().default("active"),
+    githubId: text("github_id").unique(),
+    displayName: text("display_name").notNull(),
+    username: text("username").unique(),
+    passwordHash: text("password_hash"),
+    mustChangePassword: boolean("must_change_password").notNull().default(false),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    check("automation_workspace_user_role_check", sql`${table.role} in ('engineer', 'viewer')`),
+    check("automation_workspace_user_status_check", sql`${table.status} in ('active', 'disabled')`),
+    check(
+      "automation_workspace_user_identity_check",
+      sql`(${table.role} = 'engineer' and ${table.githubId} is not null and ${table.username} is null and ${table.passwordHash} is null and not ${table.mustChangePassword}) or (${table.role} = 'viewer' and ${table.githubId} is null and ${table.username} is not null and ${table.passwordHash} is not null)`,
+    ),
+    check(
+      "automation_workspace_username_normalized_check",
+      sql`${table.username} is null or (${table.username} = lower(trim(${table.username})) and length(${table.username}) > 0)`,
+    ),
+  ],
+);
+
+export const workspaceSessions = pgTable(
+  "automation_workspace_sessions",
+  {
+    tokenHash: text("token_hash").primaryKey(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => workspaceUsers.id),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("automation_workspace_sessions_user_idx").on(table.userId)],
+);
+
+export const workspaceGithubCredentials = pgTable("automation_workspace_github_credentials", {
+  userId: uuid("user_id")
+    .primaryKey()
+    .references(() => workspaceUsers.id),
+  encryptedAccessToken: text("encrypted_access_token").notNull(),
+  encryptedRefreshToken: text("encrypted_refresh_token"),
+  expiresAt: timestamp("expires_at", { withTimezone: true }),
+  refreshExpiresAt: timestamp("refresh_expires_at", { withTimezone: true }),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});

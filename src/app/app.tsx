@@ -2,7 +2,10 @@ import { Icon } from "@hyperscal/icons";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useMatches, useNavigate, useNavigationType, useSearchParams } from "react-router";
 import { CollapsibleRegion, SelectInput, TextInput } from "../components";
+import { agentStorageKey } from "../features/agent/agent-api";
 import { AgentWidget } from "../features/agent/agent-widget";
+import { AccountControls } from "../features/auth/account-controls";
+import { useWorkspaceUser } from "../features/auth/auth-context";
 import { PrdDocumentIcon } from "../features/prds/components/prd-document-icon";
 import { PrdCatalog } from "../features/prds/prd-catalog";
 import { usePrds } from "../features/prds/use-prds";
@@ -37,6 +40,7 @@ import { useDraftScenarios } from "../features/scenarios/use-draft-scenarios";
 import { useScenarioCatalog } from "../features/scenarios/use-scenario-catalog";
 
 export function App() {
+  const user = useWorkspaceUser();
   const matches = useMatches();
   const route = matches.at(-1);
   const prds = usePrds();
@@ -322,6 +326,7 @@ export function App() {
             </div>
           )}
           <EnvironmentVariables disabled={Boolean(activeRun && !activeRun.done)} />
+          <AccountControls />
         </div>
       </nav>
       <div className="app-body">
@@ -343,6 +348,17 @@ export function App() {
           }}
         />
         <main className={isHome ? "workspace workspace-home" : "workspace"}>
+          {isHome && user.role === "viewer" && (
+            <section className="viewer-welcome" aria-labelledby="viewer-welcome-title">
+              <p className="auth-eyebrow">SCENARIO EXPLORER</p>
+              <h1 id="viewer-welcome-title">Welcome, {user.displayName}</h1>
+              <p>Choose a module from the sidebar to explore scenarios, run tests, and review the latest results.</p>
+              <div className="viewer-welcome-meta">
+                <strong>{scenarios.length}</strong>
+                <span>scenarios available</span>
+              </div>
+            </section>
+          )}
           <div className="layout" style={isHome ? { display: "none" } : undefined}>
             <section className="content" aria-label="Scenario list">
               <div className="list-header">
@@ -546,6 +562,7 @@ export function App() {
               key={`${routeModule}/${routeMenu}`}
               module={routeModule}
               menu={routeMenu}
+              canEdit={user.role === "engineer"}
               draftPrds={prds.draftPrds}
               draft={prds.draft}
               returnFocus={prdButton}
@@ -556,22 +573,22 @@ export function App() {
               }}
               onCreate={() => {
                 sessionStorage.setItem(
-                  "automation-prd-context",
+                  agentStorageKey("prd-context"),
                   JSON.stringify({ module: routeModule, menu: routeMenu }),
                 );
                 sessionStorage.setItem(
-                  "automation-prd-start",
+                  agentStorageKey("prd-start"),
                   `Help me create or import the menu PRD for ${routeModule} / ${routeMenu}, covering its child test groups and files.`,
                 );
                 goHome();
               }}
               onEdit={() => {
                 sessionStorage.setItem(
-                  "automation-prd-context",
+                  agentStorageKey("prd-context"),
                   JSON.stringify({ module: routeModule, menu: routeMenu }),
                 );
                 sessionStorage.setItem(
-                  "automation-prd-start",
+                  agentStorageKey("prd-start"),
                   `Help me edit or refresh the menu PRD for ${routeModule} / ${routeMenu}, covering its child test groups and files.`,
                 );
                 goHome();
@@ -633,34 +650,36 @@ export function App() {
           {draftPreviewOpen && activeDraftRun && (
             <LiveRun run={activeDraftRun} draft onClose={() => setDraftPreviewOpen(false)} />
           )}
-          <AgentWidget
-            home={isHome}
-            feature={
-              feature
-                ? { module: feature.module, file: feature.file, title: scopeTitle || featureTitle(feature) }
-                : undefined
-            }
-            group={
-              selectedGroup && !feature
-                ? { path: selectedGroup.path, title: scopeTitle || selectedGroup.title }
-                : undefined
-            }
-            contextScenarios={agentContextScenarios}
-            scenario={
-              chosen
-                ? {
-                    key: chosen.key,
-                    title: chosen.title,
-                    id: chosen.id,
-                    file: chosen.file,
-                    module: chosen.module,
-                    feature: chosen.feature,
-                    steps: chosen.steps,
-                    tags: chosen.tags,
-                  }
-                : undefined
-            }
-          />
+          {user.role === "engineer" && (
+            <AgentWidget
+              home={isHome}
+              feature={
+                feature
+                  ? { module: feature.module, file: feature.file, title: scopeTitle || featureTitle(feature) }
+                  : undefined
+              }
+              group={
+                selectedGroup && !feature
+                  ? { path: selectedGroup.path, title: scopeTitle || selectedGroup.title }
+                  : undefined
+              }
+              contextScenarios={agentContextScenarios}
+              scenario={
+                chosen
+                  ? {
+                      key: chosen.key,
+                      title: chosen.title,
+                      id: chosen.id,
+                      file: chosen.file,
+                      module: chosen.module,
+                      feature: chosen.feature,
+                      steps: chosen.steps,
+                      tags: chosen.tags,
+                    }
+                  : undefined
+              }
+            />
+          )}
         </main>
       </div>
     </div>

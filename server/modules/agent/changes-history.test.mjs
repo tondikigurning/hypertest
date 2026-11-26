@@ -41,7 +41,7 @@ test("reset discards reviewed draft content including committed changes, but rej
     stateFile: join(root, "state.json"),
     prepareWorkspace: async () => ({ workspace, branch, baseCommit: base, baseBranch: branch, expectedHead: base }),
   });
-  await session.prdVersions("sales", "orders");
+  await session.contextFiles("file");
   await writeFile(join(workspace, "file.txt"), "first\n");
   const stale = await session.diff();
   await writeFile(join(workspace, "file.txt"), "second\n");
@@ -73,7 +73,7 @@ test("reset discards reviewed draft content including committed changes, but rej
       expectedHead: committed,
     }),
   });
-  await syncedSession.prdVersions("sales", "orders");
+  await syncedSession.contextFiles("file");
   await writeFile(join(workspace, "new.txt"), "new\n");
   const current = await syncedSession.diff();
   await syncedSession.resetChanges(current.digest);

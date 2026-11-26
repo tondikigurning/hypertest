@@ -43,10 +43,12 @@ Aplikasi target pertama adalah **Converge** (`converge.<env>.hyperscal.com`, env
 
 ## 4. Pengguna dan Peran
 
+Bagian ini adalah kebutuhan produk target, bukan klaim kemampuan preview lokal. Preview tetap loopback; identitas browser lokal bukan autentikasi. Ketersediaan kode OAuth kelak tidak berarti layanan sudah hosted atau aman untuk akses publik.
+
 Dua peran per Project:
 
-- **Engineer**: akses penuh. Membuat draft, memakai agent, meng-upload atau membuat PRD, menjalankan test, membuat PR, serta mengelola env dan secret, anggota Project, dan koneksi repo. Jadwal dan notifikasi ditunda ke fase berikutnya. Secret bersifat write-only.
-- **Viewer**: hanya melihat catalog, hasil run, evidence, dan PRD, serta menjalankan scenario pada branch target. Tidak bisa memakai agent, membuat draft, atau membuat PR.
+- **Engineer**: masuk melalui GitHub OAuth dan otomatis menjadi Engineer. Dapat membuat draft, memakai agent, mengelola PRD, menjalankan test, membuat PR, serta membuat, menonaktifkan dan mereset password Viewer. Tidak dapat mengubah akun Engineer lain.
+- **Viewer**: masuk dengan username dan password yang ditetapkan Engineer, dan wajib mengganti password sementara saat login pertama dan setelah reset. Dapat melihat catalog, hasil run, evidence, PRD dan daftar PR serta menjalankan scenario pada branch target. Tidak bisa memakai agent untuk authoring, membuat draft atau PR, atau mengelola akun.
 - **Sistem (scheduler, fase berikutnya)**: jika fitur jadwal ditambahkan, menjalankan run terjadwal dengan identitas sistem.
 
 Izin tulis ke repo tetap dibatasi izin GitHub milik pengguna.
@@ -54,7 +56,7 @@ Izin tulis ke repo tetap dibatasi izin GitHub milik pengguna.
 ## 5. Glosarium
 
 - **Project**: satu repo test + satu aplikasi target + kumpulan env dan anggota. MVP: satu Project (Converge); jadwal ditunda.
-- **Environment (env)**: target eksekusi (nama, base URL, variabel/secret). Dinamis per Project.
+- **Environment (env)**: target eksekusi mengikuti konfigurasi dan kebutuhan skenario automation.
 - **Branch target**: branch yang menjadi basis dan tujuan PR (default `development`).
 - **Draft**: branch kerja per pengguna (di-checkout dari branch target) + sesi chat + workspace sandbox. Privat sampai finalize.
 - **Catalog**: daftar scenario dari `.feature`, dikelompokkan ke kategori flow dari tag `@flow:`, plus status per env dari hasil run.
@@ -87,17 +89,17 @@ Izin tulis ke repo tetap dibatasi izin GitHub milik pengguna.
 
 ### 8.1 Project dan koneksi repo
 
-- FR-1. Menghubungkan Project ke repo GitHub lewat GitHub App dan memilih branch target.
+- FR-1. Gunakan repository dan branch target yang sudah dikonfigurasi; tidak ada UI baru untuk mengubah koneksi repository.
 - FR-2. Impor awal: parse semua `.feature` di branch target ke catalog (tanpa riwayat run).
 - FR-3. Scaffold repo baru (lihat Lampiran A) dengan skill default.
-- FR-4. Kelola anggota Project (Engineer atau Viewer).
+- FR-4. Engineer melihat semua akun dan hanya dapat membuat, menonaktifkan, dan mereset password Viewer. Tidak ada pendaftaran Viewer publik.
 
-### 8.2 Environment dan secret
+### 8.2 Environment dan Variables
 
-- FR-5. CRUD env per Project: nama, base URL, variabel, secret.
-- FR-6. Secret terenkripsi at rest, write-only, tidak pernah ditampilkan ulang, dan dimasking di log dan trace.
-- FR-7. Secret env disuntikkan ke worker atau sandbox sebagai environment variable saat run atau eksplorasi; model tidak melihat nilainya.
-- FR-8. Env dapat ditandai *protected* sebagai penanda visual dan pencatatan audit (tidak memblokir akses pada MVP).
+- FR-5. Semua role memilih environment dari konfigurasi automation; tidak ada CRUD environment.
+- FR-6. Preferensi environment dan Variables nonrahasia disimpan per akun di localStorage. Password dan token Variables hanya berada di memori selama diperlukan, bukan Web Storage, database, chat, log, atau evidence; bersihkan saat logout dan setelah penggunaan yang sesuai.
+- FR-7. Kirim Variables hanya ke run atau eksplorasi yang memerlukannya; model tidak melihat nilai rahasia.
+- FR-8. Validasi Variables mengikuti konfigurasi dan skema automation; tidak ada pengelolaan secret Project.
 
 ### 8.3 Catalog
 
@@ -166,9 +168,9 @@ Fitur jadwal ditunda dan belum tersedia di preview lokal. Kebutuhan berikut dica
 
 ### 8.10 Akses dan audit
 
-- FR-51. Login dengan GitHub (GitHub App OAuth); identitas yang sama dipakai untuk commit dan PR.
+- FR-51. Engineer login dengan GitHub App OAuth; Q-Rex memakai otorisasi GitHub Engineer aktif untuk operasi branch dan PR. Viewer login dengan username/password tanpa sign-up.
 - FR-52. Agent dan semua peran boleh bekerja di semua env; pengamanan data bergantung pada aturan data-safety di skill (record milik E2E, izin sebelum menyentuh seed data).
-- FR-53. Audit log: siapa, kapan, env mana, dan aksi apa untuk aksi agent yang berinteraksi dengan env, run, perubahan secret, dan PR.
+- FR-53. Audit log: siapa, kapan, env mana, dan aksi apa untuk aksi agent yang berinteraksi dengan env, run, dan PR.
 
 ## 9. Adaptasi Skill
 
@@ -185,8 +187,8 @@ Skill tetap di repo test dan perlu disesuaikan karena source FE tidak tersedia d
 
 Semua tabel berkunci `project_id` agar siap multi-Project.
 
-- `projects`, `project_members` (role: engineer atau viewer), `users` (identitas GitHub).
-- `environments`, `environment_variables` (nilai terenkripsi, write-only).
+- `projects`, akun Engineer dengan ID GitHub stabil dan akun Viewer dengan username unik, role, status, password hash, dan sesi yang dapat dicabut.
+- Konfigurasi environment berasal dari automation; Variables rahasia tidak disimpan sebagai data Project.
 - `user_ai_credentials` (provider, key terenkripsi) dan `ai_usage`.
 - `drafts` (branch, base\_ref, status: active, finalized, archived, owner), `draft_sessions`, dan `messages`.
 - `flows` dan `scenarios` (scenario\_id, flow\_id, judul, tag, prioritas, langkah, source\_path, ref, commit\_sha). Catalog resmi = ref branch target; catalog draft di-cache per draft + SHA.
@@ -214,7 +216,7 @@ Semua tabel berkunci `project_id` agar siap multi-Project.
 
 ## 12. Kebutuhan Non-Fungsional
 
-- **Keamanan**: enkripsi secret dan API key at rest (envelope encryption); tidak ada secret di log, trace, atau prompt; sandbox terisolasi antar sesi; egress sandbox dibatasi ke env target, GitHub, dan endpoint yang diperlukan. Karena agent dan semua pengguna boleh di semua env, audit log wajib.
+- **Keamanan**: enkripsi token OAuth dan API key at rest (envelope encryption); tidak ada secret di log, trace, atau prompt; sandbox terisolasi antar sesi; egress sandbox dibatasi ke env target, GitHub, dan endpoint yang diperlukan. Karena agent dan semua pengguna boleh di semua env, audit log wajib.
 - **Privasi evidence**: screenshot, video, dan file bukti dapat memuat data internal; bucket privat, akses signed URL, dan redaksi nilai secret.
 - **Keandalan**: sesi agent dapat dilanjutkan setelah gangguan; pemulihan job dan antrean tahan restart ditunda bersama worker hosted.
 - **Performa**: progres run live; UI catalog tetap responsif pada ribuan scenario.
@@ -225,20 +227,20 @@ Semua tabel berkunci `project_id` agar siap multi-Project.
 
 **MVP**
 
-- Project Converge (skema multi-Project), koneksi GitHub, env dan secret, anggota (Engineer dan Viewer).
+- Project Converge (skema multi-Project), repository terkonfigurasi, environment automation, dan akun Engineer dan Viewer.
 - Catalog dari repo, run dari checkout saat ini pada satu env per permintaan, pilihan scenario/feature/kategori, satu run aktif per proses API, hasil terbaru per scenario/env dengan status passed/failed/skipped, dan evidence terbaru.
 - Agent + skill (`ask-qa` dipangkas, `write-prd`, `write-e2e-scenarios`, `write-e2e-code`) dan BYOK API key.
 - Draft → sinkronisasi → PR, serta History PR.
 
 **Fase 2**
 
-- Jadwal cron dan notifikasi email, pemilihan tag atau banyak env sekaligus, worker container dan antrean tahan restart, batas konkurensi per env lintas instance, UI multi-Project, login plan (Sign in with ChatGPT), notifikasi Slack, ekspor evidence ke Google Drive, penyebaran perbaikan skill lintas Project, run otomatis setelah merge, dan pagar teknis untuk env protected.
+- Jadwal cron dan notifikasi email, pemilihan tag atau banyak env sekaligus, worker container dan antrean tahan restart, batas konkurensi per env lintas instance, UI multi-Project, login plan (Sign in with ChatGPT), notifikasi Slack, ekspor evidence ke Google Drive, penyebaran perbaikan skill lintas Project, run otomatis setelah merge, dan kontrol akses environment tambahan.
 
 ## 14. Risiko dan Mitigasi
 
 - **Subscription tidak bisa dipakai di semua provider.** Anthropic melarang token OAuth plan Free, Pro, dan Max di produk pihak ketiga (kebijakan Februari 2026), sedangkan OpenAI membuka plan usage untuk aplikasi yang memenuhi syarat (September 2026). Mitigasi: MVP memakai API key; adapter auth disiapkan; verifikasi syarat dan kebijakan sebelum fase 2.
 - **Kualitas tool-calling berbeda antar model.** Mitigasi: daftar model teruji, evaluasi skill per model, pesan galat yang jelas.
-- **Pengamanan data hanya lunak (instruksi skill)** karena agent boleh di semua env. Mitigasi: audit log, penanda env protected, pagar teknis di fase 2.
+- **Pengamanan data hanya lunak (instruksi skill)** karena agent boleh di semua env. Mitigasi: audit log dan pagar teknis di fase berikutnya.
 - **Eksplorasi tanpa source FE** menghasilkan PRD berbasis perilaku teramati. Mitigasi: label `observed` dan gerbang validasi.
 - **Konflik antar draft** pada file bersama. Mitigasi: sinkronisasi sebelum finalize dan bantuan agent.
 - **Branch draft di GitHub terlihat oleh siapa pun yang punya akses repo** meski tidak tampil di app. Mitigasi: dokumentasikan; pertimbangkan prefix dan kebijakan akses repo.
@@ -277,4 +279,4 @@ Semua tabel berkunci `project_id` agar siap multi-Project.
 - `.agents/skills/` berisi skill hasil adaptasi + `playwright-cli` dan referensinya.
 - Record PRD database beridentifier virtual `docs/prd/<module>/<menu>.md`; scenario dan kategori flow berada di `<menu>.feature` atau child files di `<module>/<menu>/`, sesuai [test organization](automation/test-organization.md).
 - MSW untuk scenario `@mock`, `package.json`, dan `tsconfig` minimal.
-- Tidak ada `.env.local` di repo; semua nilai env datang dari app.
+- File `.env.local` lokal tetap diabaikan Git; Variables untuk UI diberikan oleh pengguna.
