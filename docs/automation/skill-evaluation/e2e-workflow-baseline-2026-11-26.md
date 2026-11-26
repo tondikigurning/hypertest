@@ -97,3 +97,55 @@ Final follow-up: same eight feature identities, target configuration, authentica
 Follow-up 1: **8/8 = 100%**, 0 failed, 0 skipped, 0 blocked and 0 not run; 61.89 s wall time. Follow-up 2: **7/8 = 87.5%**, 1 failed, 0 skipped, 0 blocked and 0 not run; 104.74 s wall time. Authentication passed in both. In the remaining failure, the shell appeared but the search control did not become visible within 30 seconds during initial navigation. The saved snapshot does not establish whether the cause was application loading, environment or another issue. No automatic reload, assertion weakening or skip was introduced. Two trials do not establish long-term stability.
 
 These results are comparable as a narrow test-code experiment, with the caveats that tenant data/state was not frozen, prior checkout changes continued outside the guarded paths, and the original baseline's pagination skip may have reflected retained filters. The follow-up cannot establish that the scenario/code skills autonomously produce better tests or shorten authoring. Evaluate that separately with paired, independently run authoring sessions using the same scope, model/effort, reviewed PRD, target state and review gates; record active scenario/code work separately from review wait, then assess complete intent/assertion coverage and repeated per-scenario outcomes without changing selection or mock/skip rules.
+
+## Skill follow-up — 2026-11-26, base `aac0ccb`
+
+The checkout was clean before this follow-up. Reviewed the preceding changes (`26b3f17`, `0e1b325`), saved exploration/handoffs, Report Templates POM/steps and local regression fixtures, runner/config/types, skill callers and shared review/reuse/data-safety contracts. Relevant prior terminal conversations were recovered locally for context and aggregate usage/tool activity only; private transcripts, tenant details and credentials are not copied here. The earlier investigation includes substantial cached prompt input and repeated diagnostic commands, but spans investigation, review waits and execution. It is not a controlled measurement of scenario/code authoring cost, and cannot establish a token/time saving for these edits.
+
+The strongest established failures remain those reproduced above: the dialog title's assumed heading semantics, incomplete list readiness and a reset completing before results. The remaining 30-second loading failure and historical Knowledge Management visibility/click failures still lack discriminating evidence; no application defect or lifecycle root cause is asserted. Shared lifecycle provisioning is a high-impact investigation target, not a proven cause.
+
+The instruction audit found decision gaps behind those failures: a generic requirement to verify locators/wait for settled results without a reusable transition contract; troubleshooting that presented symptoms as causes and suggested adding a mock tag without checking reviewed intent; repeated scope/reuse/review prose across entrypoints and references. Root `tsconfig.json` also excludes E2E, so its successful check alone cannot establish E2E type safety. These are observed instruction/configuration properties, not proof that every prior model failure came from them.
+
+Changes:
+
+- Shortened both skill entrypoints while retaining eligibility, whole-scope coverage, stable identities, cumulative/native review gates, external evidence states and data-safety links. Reviews still present every new/changed scenario and requirement-to-outcome coverage; detailed review preparation is disclosed at that step.
+- Added one shared reliability reference for scenario prerequisites/target/transition/outcome, verified locator semantics, causal readiness, negative assertions, independent setup and explicit failure-versus-absence handling. It does not require optional locator evidence before an otherwise evidenced scenario can be reviewed.
+- Implementation now calls for actual scoped E2E types, full diagnostics, representative shared-path validation before propagation, complete final selection, first-attempt accounting and bounded hypothesis-driven reruns. No blanket reload, mutation retry or timeout escalation was introduced.
+- Reworked troubleshooting into evidence to check and conditional corrections. Adding a mock requires existing reviewed intent or scenario review; failure or incomplete readiness cannot be hidden as a skip.
+
+Whitespace-delimited word counts, measured on actual files with the same method (not tokenizer measurements):
+
+| Instruction | Before | After |
+| --- | ---: | ---: |
+| Scenario entrypoint | 3,406 | 1,296 |
+| Code entrypoint | 2,360 | 1,384 |
+| Combined entrypoints | 5,766 | 2,680 |
+
+The final entrypoints are 53.5% shorter by this measure. Q-Rex includes the active entrypoint in `systemForStep()` in `agent-session.mjs`, so shrinking it reduces repeated instruction payload. References still consume context when consulted; the final added reliability and review references total 1,789 words. These figures do not establish a 53.5% reduction in complete workflow tokens, provider cost or elapsed time. `write-prd` and its shared contracts were preserved.
+
+Behavioral validation used the [six offline requests](e2e-reliability-cases.md) and an independent agent with no parent discussion or proposed answers, an immutable instruction snapshot and only synthetic facts. Its permission scope was snapshot reads and temporary output writes; no tenant, credentials, live browser, publication or BDD generation. Cases request actual POM repairs, a scenario batch/review and decisions about lifecycle uncertainty, Q-Rex review blocking, incomplete checks and cost claims. The [archived actual responses and generated artifacts](e2e-reliability-responses.md) retain the initial output and the targeted final follow-up.
+
+| Case | Observed initial decision / artifact | Assessment |
+| --- | --- | --- |
+| 1 — selector | Text-scoped dialog, delayed insertion awaited, disabled Next assertion retained | Local emitted-code fixture passed. |
+| 2 — reset / no-match | Awaited a reset busy cycle without requiring row-count change; busy timeout propagated. However, missing empty text returned false without positively establishing matching rows. | Correction needed; emitted code passed 5/6 initial browser fixtures, failing the unresolved-result guard. |
+| 3 — lifecycle | Reconciled uncertain Save before another mutation, rejected historical seed permission, preserved exact owned cleanup and independent setup | Supported decisions; no live lifecycle or diagnostics execution claimed. |
+| 4 — scenarios | Authored create/detail, cancel and validation; kept unavailable-role branch blocked and flow pending; prepared exact-source manual review and requirement mapping | Supported scope and review decisions; no invented role, approval, locator or execution. |
+| 5 — Q-Rex | Workspace-wide cumulative review block honored despite eligible baseline scenario and chat Yes | Native review required; no implementation or runner workaround. |
+| 6 — completion/cost | Retained missing collection/types and stale post-edit execution; first-attempt 3/5 distinguished from retry-green; no measured token/time improvement claimed | Supported evidence accounting and next actions. |
+
+The case-2 observation prompted a narrow instruction correction: both values of a boolean prerequisite need positive evidence, and neither/both result states must remain errors. Also clarified that existing application signals should precede custom observation machinery, and that independent mutable setup does not prohibit safe reuse of prior owned data. The input exercise now explicitly defines the boolean caller and unresolved/conflicting rendering states; its original wording had room for interpretation. A fresh evaluator received only the final snapshot and this clarified case, without earlier answers or failure diagnostics. It generated a simpler list POM with bounded observation of explicit rows versus empty state. Because both instructions and fixture wording changed, this is not a controlled causal comparison of the skill alone.
+
+The [repeatable local browser harness](verify-generated-e2e.mjs) ran the initial selector plus final list POM after strict TypeScript compilation: seven cases cover delayed dialog, reset with unchanged row count, stale empty state while busy, settled empty state, indefinitely busy render, neither result and conflicting results. These use synthetic DOM and abort all browser requests; no tenant or credentials are involved. An initial `tsx` harness attempt also exposed a serialization-helper error inside the generated MutationObserver callback. That error did not reproduce after TypeScript emission, so it is not attributed to the tenant runner or used as a skill root cause. The conflicting-state fixture was corrected to give the empty message its own exact-text element; a parent containing both row text and empty text did not exercise that verified locator.
+
+To reproduce, recover `selector.ts` from the archived initial output and `list.ts` from the final output into an ignored folder under `e2e/test-results/` (so installed E2E dependencies resolve). From the repository root, compile those two files with `pnpm.cmd exec tsc --strict --target ES2022 --module ESNext --moduleResolution Bundler --skipLibCheck --types node --outDir <folder>/compiled <folder>/selector.ts <folder>/list.ts`, then run `node docs/automation/skill-evaluation/verify-generated-e2e.mjs <folder>/compiled`. This does not generate or execute BDD.
+
+Snapshot fingerprints sort all Markdown paths under `.agents/skills` plus `docs/automation/test-organization.md`, hashing each relative `/` path, NUL, LF-normalized UTF-8 content, NUL:
+
+| Snapshot | Files | SHA-256 |
+| --- | ---: | --- |
+| Baseline at this turn | 33 | `d7e0fc2a1b5b2eefe2d5d1e064620f58e27b1f124893264d9e225b86b01bdf84` |
+| Initial six-case candidate | 35 | `c0ee49c7938cb3f0663fa6e0e03d73eb5a55c477a81aebb19eeab9a0fddee768` |
+| Final targeted candidate | 35 | `3d716b6513525633b1d3dbc1f35f98081c6e7df6830fb1ee8d3e01636c4dbbd9` |
+
+Initial generated raw-byte identities: selector `6724b2e4b298049e2b4f4762661f92aefbb2cbf4ce73d80cf96a31487c67b3da`, list `591c70e6dfac99c0ba48bd8803e46d5a7a4fa643be75e82457179c7f9681c5a3`, feature `d5bea7aba14ec8bdccfdb4107415f95feb33d34c8705d18a2e2cc7abf4d7a7ef`. Final generated list: `fd91ca985ad2cd2f03d2e628d6a22fca696531577ff7b90a5a132d4acd8189fe`. The initial full case text has SHA-256 `6c7cb0687290135f412d2baeec2f3049f63a90c8131544b1682c231feb54e6d0`; the retained case file includes the disclosed case-2 clarification. The evaluators inherited the active model; no exact model/provider identifier was exposed or inferred. Each exercise was tried once per stated snapshot, not a statistical sample across models.
