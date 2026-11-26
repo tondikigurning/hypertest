@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import type { Scenario } from "./scenario";
 
 const catalogApi = "/api/scenarios";
-const catalogSnapshot = "/scenario-catalog.json";
+const catalogSnapshot = "/api/scenarios/snapshot";
 
 async function readCatalog(response: Response | null): Promise<Array<Scenario> | null> {
   if (!response?.ok || !response.headers.get("content-type")?.includes("application/json")) return null;
@@ -31,7 +31,7 @@ export function useScenarioCatalog(completedRunId: string | undefined, environme
             () => null,
           )
         : null;
-      const usingSnapshot = !response;
+      const usingSnapshot = !response || response.status >= 500;
       if (usingSnapshot) {
         response = await fetch(catalogSnapshot, { signal: controller.signal }).catch(() => null);
       }
