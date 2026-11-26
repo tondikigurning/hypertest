@@ -8,17 +8,24 @@ export class ReportTemplatesPage {
     constructor(private readonly page: Page) {}
 
     private get table() { return this.page.getByRole("table").first(); }
-    private get selector() { return this.page.getByRole("dialog").filter({ has: this.page.getByRole("heading", { name: "Select Report Type" }) }); }
+    private get selector() { return this.page.getByRole("dialog").filter({ has: this.page.getByText("Select Report Type", { exact: true }) }); }
+
+    private async waitForListReady() {
+        await expect(this.page.getByTestId("filter-search-input")).toBeVisible({ timeout: 30_000 });
+        await expect(this.table.getByRole("button", { name: "Report Name", exact: true })).toBeVisible({ timeout: 30_000 });
+    }
 
     async navigate() {
         await this.page.goto("/reports/templates", { waitUntil: "domcontentloaded" });
         await expect(this.page).not.toHaveURL(/\/login/);
         await expect(this.page.getByRole("button", { name: "Create New" })).toBeVisible();
+        await this.waitForListReady();
     }
     async openFromReports() {
         await this.page.goto("/reports/all-reports", { waitUntil: "domcontentloaded" });
         await this.page.getByTestId("reports-templates-menu-item").click();
         await expect(this.page.getByRole("button", { name: "Create New" })).toBeVisible();
+        await this.waitForListReady();
     }
     async expectList() {
         await expect(this.page.getByRole("button", { name: "Create New" })).toBeVisible();
@@ -36,17 +43,48 @@ export class ReportTemplatesPage {
     }
     async prepareFirstPage() {
         await this.navigate();
+        const search = this.page.getByTestId("filter-search-input");
+        const clear = this.page.getByTestId("btn-clear-filters");
+        const hadCriteria = (await search.inputValue()) !== "" || await clear.isVisible();
+        const previousRange = hadCriteria ? await this.rangeText().catch(() => "") : "";
+        if (hadCriteria) {
+            await this.reset();
+            await expect(search).toBeEmpty();
+            await expect(clear).toBeHidden();
+        }
+        await expect.poll(async () => {
+            const range = await this.rangeText().catch(() => "");
+            return this.parseRange(range) !== null && (!hadCriteria || range !== previousRange);
+        }, { message: "The unfiltered pagination range did not settle after clearing list criteria" }).toBe(true);
         const previous = this.page.getByRole("button", { name: "Previous Page" });
         while (await previous.isEnabled()) await previous.click();
         this.initialRange = await this.rangeText();
     }
-    async hasNextPage() { return this.page.getByRole("button", { name: "Next Page" }).isEnabled(); }
+    async hasNextPage() {
+        const range = this.parseRange(this.initialRange);
+        if (!range) throw new Error("The first-page pagination range is unavailable");
+        const next = this.page.getByRole("button", { name: "Next Page" });
+        if (range.end < range.total) {
+            await expect(next).toBeEnabled();
+            return true;
+        }
+        await expect(next).toBeDisabled();
+        return false;
+    }
     async nextPage() { await this.page.getByRole("button", { name: "Next Page" }).click(); }
     async previousPage() { await this.page.getByRole("button", { name: "Previous Page" }).click(); }
+    private parseRange(text: string) {
+        const match = text.match(/([\d,]+)\s*[-–]\s*([\d,]+)\s+of\s+([\d,]+)/);
+        return match ? {
+            start: Number(match[1].replaceAll(",", "")),
+            end: Number(match[2].replaceAll(",", "")),
+            total: Number(match[3].replaceAll(",", "")),
+        } : null;
+    }
     private rangeStart(text: string) {
-        const match = text.match(/(\d+)\s*[-–]\s*\d+\s+of\s+\d+/);
+        const match = this.parseRange(text);
         if (!match) throw new Error(`Cannot parse the displayed row range: ${text}`);
-        return Number(match[1]);
+        return match.start;
     }
     async expectRangeChanged() {
         const first = this.rangeStart(this.initialRange);
@@ -73,6 +111,8 @@ export class ReportTemplatesPage {
     async reset() {
         await this.page.keyboard.press("Escape");
         await this.page.getByTestId("btn-clear-filters").click();
+        await expect(this.page.getByTestId("filter-search-input")).toBeEmpty();
+        await this.expectPopulated();
     }
     async expectPopulated() { await expect.poll(() => this.hasRows()).toBe(true); }
     async openCreate() { await this.page.getByRole("button", { name: "Create New" }).click(); }

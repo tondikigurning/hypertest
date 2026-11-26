@@ -61,6 +61,12 @@
 
 - Observed 2026-11-25, STT1, authenticated account, role unknown. Searching for the visible system template `Case Performance Report` returned a matching list link; opening it showed report type `(View Case Reporting Base)` and a table. `getByTestId('report-pivot-config-trigger')` opened a summary generated as `getByTestId('report-pivot-config-summary')` with Date Filter and Values. A later type-selector check confirmed `Case Number` appears in the selected OLA type preview. These observations do not establish test ownership or availability on other tenants. No mutation, image, trace or full request captured. Browser back via keyboard did not visibly return during exploration; candidate code navigates back to the list and repeats search instead.
 
+### RTM-code-03 — Readiness, selector and retained search
+
+- Observed 2026-11-26 using a separate terminal browser on the configured target; role and application build unknown. The visible list shell and disabled pagination appeared before the actual search control and Report Name header. Once those controls appeared, the list could still contain a retained search. After clearing that search and allowing the list to settle, the displayed range and enabled Next control established that more than one page was available. This does not establish the state of earlier runs or other tenants.
+- The report type selector was a dialog containing the exact visible text `Select Report Type`, but that text was not exposed as a heading. Its Case Management and Next buttons were visible inside the dialog. After a no-match search, resetting and immediately searching again could leave the previous empty state visible while the reset later replaced the new input; awaiting the restored populated list avoided that observed race.
+- Two read-only runs of the repaired checkout selected eight scenarios; all passed once, and seven passed in the other run. In the latter, the list shell remained present but the search control did not appear within 30 seconds. The cause and any relation to tenant availability remain unverified. Run evidence is recorded in `docs/automation/skill-evaluation/e2e-workflow-baseline-2026-11-26.md`; screenshots, traces, credentials and record identities are intentionally not copied here.
+
 ## Flow confirmation provenance
 
 ### Full menu inventory
