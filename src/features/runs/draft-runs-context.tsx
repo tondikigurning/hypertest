@@ -89,7 +89,7 @@ export function DraftRunsProvider({ children }: { children: ReactNode }) {
         if (!controller.signal.aborted)
           setError(cause instanceof Error ? cause.message : "Draft evidence could not be saved.");
       } finally {
-        if (!controller.signal.aborted) timer = window.setTimeout(poll, 2500);
+        if (!controller.signal.aborted) timer = window.setTimeout(poll, 1000);
       }
     };
     void poll();

@@ -3302,3 +3302,15 @@ body:has(dialog[open]) .agent-widget:not(:has(.agent-confirm-dialog[open])) {
 .exploration-expand {
   margin-left: auto;
 }
+
+.agent-scenario-request ul {
+  margin: 8px 0;
+  padding-left: 20px;
+  overflow-wrap: anywhere;
+}
+
+.agent-scenario-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}

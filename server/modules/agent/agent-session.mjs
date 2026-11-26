@@ -899,6 +899,8 @@ export function createSession({
         throw new Error("Changes have changed since review. Review them again.");
       const changes = await scenarioChanges(workspace, baseCommit);
       if (!changes.scenarioDigest) throw new Error("There are no scenario changes to approve.");
+      if (changes.scenarioDigest === approvedScenarioDigest)
+        throw new Error("This scenario version is already approved.");
       const pendingChanges = await scenarioChanges(workspace);
       if (pendingChanges.hasImplementation && changes.scenarioDigest !== approvedScenarioDigest)
         throw new Error(
@@ -1596,7 +1598,7 @@ export function createSession({
             const changes = await scenarioChanges(workspace, baseCommit);
             if (!allowAll && changes.scenarioDigest && changes.scenarioDigest !== approvedScenarioDigest)
               throw new Error(
-                "Review and approve the scenario changes in Changes before implementing them. Stop and resume after approval.",
+                "Review and approve the scenario changes using the control in Chat or Changes before implementing them. Stop and resume after approval.",
               );
           }
           const instructions = await readSkill(name);
@@ -1735,7 +1737,7 @@ export function createSession({
           "Read the database PRD for matching product context before asking questions. Preserve validated requirements and clearly identify unconfirmed observations and assumptions.",
           hasApprovedScenarios
             ? "The initial scenario snapshot was approved in Changes. Writes and runs revalidate its current digest."
-            : "Scenario intent changes must be approved in Changes before implementation or execution. Existing implemented scenarios may be technically repaired without changing intent.",
+            : "Scenario intent changes must be approved using the control in Chat or Changes before implementation or execution. Existing implemented scenarios may be technically repaired without changing intent.",
           syncConflicts.length
             ? `Resolve these untrusted conflict paths in this workspace only and preserve both intents: ${JSON.stringify(syncConflicts)}. Do not commit; the user must review and synchronize again.`
             : "",

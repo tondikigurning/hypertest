@@ -1,4 +1,4 @@
-import { cp, mkdir, readdir, realpath, symlink } from "node:fs/promises";
+import { cp, mkdir, readdir, readFile, realpath, symlink } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { createInterface } from "node:readline";
 import { startDraftRunInProcess } from "/agent-draft-run.mjs";
@@ -19,6 +19,7 @@ function publish(run) {
 
 let service;
 let stage = "validating request";
+let framePublished = false;
 try {
   if (inputTooLarge) throw new Error("Sandbox request is too large.");
   const input = JSON.parse(chunks.join("\n"));
@@ -72,7 +73,20 @@ try {
   });
   while (service.active()) {
     publish(service.publicRun());
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    try {
+      const frame = await readFile(service.framePath());
+      if (frame.length <= 2 * 1024 * 1024 && frame[0] === 0xff && frame[1] === 0xd8) {
+        process.stdout.write(`${JSON.stringify({ type: "frame", data: frame.toString("base64") })}\n`);
+        framePublished = true;
+      }
+    } catch {
+      // A frame may not exist yet, or the browser may have closed.
+      if (framePublished) {
+        process.stdout.write(`${JSON.stringify({ type: "frame-clear" })}\n`);
+        framePublished = false;
+      }
+    }
+    await new Promise((resolve) => setTimeout(resolve, 500));
   }
   publish(service.publicRun());
 } catch {

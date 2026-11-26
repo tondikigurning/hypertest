@@ -8,6 +8,8 @@ import type { Scenario } from "../../scenarios/scenario";
 import { listDraftRuns, type SavedDraftRun } from "../draft-evidence-store";
 import { useDraftRuns } from "../use-draft-runs";
 import { useRunEnvironment } from "../use-run-environment";
+import { LiveRun } from "./live-run";
+import { RunDialogHeading } from "./run-dialog-heading";
 import { RunPanel } from "./run-panel";
 
 export function DraftRun({ scenario }: { scenario: Scenario }) {
@@ -16,14 +18,17 @@ export function DraftRun({ scenario }: { scenario: Scenario }) {
   const [saved, setSaved] = useState<Array<SavedDraftRun>>([]);
   const [actionError, setActionError] = useState("");
   const [starting, setStarting] = useState(false);
+  const [showLive, setShowLive] = useState(false);
   const [confirmation, setConfirmation] = useState<"run" | "discard">();
   const [currentDigest, setCurrentDigest] = useState("");
   const [activeDraftId, setActiveDraftId] = useState(() => getActiveDraftId());
   const target = config?.environments.find((entry) => entry.id === environment)?.target;
-  const environmentLabel = config?.environments.find((entry) => entry.id === environment)?.label || environment;
   const identityUnavailable = scenario.availabilityReasons.some((reason) =>
     reason.startsWith("The draft scenario cannot be matched to one unique scenario identity."),
   );
+  useEffect(() => {
+    if (!run) setShowLive(false);
+  }, [run]);
   useEffect(() => {
     const update = () => setActiveDraftId(getActiveDraftId());
     window.addEventListener("automation-agent-draft-change", update);
@@ -94,6 +99,7 @@ export function DraftRun({ scenario }: { scenario: Scenario }) {
     setActionError("");
     try {
       await start(scenario.id, scenario.file, environment);
+      setShowLive(true);
     } catch (cause) {
       setActionError(cause instanceof Error ? cause.message : "Could not start the draft run.");
     } finally {
@@ -128,7 +134,7 @@ export function DraftRun({ scenario }: { scenario: Scenario }) {
             ) : (
               <>
                 <Icon name="player-play-filled" aria-hidden="true" className="play-icon" />
-                <span>Run draft scenario</span>
+                <span>Run scenario</span>
               </>
             )}
           </PrimaryButton>
@@ -211,33 +217,28 @@ export function DraftRun({ scenario }: { scenario: Scenario }) {
           </section>
         )}
       </RunPanel>
+      {showLive && run && <LiveRun run={run} draft onClose={() => setShowLive(false)} />}
       {confirmation && (
         <Modal
-          className="draft-run-confirm-dialog"
+          className="group-run-dialog"
           labelledBy="draft-run-confirm-title"
           onClose={() => setConfirmation(undefined)}
         >
-          <h2 id="draft-run-confirm-title">
-            {confirmation === "run" ? "Run draft scenario?" : "Discard temporary evidence?"}
-          </h2>
+          <RunDialogHeading
+            titleId="draft-run-confirm-title"
+            title={confirmation === "run" ? "Run scenario" : "Discard temporary evidence?"}
+            description={
+              confirmation === "run" ? scenario.title : "This removes the temporary evidence for this draft run."
+            }
+            closeLabel="Close confirmation"
+            onClose={() => setConfirmation(undefined)}
+          />
           {confirmation === "run" ? (
-            <>
-              <p>Confirm the scenario and target before starting the isolated run.</p>
-              <div className="draft-run-confirm-details">
-                <span>Scenario</span>
-                <strong>{scenario.title}</strong>
-                <span>Environment</span>
-                <strong>{environmentLabel}</strong>
-                <small>{target}</small>
-              </div>
-              <p className="draft-run-confirm-safety">
-                By running, I confirm that I reviewed the scenario, setup and implementation and will use only E2E-owned
-                data: search, create, then skip if suitable data is unavailable.
-              </p>
-            </>
-          ) : (
-            <p>This removes the temporary evidence for this draft run.</p>
-          )}
+            <p>
+              By running, I confirm that I reviewed the scenario, setup and implementation and will use only E2E-owned
+              data: search, create, then skip if suitable data is unavailable.
+            </p>
+          ) : null}
           <div className="draft-run-confirm-actions">
             <button type="button" onClick={() => setConfirmation(undefined)}>
               Cancel

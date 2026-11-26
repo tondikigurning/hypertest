@@ -276,7 +276,6 @@ export function GroupRun({ selection, name, items }: { selection: RunSelection; 
                         : ""}
                     </small>
                   </span>
-                  {item.availability === "unavailable" && <span className="group-unavailable">Unavailable</span>}
                 </li>
               ))}
             </ul>

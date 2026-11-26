@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { join, resolve } from "node:path";
 import { Router } from "express";
 import { isLocalRequest } from "../../shared/local-request.mjs";
@@ -96,6 +96,16 @@ function sessionFor(id, draftId, draft) {
     );
   }
   return sessions.get(key);
+}
+
+export function sendDraftRunFrame(service, req, res) {
+  if (!service?.active() || !service.matches(req.query.run)) return res.status(404).end();
+  const frame = service.liveFrame();
+  if (!frame) return res.status(204).end();
+  const etag = `"${createHash("sha256").update(frame).digest("hex")}"`;
+  res.setHeader("ETag", etag);
+  if (req.headers["if-none-match"] === etag) return res.status(304).end();
+  return res.type("image/jpeg").send(frame);
 }
 
 export function createAgentRouter({ resolveSession = sessionFor, resolveIdentity = resolveLocalPreviewIdentity } = {}) {
@@ -465,6 +475,7 @@ export function createAgentRouter({ resolveSession = sessionFor, resolveIdentity
     }
   });
   router.get("/draft-run", (req, res) => res.json(req.agentSession.draftRun()));
+  router.get("/draft-run-frame", (req, res) => sendDraftRunFrame(req.agentSession.draftEvidenceService(), req, res));
   router.get("/draft-run-evidence", (req, res) => {
     const service = req.agentSession.draftEvidenceService();
     if (!service) return res.status(404).json({ error: "Evidence unavailable." });
@@ -483,9 +494,11 @@ export function createAgentRouter({ resolveSession = sessionFor, resolveIdentity
       res.status(409).json({ error: error.message });
     }
   });
-  router.post("/draft-run/cancel", (req, res) => {
+  router.post("/draft-run/cancel", async (req, res) => {
     try {
-      const run = req.agentSession.cancelDraftRun();
+      if (req.query.run && !req.agentSession.draftEvidenceService()?.matches(req.query.run))
+        return res.status(409).json({ error: "This draft run is no longer active." });
+      const run = await req.agentSession.cancelDraftRun();
       touchLocalDraft(req.agentIdentity.userId, req.agentDraftId);
       res.json(run);
     } catch (error) {

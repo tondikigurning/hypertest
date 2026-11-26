@@ -482,6 +482,7 @@ export function AgentWidget({
   );
   const requestNumber = useRef(0);
   const historyRequestNumber = useRef(0);
+  const reviewRequestNumber = useRef(0);
   const latestResponse = useRef(0);
   const messagesRef = useRef<HTMLDivElement>(null);
   const followMessages = useRef(true);
@@ -894,9 +895,8 @@ export function AgentWidget({
     }
   };
 
-  const reviewDiff = async (force = false) => {
-    if (reviewing || (sending && !force)) return;
-    setView("changes");
+  const loadReview = useCallback(async () => {
+    const sequence = ++reviewRequestNumber.current;
     setReviewing(true);
     setReviewNotice("");
     setError("");
@@ -915,6 +915,7 @@ export function AgentWidget({
         error?: string;
       };
       if (!response.ok) throw new Error(result.error);
+      if (sequence !== reviewRequestNumber.current) return;
       setSession(
         (current) =>
           current && {
@@ -933,14 +934,46 @@ export function AgentWidget({
       });
       setPreview(result.preview ?? []);
     } catch (cause) {
+      if (sequence !== reviewRequestNumber.current) return;
       setPatch(undefined);
       setReviewDigest(undefined);
       setScenarioReview(undefined);
       setPreview([]);
       setError(cause instanceof Error ? cause.message : "Could not load changes.");
     } finally {
-      setReviewing(false);
+      if (sequence === reviewRequestNumber.current) setReviewing(false);
     }
+  }, []);
+
+  const lastMessageId = session?.messages.at(-1)?.id;
+  const sessionAvailable = Boolean(session);
+  const draftRunning = Boolean(draftRun);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Refresh the review when a new decision or turn appears.
+  useEffect(() => {
+    if (!activeDraftId || !sessionAvailable || session?.busy || connectionError || draftRunStarting || draftRunning) {
+      ++reviewRequestNumber.current;
+      setReviewing(false);
+      return;
+    }
+    void loadReview();
+    return () => {
+      ++reviewRequestNumber.current;
+    };
+  }, [
+    activeDraftId,
+    sessionAvailable,
+    session?.busy,
+    lastMessageId,
+    connectionError,
+    draftRunStarting,
+    draftRunning,
+    loadReview,
+  ]);
+
+  const reviewDiff = async (force = false) => {
+    if (reviewing || (sending && !force)) return;
+    setView("changes");
+    await loadReview();
   };
 
   const approveScenarios = async () => {
@@ -953,11 +986,16 @@ export function AgentWidget({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ digest: reviewDigest }),
       });
-      const result = (await response.json()) as { error?: string };
+      const result = (await response.json()) as Session & { error?: string };
       if (!response.ok) throw new Error(result.error);
+      applySnapshot(result, ++requestNumber.current);
       setScenarioReview((current) => current && { ...current, approved: true });
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not approve scenario changes.");
+      setReviewDigest(undefined);
+      setScenarioReview(undefined);
+      setError(
+        `${cause instanceof Error ? cause.message : "Could not approve scenario changes."} Open Changes to review the latest version.`,
+      );
     } finally {
       setSending(false);
     }
@@ -1613,6 +1651,54 @@ export function AgentWidget({
                   ))
                 ),
               )}
+              {scenarioReview?.hasChanges && !session?.busy && !session?.approvalRequest && !session?.userRequest && (
+                <section
+                  className="agent-message agent-scenario-request"
+                  aria-label="Scenario review"
+                  aria-live="polite"
+                >
+                  <strong>Scenario review</strong>
+                  <p>
+                    {session?.allowAll
+                      ? "Allow all is active: this scenario gate is bypassed automatically, without a human review."
+                      : scenarioReview.approved
+                        ? "Approved for this scenario version."
+                        : scenarioReview.hasImplementation
+                          ? "Manual approval is blocked because this draft contains implementation changes. Open Changes for the next steps."
+                          : "Q-Rex prepared scenario changes. Review the preview and full diff, then explicitly approve this version before implementation."}
+                  </p>
+                  <ul>
+                    {preview.map((feature) => (
+                      <li key={feature.file}>
+                        <strong>{feature.file}</strong>
+                        {feature.deleted
+                          ? " ? deleted"
+                          : feature.scenarios.map((draft) => (
+                              <span key={draft.line}>
+                                {" "}
+                                ? {draft.id || "No ID"}: {draft.title} (line {draft.line})
+                              </span>
+                            ))}
+                      </li>
+                    ))}
+                  </ul>
+                  <p>Preview lists all scenarios in changed features; the diff identifies the changes.</p>
+                  <div className="agent-scenario-actions">
+                    <button type="button" disabled={reviewing || sending} onClick={() => void reviewDiff()}>
+                      Open Changes
+                    </button>
+                    {!session?.allowAll && !scenarioReview.approved && !scenarioReview.hasImplementation && (
+                      <button
+                        type="button"
+                        disabled={reviewing || sending || !reviewDigest || Boolean(session?.syncConflicts?.length)}
+                        onClick={() => void approveScenarios()}
+                      >
+                        {sending ? "Approving?" : "Approve scenario changes"}
+                      </button>
+                    )}
+                  </div>
+                </section>
+              )}
               {session?.busy && !session.userRequest && !session.approvalRequest && (
                 <div className="agent-working" role="status">
                   <QRex mood="working" />
@@ -1725,6 +1811,31 @@ export function AgentWidget({
                   </ul>
                 </div>
               )}
+              {canShowReview && scenarioReview?.hasChanges && (
+                <div className="agent-review-section agent-scenario-review">
+                  <h3>Scenario approval</h3>
+                  {session?.allowAll ? (
+                    <p>Allow all is enabled. Scenario changes can proceed without manual approval.</p>
+                  ) : scenarioReview.approved ? (
+                    <p>Approved for the current scenario version. Changes to it will require another review.</p>
+                  ) : scenarioReview.hasImplementation ? (
+                    <p>
+                      Manual approval is unavailable because implementation code is already in this draft. The approval
+                      control and its scope are shown beside Sync below.
+                    </p>
+                  ) : (
+                    <>
+                      <p>
+                        Review the scenario preview and file changes below, then approve this version before
+                        implementation or submission.
+                      </p>
+                      <AgentWorkspaceButton type="button" disabled={sending} onClick={() => void approveScenarios()}>
+                        Approve scenario changes
+                      </AgentWorkspaceButton>
+                    </>
+                  )}
+                </div>
+              )}
               {canShowReview && preview.length > 0 && (
                 <details className="agent-scenario-preview" open>
                   <summary>
@@ -1743,7 +1854,7 @@ export function AgentWidget({
                         feature.scenarios.map((draft) => (
                           <div className="agent-preview-scenario" key={draft.line}>
                             <p>
-                              {draft.id || `Line ${draft.line}`}: {draft.title}
+                              {draft.id || "No ID"}: {draft.title} (line {draft.line})
                             </p>
                             <pre>{draft.steps.join("\n")}</pre>
                           </div>
@@ -1778,31 +1889,6 @@ export function AgentWidget({
                     ))}
                   </pre>
                 </details>
-              )}
-              {canShowReview && scenarioReview?.hasChanges && (
-                <div className="agent-review-section agent-scenario-review">
-                  <h3>Scenario approval</h3>
-                  {session?.allowAll ? (
-                    <p>Allow all is enabled. Scenario changes can proceed without manual approval.</p>
-                  ) : scenarioReview.approved ? (
-                    <p>Approved for the current scenario version. Changes to it will require another review.</p>
-                  ) : scenarioReview.hasImplementation ? (
-                    <p>
-                      Manual approval is unavailable because implementation code is already in this draft. The approval
-                      control and its scope are shown beside Sync below.
-                    </p>
-                  ) : (
-                    <>
-                      <p>
-                        Review the scenario preview and file changes above, then approve this version before
-                        implementation or submission.
-                      </p>
-                      <AgentWorkspaceButton type="button" disabled={sending} onClick={() => void approveScenarios()}>
-                        Approve scenario changes
-                      </AgentWorkspaceButton>
-                    </>
-                  )}
-                </div>
               )}
               {canShowReview && reviewDigest && (
                 <form

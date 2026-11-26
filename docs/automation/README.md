@@ -79,8 +79,8 @@ The default workflow uses the review gates below. When an approval is pending, *
    A full pass plans supported, important smoke and regression branches for each flow. Batches are
    grouped by related outcomes and review/verification effort; deferred or blocked branches stay in
    `.flows.md` gaps so later batches can resume them.
-4. Q-Rex writes one scenario batch and stops for review. Open **Changes**, inspect its preview and
-   diff, then **Approve scenarios**. Chat answers, PRD review and flow confirmation do not replace
+4. Q-Rex writes one scenario batch and stops for review. Review the request in **Chat**, inspect the preview and diff in **Changes**, then use
+   **Approve scenario changes** in either view. Chat answers, PRD review and flow confirmation do not replace
    this approval. A changed scenario snapshot invalidates approval for implementation and execution.
    **Reset draft changes** discards the reviewed draft diff, including commits created by synchronization,
    and returns the worktree to its current target baseline. It clears scenario and flow approvals;

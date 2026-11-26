@@ -1,6 +1,7 @@
 import { Icon } from "@hyperscal/icons";
 import { type ReactNode, useState } from "react";
 import { BrowserPreview, CloseButton, Modal, SectionEyebrow, Spinner } from "../../../components";
+import { agentFetch } from "../../agent/agent-api";
 import { scenarioFailureExplanation } from "../scenario-failure-explanation";
 import type { Run } from "../types";
 
@@ -34,7 +35,7 @@ function LiveRunMessage({
   );
 }
 
-export function LiveRun({ run, onClose }: { run: Run; onClose: () => void }) {
+export function LiveRun({ run, onClose, draft = false }: { run: Run; onClose: () => void; draft?: boolean }) {
   const executionDone = Boolean(run.executionDone || run.done);
   const badgeClass = executionDone ? (run.error ? "failed" : run.status) : "running";
   const badgeLabel = run.cancelRequested
@@ -55,9 +56,12 @@ export function LiveRun({ run, onClose }: { run: Run; onClose: () => void }) {
     setCancelling(true);
     setCancelError("");
     try {
-      const response = await fetch(`/api/local/cancel?${new URLSearchParams({ run: run.id })}`, {
-        method: "POST",
-      });
+      const response = await (draft ? agentFetch : fetch)(
+        `${draft ? "/api/agent/draft-run/cancel" : "/api/local/cancel"}?${new URLSearchParams({ run: run.id })}`,
+        {
+          method: "POST",
+        },
+      );
       if (!response.ok) throw new Error((await response.json()).error || "Unable to stop the run.");
     } catch (error) {
       setCancelError(error instanceof Error ? error.message : "Unable to stop the run.");
@@ -69,7 +73,9 @@ export function LiveRun({ run, onClose }: { run: Run; onClose: () => void }) {
     <Modal className={expanded ? "live-dialog expanded" : "live-dialog"} labelledBy="live-title" onClose={onClose}>
       <header className="live-header">
         <div>
-          <SectionEyebrow>{run.selection?.kind === "scenario" ? "SCENARIO RUN" : "GROUP RUN"}</SectionEyebrow>
+          <SectionEyebrow>
+            {draft ? "DRAFT SCENARIO RUN" : run.selection?.kind === "scenario" ? "SCENARIO RUN" : "GROUP RUN"}
+          </SectionEyebrow>
           <h2 id="live-title">
             {run.scenarioId ||
               (run.selection?.kind === "flow"
@@ -115,9 +121,10 @@ export function LiveRun({ run, onClose }: { run: Run; onClose: () => void }) {
             <span>Browser preview</span>
           </div>
           <BrowserPreview
-            url={`/api/local/live?${new URLSearchParams({ run: run.id })}`}
+            url={`${draft ? "/api/agent/draft-run-frame" : "/api/local/live"}?${new URLSearchParams({ run: run.id })}`}
             done={executionDone}
             label={stageLabels[run.stage] || "Starting browser"}
+            fetchFrame={draft ? agentFetch : fetch}
           />
         </section>
         <aside className="live-progress">
@@ -154,7 +161,12 @@ export function LiveRun({ run, onClose }: { run: Run; onClose: () => void }) {
               {run.evidenceUpload.scenarioIds.length === 1 ? "scenario" : "scenarios"}.
             </LiveRunMessage>
           )}
-          {run.done && run.evidenceUpload?.status === "unavailable" && (
+          {draft && (
+            <LiveRunMessage tone="empty">
+              Draft results and evidence remain separate from official results.
+            </LiveRunMessage>
+          )}
+          {!draft && run.done && run.evidenceUpload?.status === "unavailable" && (
             <LiveRunMessage tone="empty" role="status">
               Evidence was not uploaded. Check the configured storage credentials and whether this run produced
               screenshots or video.

@@ -9,6 +9,7 @@ import { usePrds } from "../features/prds/use-prds";
 import { LiveRun } from "../features/runs/components/live-run";
 import { EnvironmentVariables, GroupRun } from "../features/runs/components/local-run";
 import { useActiveRun } from "../features/runs/use-active-run";
+import { useDraftRuns } from "../features/runs/use-draft-runs";
 import { useRunEnvironment } from "../features/runs/use-run-environment";
 import { RunStatus } from "../features/scenarios/components/run-status";
 import { ScenarioDetails } from "../features/scenarios/components/scenario-details";
@@ -100,6 +101,7 @@ export function App() {
   ]);
   const prdButton = useRef<HTMLButtonElement>(null);
   const activeRun = useActiveRun(true);
+  const { run: activeDraftRun } = useDraftRuns();
   const { config, environment, setEnvironment } = useRunEnvironment();
   const target = config?.environments.find((item) => item.id === environment)?.target;
   useEffect(() => {
@@ -108,6 +110,7 @@ export function App() {
     if (runningEnvironment) setEnvironment(runningEnvironment.id);
   }, [activeRun, config, setEnvironment]);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [draftPreviewOpen, setDraftPreviewOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => window.matchMedia("(max-width: 650px)").matches);
   const isRunning = useCallback(
     (scenario: Scenario) =>
@@ -515,9 +518,6 @@ export function App() {
                                 <span className="scenario-info">
                                   <small>{s.hasId ? s.id : "ID unavailable"}</small>
                                   <ScenarioMetadata scenario={s} />
-                                  {s.availability === "unavailable" && (
-                                    <span className="scenario-badge unavailable">Unavailable</span>
-                                  )}
                                   <RunStatus status={activeStatus(s)} />
                                 </span>
                               </span>
@@ -609,6 +609,30 @@ export function App() {
             </button>
           )}
           {previewOpen && activeRun && <LiveRun run={activeRun} onClose={() => setPreviewOpen(false)} />}
+          {activeDraftRun && !activeDraftRun.done && (
+            <button
+              type="button"
+              className={activeRun && !activeRun.done ? "floating-run floating-run-secondary" : "floating-run"}
+              onClick={() => setDraftPreviewOpen(true)}
+              aria-label="Open live draft run preview"
+            >
+              <span className="floating-run-indicator">
+                <span />
+              </span>
+              <span className="floating-run-copy">
+                <strong>Draft scenario run in progress</strong>
+                <span>
+                  {activeDraftRun.tests.find((test) => test.status === "running")?.title || activeDraftRun.stage}
+                </span>
+              </span>
+              <span className="floating-run-action">
+                View <span aria-hidden="true">&#8599;</span>
+              </span>
+            </button>
+          )}
+          {draftPreviewOpen && activeDraftRun && (
+            <LiveRun run={activeDraftRun} draft onClose={() => setDraftPreviewOpen(false)} />
+          )}
           <AgentWidget
             home={isHome}
             feature={

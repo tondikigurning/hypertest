@@ -524,10 +524,20 @@ test("scenario-only batches can be reviewed cumulatively before implementation c
   const first = "Feature: Orders\n  Scenario: Create\n    Given an order\n";
   const second = `${first}  Scenario: Cancel\n    Given an order\n`;
   await writeFile(featureFile, first);
-  await session.approveScenarios((await session.diff()).digest);
+  const firstReview = await session.diff();
+  await session.approveScenarios(firstReview.digest);
   assert.equal((await session.diff()).scenarioApproved, true);
+  await assert.rejects(session.approveScenarios(firstReview.digest), /already approved/);
+  assert.equal(
+    session
+      .snapshot()
+      .messages.filter((message) => message.text === "I approve the reviewed scenario changes in this workspace.")
+      .length,
+    1,
+  );
 
   await writeFile(featureFile, second);
+  await assert.rejects(session.approveScenarios(firstReview.digest), /changed since review/);
   assert.equal((await session.diff()).scenarioApproved, false);
   await session.approveScenarios((await session.diff()).digest);
   assert.equal((await session.diff()).scenarioApproved, true);

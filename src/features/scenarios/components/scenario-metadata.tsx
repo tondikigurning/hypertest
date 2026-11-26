@@ -11,7 +11,7 @@ export function ScenarioMetadata({ scenario }: { scenario: Scenario }) {
     ...(scenario.draft
       ? [
           {
-            text: `Draft ? ${scenario.draft === "added" ? "New" : scenario.draft === "changed" ? "Changed" : "Deleted"}`,
+            text: "Draft",
             tone: "attention",
           },
         ]

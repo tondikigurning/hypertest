@@ -205,13 +205,40 @@ function publicRun(run) {
     scenarioId: run.scenarioId,
     target: run.target,
     stage: run.stage,
+    executionDone: Boolean(run.executionDone),
     done: run.done,
     error: run.error,
     status: run.status,
     timedOut: Boolean(run.timedOut),
+    cancelRequested: Boolean(run.cancelRequested),
     tests: run.tests || [],
     evidenceUpload: { status: "unavailable", scenarioIds: [] },
     isolated: true,
+  };
+}
+
+export function createDraftRunEventReceiver(run) {
+  let liveFrame;
+  return {
+    receive(event) {
+      if (event.type === "run" && event.run) {
+        const { id: _containerRunId, ...update } = event.run;
+        Object.assign(run, update);
+        if (run.executionDone || run.done) liveFrame = undefined;
+      } else if (event.type === "frame" && typeof event.data === "string" && event.data.length <= 2800000) {
+        const frame = Buffer.from(event.data, "base64");
+        if (
+          !run.done &&
+          !run.executionDone &&
+          frame.length <= 2 * 1024 * 1024 &&
+          frame[0] === 0xff &&
+          frame[1] === 0xd8
+        )
+          liveFrame = frame;
+      } else if (event.type === "frame-clear") liveFrame = undefined;
+      else if (event.type === "error") run.error = event.error;
+    },
+    liveFrame: () => (!run.done && !run.executionDone ? liveFrame : undefined),
   };
 }
 
@@ -325,6 +352,7 @@ export async function startIsolatedDraftRun({ workspace, scenarioId, target, var
   let output = "";
   let cleanupPromise;
   let eventReader;
+  const events = createDraftRunEventReceiver(run);
   function artifactRunDirectory() {
     const temporaryRoot = join(artifactRoot, "tmp");
     try {
@@ -417,8 +445,7 @@ export async function startIsolatedDraftRun({ workspace, scenarioId, target, var
         for (const line of lines) {
           try {
             const event = JSON.parse(line);
-            if (event.type === "run" && event.run) Object.assign(run, event.run);
-            else if (event.type === "error") run.error = event.error;
+            events.receive(event);
           } catch {
             run.error = "The isolated runner returned an invalid status update.";
           }
@@ -437,8 +464,7 @@ export async function startIsolatedDraftRun({ workspace, scenarioId, target, var
         if (output.trim()) {
           try {
             const event = JSON.parse(output.trim());
-            if (event.type === "run" && event.run) Object.assign(run, event.run);
-            else if (event.type === "error") run.error = event.error;
+            events.receive(event);
           } catch {
             run.error = "The isolated runner returned an invalid status update.";
           }
@@ -477,6 +503,7 @@ export async function startIsolatedDraftRun({ workspace, scenarioId, target, var
     publicRun: () => publicRun(run),
     active: () => !run.done,
     matches: (id) => id === run.id,
+    liveFrame: events.liveFrame,
     outputPath: () => join(artifactRunDirectory() || join(artifactRoot, "tmp"), "output"),
     attachment(testId, index) {
       const attachment = draftProgress()?.tests[testId]?.attachments?.[index];

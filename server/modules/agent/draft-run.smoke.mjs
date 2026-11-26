@@ -41,12 +41,20 @@ test("Docker generates, collects and executes one new draft with isolated eviden
   const files = {
     "e2e/tests/bdd/features/q-rex-smoke/local.feature":
       "Feature: Q-Rex runner fixture\n  @TEN_QRX_SMO_E2E_001 @flow:SMOKE\n  Scenario: Read a local fixture\n    Given the isolated local fixture is open\n    Then the isolated local fixture is visible\n",
-    "e2e/tests/bdd/steps/q-rex-smoke.steps.ts": `import { expect } from '@playwright/test';
+    "e2e/tests/bdd/steps/q-rex-smoke.steps.ts": `import { expect, test as base } from '@playwright/test';
 import { createBdd } from 'playwright-bdd';
-const { Given, Then } = createBdd();
+import { startLivePreview } from '../fixtures/live-preview';
+const test = base.extend<{ livePreview: void }>({
+  livePreview: [async ({ context }, use) => {
+    const stop = await startLivePreview(context);
+    try { await use(); } finally { await stop(); }
+  }, { auto: true }],
+});
+const { Given, Then } = createBdd(test);
 Given('the isolated local fixture is open', async ({ page }) => { await page.goto('/'); });
 Then('the isolated local fixture is visible', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'Q-Rex runner fixture' })).toBeVisible();
+  await page.waitForTimeout(4000);
 });
 `,
     "e2e/playwright.bdd.config.ts": `import { defineConfig } from '@playwright/test';
@@ -79,8 +87,13 @@ export default defineConfig({
     signal: t.signal,
   });
   let previousStage;
+  let sawFrame = false;
+  const runId = run.publicRun().id;
   while (run.active()) {
     const current = run.publicRun();
+    assert.equal(current.id, runId, "The run identity must stay stable across sandbox updates");
+    const frame = run.liveFrame();
+    if (frame?.[0] === 0xff && frame[1] === 0xd8) sawFrame = true;
     if (current.stage !== previousStage) {
       t.diagnostic(`Sandbox stage: ${current.stage}`);
       previousStage = current.stage;
@@ -89,6 +102,8 @@ export default defineConfig({
   }
   const result = run.publicRun();
   assert.equal(result.error, undefined, JSON.stringify(result));
+  assert.ok(sawFrame, "The isolated browser should provide a live JPEG frame");
+  assert.equal(run.liveFrame(), undefined, "The preview must end with execution");
   assert.equal(result.status, "passed", JSON.stringify(result));
   assert.equal(result.tests.length, 1);
   assert.equal(result.tests[0].scenarioId, "TEN_QRX_SMO_E2E_001");
