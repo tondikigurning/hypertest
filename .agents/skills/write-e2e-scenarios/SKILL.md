@@ -60,6 +60,8 @@ If actual behavior contradicts a source or PRD, use `write-prd` to record both i
 
 ## Step 3 — Reconcile and author business outcomes
 
+For scenarios using the authenticated BDD project, rely on its authentication setup and start with the business precondition or action; omit a scenario-level or Background Given that logs in. Keep explicit login steps when authentication itself is the behavior under test or the selected project requires a clean session.
+
 Classify each journey by evidence:
 
 | Status | Action |

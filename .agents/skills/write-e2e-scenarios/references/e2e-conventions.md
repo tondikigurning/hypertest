@@ -130,8 +130,7 @@ Component masters, optional `@flow` (coverage only, not encoded in the ID):
 Feature: Dashboard Access
 
   @TEN_DSH_LST_E2E_001 @smoke @flow:TEN_DASHBOARD_FLOW @type:positive
-  Scenario: Authenticated user lands on the dashboard after login
-    Given the user is logged in
+  Scenario: Open the dashboard
     When they navigate to the dashboard
     Then the dashboard page is visible
 ```

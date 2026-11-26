@@ -5,7 +5,6 @@ Feature: Report Templates
 
   @TEN_RTM_LST_E2E_001 @smoke @flow:TEN_RTM_LIST_FLOW @type:positive
   Scenario: Browse the report template list
-    Given the user is logged in
     When the user opens Report Templates from Reports
     Then the report template list is visible with Report Name, Description, Created By and Created At columns
     And the list shows its current page and pagination controls
