@@ -11,7 +11,17 @@ import { createR2Storage, r2EvidenceLocation, r2EvidencePrefix, resolveR2Config 
 // Upload is explicit unless the BDD runner invokes this with --auto.
 async function main() {
   const root = process.cwd();
-  loadEnvLocal(root);
+  loadEnvLocal(
+    root,
+    process.env,
+    new Set([
+      "CLOUDFLARE_R2_ACCOUNT_ID",
+      "CLOUDFLARE_R2_ACCESS_KEY_ID",
+      "CLOUDFLARE_R2_SECRET_ACCESS_KEY",
+      "CLOUDFLARE_R2_BUCKET",
+      "CLOUDFLARE_R2_ENDPOINT",
+    ]),
+  );
   const args = process.argv.slice(2);
   const fileIndex = args.indexOf("--results");
   const scenarioIndex = args.indexOf("--scenario-id");

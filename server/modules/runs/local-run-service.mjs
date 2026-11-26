@@ -332,6 +332,16 @@ export function createLocalRunService({
   }
 
   async function uploadEvidence(env) {
+    const { E2E_USERNAME: _username, E2E_PASSWORD: _password, ...uploadEnvironment } = env;
+    for (const name of [
+      "CLOUDFLARE_R2_ACCOUNT_ID",
+      "CLOUDFLARE_R2_ACCESS_KEY_ID",
+      "CLOUDFLARE_R2_SECRET_ACCESS_KEY",
+      "CLOUDFLARE_R2_BUCKET",
+      "CLOUDFLARE_R2_ENDPOINT",
+    ]) {
+      if (process.env[name]) uploadEnvironment[name] = process.env[name];
+    }
     const resultsPath = env.BDD_RESULTS_FILE;
     if (!existsSync(resultsPath)) {
       run.evidenceUpload = { status: "unavailable", scenarioIds: [] };
@@ -347,7 +357,7 @@ export function createLocalRunService({
       uploaded = await command(
         tsx,
         [evidenceCli, "--push", "--auto", "--results", resultsPath, "--environment", environmentId, "--run-id", run.id],
-        env,
+        uploadEnvironment,
         repoRoot,
         evidenceUploadTimeoutMs,
       );

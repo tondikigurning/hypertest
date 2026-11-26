@@ -118,7 +118,9 @@ export default class PlaywrightScenarioReporter implements Reporter {
           ? [{ path: attachment.path, contentType: attachment.contentType }]
           : [],
       ),
-      ...(status === "failed" && result.errors.length > 0 ? { error: result.errors[0]?.message?.slice(0, 200) } : {}),
+      ...(status === "failed" && result.errors.length > 0
+        ? { error: process.env.EVENTS_FILE ? "Scenario failed." : result.errors[0]?.message?.slice(0, 200) }
+        : {}),
     };
 
     const existing = this.results.find((r) => r.meta.id === id);

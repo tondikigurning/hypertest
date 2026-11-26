@@ -8,7 +8,7 @@ import { createLocalRunService } from "./local-run-service.mjs";
 import { resolveSelection } from "./run-selection.mjs";
 
 const e2eWorkspace = resolve(import.meta.dirname, "../../../e2e");
-const service = createLocalRunService({ resultStore });
+const service = createLocalRunService({ resultStore, safeProcessEnvironment: true });
 const variables = [
   { name: "E2E_USERNAME", label: "E2E username", secret: false, required: true },
   { name: "E2E_PASSWORD", label: "E2E password", secret: true, required: true },

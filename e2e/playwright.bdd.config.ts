@@ -87,14 +87,12 @@ export default defineConfig({
     outputDir: BDD_OUTPUT_DIR,
     reporter: [
         ["list"],
-        [
-            "html",
-            {
-                open:
-                    process.env.CI || process.env.AGGREGATE_REPORT === "1" || process.env.EVENTS_FILE ? "never" : "always",
-                outputFolder: BDD_REPORT_DIR,
-            },
-        ],
+        // HTML reports can include action arguments and network details. Automation
+        // runs use the live reporter instead so browser credentials stay out of reports.
+        ...(!process.env.EVENTS_FILE ? [["html", {
+            open: process.env.CI || process.env.AGGREGATE_REPORT === "1" ? "never" : "always",
+            outputFolder: BDD_REPORT_DIR,
+        }] as [string, { open: "never" | "always"; outputFolder: string }]] : []),
         // The local Automation runner also updates the shared latest-result catalog.
         // Its result file and test artifacts are isolated under the run's temp dir.
         ["@hyperscal/test-utils/playwright", {
@@ -111,7 +109,7 @@ export default defineConfig({
         screenshot: "on",
         viewport: EVIDENCE_SIZE,
         video: { mode: "on", size: EVIDENCE_SIZE },
-        trace: "retain-on-failure",
+        trace: process.env.SETUP_AUTH_FILE ? "off" : "retain-on-failure",
         actionTimeout: process.env.CI ? 45_000 : 30_000,
         navigationTimeout: process.env.CI ? 45_000 : 30_000,
     },

@@ -9,13 +9,23 @@ export default class AutomationReporter {
     const output = process.env.EVENTS_FILE;
     if (!output || !path.isAbsolute(output)) throw new Error("EVENTS_FILE must be an absolute path");
     this.output = output;
+    this.secret = process.env.E2E_PASSWORD || "";
     this.stepIds = new WeakMap();
     this.nextStepId = 0;
     fs.mkdirSync(path.dirname(output), { recursive: true });
   }
 
   emit(event) {
-    fs.appendFileSync(this.output, `${JSON.stringify({ ...event, at: new Date().toISOString() })}\n`, { mode: 0o600 });
+    const redact = (value) => {
+      if (typeof value === "string") return this.secret ? value.split(this.secret).join("[REDACTED]") : value;
+      if (Array.isArray(value)) return value.map(redact);
+      if (value && typeof value === "object")
+        return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, redact(item)]));
+      return value;
+    };
+    fs.appendFileSync(this.output, `${JSON.stringify(redact({ ...event, at: new Date().toISOString() }))}\n`, {
+      mode: 0o600,
+    });
   }
 
   scenario(test) {
