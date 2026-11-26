@@ -62,10 +62,10 @@ import { defineBddProject } from 'playwright-bdd';
 import { resolve } from 'node:path';
 export default defineConfig({
   workers: 1, retries: 0, timeout: 30000,
-  outputDir: process.env.AUTOMATION_OUTPUT_DIR,
+  outputDir: process.env.OUTPUT_DIR,
   reporter: [[resolve(import.meta.dirname, '../server/modules/runs/playwright-reporter.mjs')]],
-  use: { baseURL: process.env.AUTOMATION_RUN_TARGET, headless: true, screenshot: 'on',
-    proxy: { server: process.env.AUTOMATION_AGENT_PROXY! },
+  use: { baseURL: process.env.RUN_TARGET, headless: true, screenshot: 'on',
+    proxy: { server: process.env.AGENT_PROXY! },
     launchOptions: { args: ['--proxy-bypass-list=<-loopback>'] } },
   projects: [defineBddProject({ name: 'q-rex-smoke', features: 'tests/bdd/features/q-rex-smoke/local.feature', steps: ['tests/bdd/steps/q-rex-smoke.steps.ts'] })],
 });

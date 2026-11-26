@@ -8,7 +8,7 @@ import path from "path";
 import { LoginPage } from "../pages/auth/LoginPage";
 import { startLivePreview } from "../fixtures/live-preview";
 
-export const AUTH_FILE = process.env.AUTOMATION_SETUP_AUTH_FILE || path.join(import.meta.dirname, "../../../playwright/.auth/user.json");
+export const AUTH_FILE = process.env.SETUP_AUTH_FILE || path.join(import.meta.dirname, "../../../playwright/.auth/user.json");
 
 setup("authenticate", async ({ page, browser, baseURL }) => {
     const stopPreview = await startLivePreview(page.context());
@@ -19,7 +19,7 @@ setup("authenticate", async ({ page, browser, baseURL }) => {
 
     // Reuse only a locally created session for the same environment and account.
     // Verify it against the application: a storage-state file can outlive its session.
-    const cacheEnabled = !process.env.CI && !process.env.AUTOMATION_SETUP_AUTH_FILE;
+    const cacheEnabled = !process.env.CI && !process.env.SETUP_AUTH_FILE;
     const metadataPath = `${AUTH_FILE}.meta.json`;
     const identity = { baseURL, username };
     if (cacheEnabled && baseURL && username) {

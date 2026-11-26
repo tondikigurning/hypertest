@@ -6,8 +6,8 @@ const SCENARIO_ID = /^@?[A-Z]{2,4}_[A-Z0-9_]+_E2E_\d{3,4}$/;
 /** Append-only events for the Automation worker; each Playwright example keeps its own test ID. */
 export default class AutomationReporter {
   constructor() {
-    const output = process.env.AUTOMATION_EVENTS_FILE;
-    if (!output || !path.isAbsolute(output)) throw new Error("AUTOMATION_EVENTS_FILE must be an absolute path");
+    const output = process.env.EVENTS_FILE;
+    if (!output || !path.isAbsolute(output)) throw new Error("EVENTS_FILE must be an absolute path");
     this.output = output;
     this.stepIds = new WeakMap();
     this.nextStepId = 0;

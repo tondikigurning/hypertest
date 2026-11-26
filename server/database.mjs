@@ -7,7 +7,7 @@ let connection;
 export function database() {
   if (!connection) {
     const connectionString =
-      process.env.AUTOMATION_DATABASE_URL || "postgresql://automation:automation@127.0.0.1:55432/automation";
+      process.env.DATABASE_URL || "postgresql://automation:automation@127.0.0.1:55432/automation";
     pool = new pg.Pool({ connectionString });
     connection = drizzle(pool);
   }

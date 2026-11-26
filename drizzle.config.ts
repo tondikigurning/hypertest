@@ -5,6 +5,6 @@ export default defineConfig({
   schema: "./server/modules/results/schema.mjs",
   out: "./drizzle",
   dbCredentials: {
-    url: process.env.AUTOMATION_DATABASE_URL || "postgresql://automation:automation@127.0.0.1:55432/automation",
+    url: process.env.DATABASE_URL || "postgresql://automation:automation@127.0.0.1:55432/automation",
   },
 });

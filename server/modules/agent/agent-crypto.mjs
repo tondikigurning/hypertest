@@ -10,14 +10,14 @@ const aad = Buffer.from("hypertest-automation-agent-key:v1");
 
 function encryptionKey({ keyFile = generatedKeyFile, environment = process.env, fileEnvironment = localEnv } = {}) {
   const encoded =
-    environment.AUTOMATION_AGENT_ENCRYPTION_KEY ||
-    fileEnvironment.AUTOMATION_AGENT_ENCRYPTION_KEY ||
+    environment.AGENT_ENCRYPTION_KEY ||
+    fileEnvironment.AGENT_ENCRYPTION_KEY ||
     (existsSync(keyFile) ? readFileSync(keyFile, "utf8").trim() : undefined);
   if (typeof encoded !== "string" || !encoded) return undefined;
   if (!/^[A-Za-z0-9_-]+={0,2}$/.test(encoded))
-    throw new Error("AUTOMATION_AGENT_ENCRYPTION_KEY must be a base64-encoded 32-byte key.");
+    throw new Error("AGENT_ENCRYPTION_KEY must be a base64-encoded 32-byte key.");
   const key = Buffer.from(encoded, "base64url");
-  if (key.length !== 32) throw new Error("AUTOMATION_AGENT_ENCRYPTION_KEY must be a base64-encoded 32-byte key.");
+  if (key.length !== 32) throw new Error("AGENT_ENCRYPTION_KEY must be a base64-encoded 32-byte key.");
   return key;
 }
 
@@ -43,7 +43,7 @@ export function isAgentEncryptionConfigured() {
 
 export function encryptAgentSecret(value) {
   const key = encryptionKey();
-  if (!key) throw new Error("Configure AUTOMATION_AGENT_ENCRYPTION_KEY before saving provider API keys.");
+  if (!key) throw new Error("Configure AGENT_ENCRYPTION_KEY before saving provider API keys.");
   if (typeof value !== "string" || !value.trim()) throw new Error("Enter a provider API key.");
   const iv = randomBytes(12);
   const cipher = createCipheriv("aes-256-gcm", key, iv);
@@ -59,7 +59,7 @@ export function encryptAgentSecret(value) {
 
 export function decryptAgentSecret(value) {
   const key = encryptionKey();
-  if (!key) throw new Error("Configure AUTOMATION_AGENT_ENCRYPTION_KEY before using provider API keys.");
+  if (!key) throw new Error("Configure AGENT_ENCRYPTION_KEY before using provider API keys.");
   if (typeof value !== "string") throw new Error("The saved provider API key is unavailable.");
   const [version, encodedIv, encodedTag, encodedCiphertext, ...extra] = value.split(".");
   if (version !== "v1" || !encodedIv || !encodedTag || !encodedCiphertext || extra.length)

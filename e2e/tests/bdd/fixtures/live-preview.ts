@@ -5,7 +5,7 @@ const PREVIEW_DETACH_TIMEOUT_MS = 2_000;
 
 /** Opt-in local preview; the ordinary BDD runner does not create a stream. */
 export async function startLivePreview(context: BrowserContext): Promise<() => Promise<void>> {
-    const framePath = process.env.AUTOMATION_LIVE_FRAME;
+    const framePath = process.env.LIVE_FRAME;
     if (!framePath) return async () => {};
     const sessions = new Set<CDPSession>();
     let closed = false;

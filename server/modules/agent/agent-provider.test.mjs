@@ -116,7 +116,7 @@ test("UI encryption setup creates a stable local key without replacing an existi
   initializeAgentEncryption(options);
   assert.equal((await readFile(options.keyFile, "utf8")).trim(), first);
   assert.throws(
-    () => initializeAgentEncryption({ ...options, environment: { AUTOMATION_AGENT_ENCRYPTION_KEY: "invalid" } }),
+    () => initializeAgentEncryption({ ...options, environment: { AGENT_ENCRYPTION_KEY: "invalid" } }),
     /32-byte/,
   );
   assert.equal((await readFile(options.keyFile, "utf8")).trim(), first);

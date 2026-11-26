@@ -16,8 +16,8 @@ if (
   !["before", "after", "failed"].includes(phase)
 )
   throw new Error("Invalid result import arguments.");
-if (!process.env.AUTOMATION_DATABASE_URL) throw new Error("AUTOMATION_DATABASE_URL is required for direct BDD import.");
-const pool = new pg.Pool({ connectionString: process.env.AUTOMATION_DATABASE_URL });
+if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL is required for direct BDD import.");
+const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
 try {
   const journal = createResultJournal(
     createResultStore(() => drizzle(pool)),

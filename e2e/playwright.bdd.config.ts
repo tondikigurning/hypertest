@@ -37,22 +37,22 @@ const ENV_FILE = path.resolve(import.meta.dirname, ".env.local");
 dotenv.config({ path: ENV_FILE, quiet: true });
 
 const fileEnvironment = existsSync(ENV_FILE) ? dotenv.parse(readFileSync(ENV_FILE)) : {};
-const ENV = process.env.AUTOMATION_SELECTED_ENV || fileEnvironment.ENV;
+const ENV = process.env.SELECTED_ENV || fileEnvironment.ENV;
 if (!ENV || !/^[a-z0-9-]+$/.test(ENV)) throw new Error("Set a valid ENV in e2e/.env.local.");
 const TARGET_URL = `https://converge.${ENV}.hyperscal.com/`;
 
 // A hosted worker may supply an isolated Playwright storage-state file. Ordinary
 // local/CI runs continue to use the existing credential-based setup project.
-const AUTOMATION_AUTH_FILE = process.env.AUTOMATION_STORAGE_STATE;
-if (AUTOMATION_AUTH_FILE && !path.isAbsolute(AUTOMATION_AUTH_FILE)) {
-    throw new Error("AUTOMATION_STORAGE_STATE must be an absolute path");
+const STORAGE_STATE_FILE = process.env.STORAGE_STATE;
+if (STORAGE_STATE_FILE && !path.isAbsolute(STORAGE_STATE_FILE)) {
+    throw new Error("STORAGE_STATE must be an absolute path");
 }
-const AUTH_FILE = AUTOMATION_AUTH_FILE || process.env.AUTOMATION_SETUP_AUTH_FILE || path.join(import.meta.dirname, "playwright/.auth/user.json");
+const AUTH_FILE = STORAGE_STATE_FILE || process.env.SETUP_AUTH_FILE || path.join(import.meta.dirname, "playwright/.auth/user.json");
 const BDD_STEPS = ["tests/bdd/steps/**/*.ts", "tests/bdd/fixtures/**/*.ts"];
-const BDD_REPORT_DIR = process.env.AUTOMATION_REPORT_DIR || path.join(import.meta.dirname, "playwright-report", "bdd");
-const BDD_OUTPUT_DIR = process.env.AUTOMATION_OUTPUT_DIR || path.join(import.meta.dirname, "test-results", "bdd");
-const AUTOMATION_BDD_FEATURES = process.env.AUTOMATION_BDD_FEATURES
-    ? JSON.parse(process.env.AUTOMATION_BDD_FEATURES)
+const BDD_REPORT_DIR = process.env.REPORT_DIR || path.join(import.meta.dirname, "playwright-report", "bdd");
+const BDD_OUTPUT_DIR = process.env.OUTPUT_DIR || path.join(import.meta.dirname, "test-results", "bdd");
+const BDD_FEATURES = process.env.BDD_FEATURES
+    ? JSON.parse(process.env.BDD_FEATURES)
     : [
         "tests/bdd/features/_components/**/*.feature",
         "tests/bdd/features/user-management/**/*.feature",
@@ -91,7 +91,7 @@ export default defineConfig({
             "html",
             {
                 open:
-                    process.env.CI || process.env.AGGREGATE_REPORT === "1" || process.env.AUTOMATION_EVENTS_FILE ? "never" : "always",
+                    process.env.CI || process.env.AGGREGATE_REPORT === "1" || process.env.EVENTS_FILE ? "never" : "always",
                 outputFolder: BDD_REPORT_DIR,
             },
         ],
@@ -100,13 +100,13 @@ export default defineConfig({
         ["@hyperscal/test-utils/playwright", {
             outputFile: process.env.BDD_RESULTS_FILE || "temp/test-results/tenants/bdd.results.json",
         }],
-        ...(process.env.AUTOMATION_EVENTS_FILE
+        ...(process.env.EVENTS_FILE
             ? [[path.resolve(import.meta.dirname, "../server/modules/runs/playwright-reporter.mjs")] as [string]]
             : []),
     ],
     use: {
         baseURL: TARGET_URL,
-        ...(process.env.AUTOMATION_AGENT_PROXY ? { proxy: { server: process.env.AUTOMATION_AGENT_PROXY } } : {}),
+        ...(process.env.AGENT_PROXY ? { proxy: { server: process.env.AGENT_PROXY } } : {}),
         headless: true,
         screenshot: "on",
         viewport: EVIDENCE_SIZE,
@@ -137,7 +137,7 @@ export default defineConfig({
         {
             ...defineBddProject({
                 name: "bdd-chromium-authenticated",
-                features: AUTOMATION_BDD_FEATURES,
+                features: BDD_FEATURES,
                 steps: BDD_STEPS,
             }),
             use: {
@@ -145,7 +145,7 @@ export default defineConfig({
                 viewport: EVIDENCE_SIZE,
                 storageState: AUTH_FILE,
             },
-            dependencies: AUTOMATION_AUTH_FILE ? [] : ["setup"],
+            dependencies: STORAGE_STATE_FILE ? [] : ["setup"],
         },
 
         // ── 4. Organization Management (dedicated) ──────────────────────────────
@@ -166,7 +166,7 @@ export default defineConfig({
                 actionTimeout: process.env.CI ? 90_000 : 60_000,
                 navigationTimeout: process.env.CI ? 90_000 : 60_000,
             },
-            dependencies: AUTOMATION_AUTH_FILE ? [] : ["setup"],
+            dependencies: STORAGE_STATE_FILE ? [] : ["setup"],
         },
     ],
 });

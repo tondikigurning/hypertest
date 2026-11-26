@@ -48,7 +48,7 @@ function runnerBaseEnvironment() {
     "HTTPS_PROXY",
     "http_proxy",
     "https_proxy",
-    "AUTOMATION_AGENT_PROXY",
+    "AGENT_PROXY",
     "CI",
   ];
   return Object.fromEntries(
@@ -193,14 +193,14 @@ export function createLocalRunService({
     const env = {
       ...(safeProcessEnvironment ? runnerBaseEnvironment() : process.env),
       ...environment,
-      AUTOMATION_SELECTED_ENV: environments.find((item) => item.target === run.target)?.id || "",
-      AUTOMATION_RUN_TARGET: run.target,
-      AUTOMATION_BDD_FEATURES: JSON.stringify(run.files.map((file) => `tests/bdd/features/${file}`)),
-      AUTOMATION_SETUP_AUTH_FILE: auth,
-      AUTOMATION_OUTPUT_DIR: join(run.dir, "output"),
-      AUTOMATION_REPORT_DIR: join(run.dir, "report"),
-      AUTOMATION_EVENTS_FILE: run.events,
-      AUTOMATION_LIVE_FRAME: join(run.dir, "live.jpg"),
+      SELECTED_ENV: environments.find((item) => item.target === run.target)?.id || "",
+      RUN_TARGET: run.target,
+      BDD_FEATURES: JSON.stringify(run.files.map((file) => `tests/bdd/features/${file}`)),
+      SETUP_AUTH_FILE: auth,
+      OUTPUT_DIR: join(run.dir, "output"),
+      REPORT_DIR: join(run.dir, "report"),
+      EVENTS_FILE: run.events,
+      LIVE_FRAME: join(run.dir, "live.jpg"),
       BDD_RESULTS_FILE: join(run.dir, "bdd.results.json"),
     };
     try {

@@ -17,11 +17,11 @@ foreach ($project in @('bdd-chromium', 'bdd-chromium-authenticated', 'bdd-chromi
 [System.IO.File]::WriteAllText($configPath, $original, [System.Text.UTF8Encoding]::new($false))
 $env:CI = '1'
 $env:AGGREGATE_REPORT = '1'
-$env:AUTOMATION_BDD_FEATURES = '["tests/bdd/features/reports/report-templates.feature"]'
-$env:AUTOMATION_SETUP_AUTH_FILE = Join-Path $runDir 'auth-state.json'
-$env:AUTOMATION_OUTPUT_DIR = Join-Path $runDir 'output'
-$env:AUTOMATION_REPORT_DIR = Join-Path $runDir 'html'
-foreach ($name in @('AUTOMATION_SELECTED_ENV', 'AUTOMATION_STORAGE_STATE', 'AUTOMATION_LIVE_FRAME', 'AUTOMATION_EVENTS_FILE', 'AUTOMATION_AGENT_PROXY')) {
+$env:BDD_FEATURES = '["tests/bdd/features/reports/report-templates.feature"]'
+$env:SETUP_AUTH_FILE = Join-Path $runDir 'auth-state.json'
+$env:OUTPUT_DIR = Join-Path $runDir 'output'
+$env:REPORT_DIR = Join-Path $runDir 'html'
+foreach ($name in @('SELECTED_ENV', 'STORAGE_STATE', 'LIVE_FRAME', 'EVENTS_FILE', 'AGENT_PROXY')) {
   Remove-Item -Path ('Env:' + $name) -ErrorAction SilentlyContinue
 }
 $filter = 'TEN_RTM_'
@@ -74,8 +74,8 @@ try {
   $runFailed = $false
   foreach ($attempt in 1..2) {
     Assert-SourceUnchanged
-    $env:AUTOMATION_SETUP_AUTH_FILE = Join-Path $runDir "auth-state-$attempt.json"
-    $env:AUTOMATION_OUTPUT_DIR = Join-Path $runDir "output-$attempt"
+    $env:SETUP_AUTH_FILE = Join-Path $runDir "auth-state-$attempt.json"
+    $env:OUTPUT_DIR = Join-Path $runDir "output-$attempt"
     $start = [DateTimeOffset]::UtcNow
     & pnpm.cmd exec playwright test "--config=$configName" '--project=bdd-chromium-authenticated' "--grep=$filter" '--grep-invert=TEN_RTM_CRT_E2E_002' '--reporter=json' 1> (Join-Path $runDir "run-$attempt.json") 2> (Join-Path $runDir "run-$attempt.err")
     $code = $LASTEXITCODE

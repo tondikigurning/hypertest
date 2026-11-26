@@ -13,8 +13,8 @@ const target = new URL(`${protocol}//${hostname}:${port}/`);
 try {
   await startTargetEgressProxy({
     target: target.href,
-    host: process.env.AUTOMATION_AGENT_PROXY_HOST || "0.0.0.0",
-    port: Number(process.env.AUTOMATION_AGENT_PROXY_PORT || 3128),
+    host: process.env.AGENT_PROXY_HOST || "0.0.0.0",
+    port: Number(process.env.AGENT_PROXY_PORT || 3128),
   });
   process.stdout.write("Agent egress proxy ready.\n");
 } catch {

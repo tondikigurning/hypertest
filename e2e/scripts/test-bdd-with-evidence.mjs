@@ -15,9 +15,9 @@ if (nodeMajorVersion >= 26) {
     .filter(Boolean)
     .join(" ");
 }
-const environment = process.env.AUTOMATION_ENVIRONMENT_ID;
-if (environment && (!/^[a-z0-9-]+$/.test(environment) || !process.env.AUTOMATION_DATABASE_URL))
-  throw new Error("Set a valid AUTOMATION_ENVIRONMENT_ID and AUTOMATION_DATABASE_URL together.");
+const environment = process.env.ENVIRONMENT_ID;
+if (environment && (!/^[a-z0-9-]+$/.test(environment) || !process.env.DATABASE_URL))
+  throw new Error("Set a valid ENVIRONMENT_ID and DATABASE_URL together.");
 
 function run(command, commandArgs, cwd, env = process.env) {
   return spawnSync(command, commandArgs, {
@@ -28,7 +28,7 @@ function run(command, commandArgs, cwd, env = process.env) {
   });
 }
 
-if (process.env.AUTOMATION_DATABASE_URL) {
+if (process.env.DATABASE_URL) {
   const syncCatalog = spawnSync(
     process.execPath,
     [path.join(repoRoot, "server/modules/catalog/sync-catalog.mjs")],
@@ -55,7 +55,7 @@ const playwright = run(
   ["exec", "playwright", "test", "--config=playwright.bdd.config.ts", ...args],
   appDir,
   { ...bddEnvironment, AGGREGATE_REPORT: process.env.AGGREGATE_REPORT || "1", BDD_RESULTS_FILE: runResults,
-    ...(environment ? { AUTOMATION_EVENTS_FILE: eventsPath } : {}) },
+    ...(environment ? { EVENTS_FILE: eventsPath } : {}) },
 );
 if (playwright.error) throw playwright.error;
 const testExitCode = playwright.status ?? 1;

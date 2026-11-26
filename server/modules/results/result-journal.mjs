@@ -3,7 +3,7 @@ import { mkdir, readdir, readFile, rename, rm, writeFile } from "node:fs/promise
 import { join } from "node:path";
 
 export function pendingDirectory(root) {
-  const url = process.env.AUTOMATION_DATABASE_URL || "postgresql://automation:automation@127.0.0.1:55432/automation";
+  const url = process.env.DATABASE_URL || "postgresql://automation:automation@127.0.0.1:55432/automation";
   return join(root, ".cache/automation-results-pending", createHash("sha256").update(url).digest("hex").slice(0, 24));
 }
 

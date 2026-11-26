@@ -1,7 +1,7 @@
 export function isAllowedWebHost(host) {
-  const port = process.env.AUTOMATION_WEB_PORT || "3110";
+  const port = process.env.WEB_PORT || "3110";
   const localWebHosts = new Set([`localhost:${port}`, `127.0.0.1:${port}`]);
-  const configured = process.env.AUTOMATION_WEB_ALLOWED_HOSTS?.split(",")
+  const configured = process.env.WEB_ALLOWED_HOSTS?.split(",")
     .map((value) => value.trim())
     .filter(Boolean);
   const allowedHosts = configured

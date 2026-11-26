@@ -4,8 +4,8 @@ import { fileURLToPath } from "node:url";
 import { createServer } from "vite";
 import { localApiHost, localApiPort } from "./shared/local-api-config.mjs";
 
-const host = process.env.AUTOMATION_WEB_HOST ?? "127.0.0.1";
-const port = Number(process.env.AUTOMATION_WEB_PORT ?? 3110);
+const host = process.env.WEB_HOST ?? "127.0.0.1";
+const port = Number(process.env.WEB_PORT ?? 3110);
 const apiWaitTimeoutMs = 60_000;
 const apiRetryIntervalMs = 250;
 

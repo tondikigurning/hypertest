@@ -28,7 +28,7 @@ test("agent file tools never fall back to workspace PRD files", async (t) => {
 function runCli(args, input) {
   return new Promise((resolve, reject) => {
     const child = spawn(process.execPath, ["server/modules/agent/prd-cli.mjs", ...args], {
-      env: { ...process.env, AUTOMATION_PRD_IDENTITY: "" },
+      env: { ...process.env, PRD_IDENTITY: "" },
       stdio: ["pipe", "pipe", "pipe"],
     });
     let output = "";
@@ -250,11 +250,11 @@ test("PRD HTTP operations work without browser identity or a draft", async (t) =
   });
   const base = `http://127.0.0.1:${server.address().port}`;
   const host = `127.0.0.1:${server.address().port}`;
-  const previousHosts = process.env.AUTOMATION_WEB_ALLOWED_HOSTS;
-  process.env.AUTOMATION_WEB_ALLOWED_HOSTS = host;
+  const previousHosts = process.env.WEB_ALLOWED_HOSTS;
+  process.env.WEB_ALLOWED_HOSTS = host;
   t.after(() => {
-    if (previousHosts === undefined) delete process.env.AUTOMATION_WEB_ALLOWED_HOSTS;
-    else process.env.AUTOMATION_WEB_ALLOWED_HOSTS = previousHosts;
+    if (previousHosts === undefined) delete process.env.WEB_ALLOWED_HOSTS;
+    else process.env.WEB_ALLOWED_HOSTS = previousHosts;
   });
   const origin = base;
   const created = await fetch(`${base}/agent/prd-versions`, {

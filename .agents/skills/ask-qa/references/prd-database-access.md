@@ -1,6 +1,6 @@
 # Terminal PRD database access
 
-PRDs are shared by all clients using the configured PostgreSQL database. Configure `AUTOMATION_DATABASE_URL` as for the API; no browser identity is needed. If access is unavailable, report the blocker instead of creating a repository PRD.
+PRDs are shared by all clients using the configured PostgreSQL database. Configure `DATABASE_URL` as for the API; no browser identity is needed. If access is unavailable, report the blocker instead of creating a repository PRD.
 
 From the repository root, `node server/modules/agent/prd-cli.mjs read docs/prd/<module>/<menu>.md` reads one. `list` and `write` require the intended identity explicitly, even after a unique read. These paths are virtual identifiers. `write <identifier>` reads a JSON object from stdin with `content` and `expected` (the exact previously read content, or null if absent). It rejects stale changes. A draft must preserve unchanged validations and leave new or changed items without `[validated]`.
 

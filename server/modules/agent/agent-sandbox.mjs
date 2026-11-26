@@ -430,7 +430,7 @@ export async function startIsolatedDraftRun({ workspace, scenarioId, target, var
       "--env",
       "https_proxy=http://agent-egress:3128",
       "--env",
-      "AUTOMATION_AGENT_PROXY=http://agent-egress:3128",
+      "AGENT_PROXY=http://agent-egress:3128",
       image,
       "node",
       "/agent-sandbox-runner.mjs",
