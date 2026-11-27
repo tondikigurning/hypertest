@@ -79,8 +79,11 @@ The default workflow uses the review gates below. When an approval is pending, *
    unverified scope and obtain any host-required flow confirmation. The file is available only in the
    workspace or committed source that contains it; a separate draft does not automatically inherit it.
    A full pass covers every confirmed in-scope flow and its supported, distinct smoke and regression
-   branches. Up to 12 flows are handled together without batching; larger inventories are divided into balanced batches
-   targeting 8–12 flows each. Flow count does not limit the number of scenarios per flow. The ordered
+   branches. Each flow's primary outcome must be mapped to actual scenario actions and assertions or reported as a
+   specific gap. A supported create, edit, rename or delete needs an outcome-asserting successful mutation; cancellation
+   alone does not cover it. Owned-data, live-approval and scenario-review rules still apply. Up to 12 flows are handled
+   together without batching; larger inventories are divided into balanced batches targeting 8–12 flows each. There is
+   no fixed minimum or formula for scenario counts: distinct supported outcomes determine coverage. The ordered
    batch plan and blocked or deferred branches are recorded in `.exploration.md`; PRD/actual
    discrepancies belong in `.flows.md` gaps.
 4. Q-Rex writes one scenario batch and stops for review. Review the request in **Chat**, inspect the preview and diff in **Changes**, then use

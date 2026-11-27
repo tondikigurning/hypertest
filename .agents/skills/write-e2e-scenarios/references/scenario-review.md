@@ -24,6 +24,7 @@ The response itself must contain:
 
 - Total flows and new/changed scenarios in the exact batch, reconciled with current features. Group every scenario by flow ID and plain-language goal, with exact feature path, scenario ID, descriptive title/outcome and new/changed status. Use source locations for missing/duplicate IDs.
 - Requirement-to-scenario-to-outcome mapping above, applicable master references, masters judged inapplicable, evidence/locator gaps, defects and mock/quarantine limits. A combined table is fine if it retains every field; file links alone are insufficient.
+- For every flow, identify its primary successful outcome and the scenario that performs and asserts it, or its specific blocked, unverified or excluded status and next action. For each mutation identify the target ownership/setup, submitted action, observable result, persistence claim and cleanup limits. List the other materially distinct supported branches and their coverage; cancellation and validation do not cover the successful action.
 - Existing coverage and confirmed flows/branches outside this batch, each with status, reason and next action. Distinguish existing scenarios from newly authored work. Explain batch boundaries and categories added, retained, extended or retired.
 - Whether implementation and execution have occurred, the exact snapshot/scope the requested decision covers and the next action after acceptance. Flow confirmation and this review grant no live-data permission or test pass.
 
