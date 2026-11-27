@@ -179,12 +179,12 @@ async function workflow(t, responses, runtime = {}, files = {}, prdStore) {
 test("flow document reads uncommitted and newly created files from the draft workspace", async (t) => {
   const path = "e2e/tests/bdd/features/example/orders.flows.md";
   const { session, workspace } = await workflow(t, [], {}, { [path]: "# Committed flows" });
-  assert.deepEqual(await session.flowDocument("example", "orders"), { content: "# Committed flows" });
+  assert.deepEqual(await session.flowDocument("example", "orders"), { content: "# Committed flows", changed: false });
   await writeFile(join(workspace, path), "# Changed flows");
-  assert.deepEqual(await session.flowDocument("example", "orders"), { content: "# Changed flows" });
-  assert.deepEqual(await session.flowDocument("example", "new-menu"), { content: null });
+  assert.deepEqual(await session.flowDocument("example", "orders"), { content: "# Changed flows", changed: true });
+  assert.deepEqual(await session.flowDocument("example", "new-menu"), { content: null, changed: false });
   await writeFile(join(workspace, "e2e/tests/bdd/features/example/new-menu.flows.md"), "# New flows");
-  assert.deepEqual(await session.flowDocument("example", "new-menu"), { content: "# New flows" });
+  assert.deepEqual(await session.flowDocument("example", "new-menu"), { content: "# New flows", changed: true });
   await assert.rejects(session.flowDocument("..", "orders"), /valid module and menu/);
 });
 

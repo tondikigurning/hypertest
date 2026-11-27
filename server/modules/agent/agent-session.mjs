@@ -1996,7 +1996,13 @@ export function createSession({
   async function flowDocument(module, menu) {
     await ensureWorkspace();
     verifyHeadSync();
-    return readFlowDocument(workspace, module, menu);
+    const document = await readFlowDocument(workspace, module, menu);
+    const path = `e2e/tests/bdd/features/${module}/${menu}.flows.md`;
+    const status = await execFileAsync("git", ["status", "--porcelain", "--untracked-files=all", "--", path], {
+      cwd: workspace,
+      timeout: 30000,
+    });
+    return { ...document, changed: Boolean(status.stdout.trim()) };
   }
 
   async function resolveContextItems(items, catalog, resolveScenario) {
