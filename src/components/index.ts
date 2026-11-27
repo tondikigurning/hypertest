@@ -6,7 +6,6 @@ export { Modal } from "./modal";
 export { PrimaryButton } from "./primary-button";
 export { RetryButton } from "./retry-button";
 export { SectionEyebrow } from "./section-eyebrow";
-export { SegmentedControl } from "./segmented-control";
 export { SelectInput } from "./select-input";
 export { Spinner } from "./spinner";
 export { TextAreaInput } from "./text-area-input";
