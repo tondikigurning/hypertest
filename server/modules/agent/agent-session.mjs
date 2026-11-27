@@ -29,6 +29,7 @@ import {
   runExplorationBrowserCommand,
   startExplorationBrowser,
 } from "./exploration-browser.mjs";
+import { readFlowDocument } from "./flow-document.mjs";
 import {
   authorizeFlowWrite,
   changedScenarioFlows,
@@ -1992,6 +1993,12 @@ export function createSession({
     return [...new Set([...files.filter((path) => !prdIdentity(path)), ...prds])].sort().slice(0, 30);
   }
 
+  async function flowDocument(module, menu) {
+    await ensureWorkspace();
+    verifyHeadSync();
+    return readFlowDocument(workspace, module, menu);
+  }
+
   async function resolveContextItems(items, catalog, resolveScenario) {
     const attachments = validateContextItems(items);
     if (
@@ -2217,6 +2224,7 @@ export function createSession({
     cancelDraftRun,
     cancel,
     contextFiles,
+    flowDocument,
     prds: async () => {
       if (!prdStore) throw new Error("PRD database store is unavailable.");
       return prdStore.list();

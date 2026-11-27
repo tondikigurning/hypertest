@@ -7,6 +7,7 @@ import { AgentWidget } from "../features/agent/agent-widget";
 import { AccountControls } from "../features/auth/account-controls";
 import { useWorkspaceUser } from "../features/auth/auth-context";
 import { PrdDocumentIcon } from "../features/prds/components/prd-document-icon";
+import { FlowCatalog } from "../features/prds/flow-catalog";
 import { PrdCatalog } from "../features/prds/prd-catalog";
 import { usePrds } from "../features/prds/use-prds";
 import { LiveRun } from "../features/runs/components/live-run";
@@ -75,8 +76,16 @@ export function App() {
   const filters = scenarioFiltersFromSearchParams(searchParams);
   const { search, status, tag } = filters;
   const isPrdView = isMenu && searchParams.get("view") === "prd";
+  const isFlowView = isMenu && searchParams.get("view") === "flows";
   useEffect(() => {
-    if (!isScenarioRoute || isMenu || searchParams.get("view") !== "prd" || !routeModule || !routeMenu) return;
+    if (
+      !isScenarioRoute ||
+      isMenu ||
+      !["prd", "flows"].includes(searchParams.get("view") || "") ||
+      !routeModule ||
+      !routeMenu
+    )
+      return;
     if (prds.draftPrds.loading) return;
     if (routeModule === "_components") {
       const next = new URLSearchParams(searchParams);
@@ -104,6 +113,7 @@ export function App() {
     searchParams,
   ]);
   const prdButton = useRef<HTMLButtonElement>(null);
+  const flowButton = useRef<HTMLButtonElement>(null);
   const activeRun = useActiveRun(true);
   const { run: activeDraftRun } = useDraftRuns();
   const { config, environment, setEnvironment } = useRunEnvironment();
@@ -403,6 +413,22 @@ export function App() {
                         <span>View PRD</span>
                       </button>
                     )}
+                    {isMenu && routeModule && routeMenu && (
+                      <button
+                        ref={flowButton}
+                        type="button"
+                        className="open-prd-button"
+                        title={`View flows for ${label(routeModule)} / ${label(routeMenu)}`}
+                        onClick={() => {
+                          const next = new URLSearchParams(searchParams);
+                          next.set("view", "flows");
+                          setSearchParams(next);
+                        }}
+                      >
+                        <PrdDocumentIcon />
+                        <span>View flows</span>
+                      </button>
+                    )}
                     {selectedGroup && scopedScenarios.length > 0 && !search.trim() && (
                       <GroupRun
                         key={selectedGroup.path}
@@ -592,6 +618,20 @@ export function App() {
                   `Help me edit or refresh the menu PRD for ${routeModule} / ${routeMenu}, covering its child test groups and files.`,
                 );
                 goHome();
+              }}
+            />
+          )}
+          {isFlowView && routeModule && routeMenu && (
+            <FlowCatalog
+              key={`${routeModule}/${routeMenu}/${prds.draft}`}
+              module={routeModule}
+              menu={routeMenu}
+              draft={user.role === "engineer" ? prds.draft : ""}
+              returnFocus={flowButton}
+              onClose={() => {
+                const next = new URLSearchParams(searchParams);
+                next.delete("view");
+                setSearchParams(next, { replace: true });
               }}
             />
           )}

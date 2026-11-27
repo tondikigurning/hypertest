@@ -44,6 +44,7 @@ import {
   refreshDraftForTurn,
   synchronizeDraftWorkspace,
 } from "./draft-workspace.mjs";
+import { readFlowDocument } from "./flow-document.mjs";
 import { createGithubOperations } from "./github-operations.mjs";
 import { createPrdDatabase } from "./prd-database.mjs";
 import { refreshPullRequests } from "./publish-draft.mjs";
@@ -168,6 +169,13 @@ export function createAgentRouter({
     }),
   );
   const prdStore = createPrdDatabase();
+  router.get("/checkout-flow-document", async (req, res) => {
+    try {
+      res.json(await readFlowDocument(resolve(import.meta.dirname, "../../../"), req.query.module, req.query.menu));
+    } catch (error) {
+      res.status(400).json({ error: error.message || "Could not load flows." });
+    }
+  });
   router.get("/prds", async (_req, res) => {
     try {
       res.json(await prdStore.list());
@@ -564,6 +572,13 @@ export function createAgentRouter({
       res.json(await req.agentSession.diff());
     } catch (error) {
       res.status(409).json({ error: error.message });
+    }
+  });
+  router.get("/flow-document", async (req, res) => {
+    try {
+      res.json(await req.agentSession.flowDocument(req.query.module, req.query.menu));
+    } catch (error) {
+      res.status(409).json({ error: error.message || "Could not load flows." });
     }
   });
   router.get("/context-files", async (req, res) => {

@@ -57,6 +57,8 @@ pnpm build
 
 Select a menu to use **View PRD**. Its one document covers the menu and all child test groups/files; child views do not have separate PRDs. Q-Rex stores PRDs and their versions in the configured PostgreSQL database, shared across browser identities; `docs/prd/<module>/<menu>.md` is their virtual identifier in agent tools, not a repository file. Manage versions in the PRD view; edit any version manually, or use **Edit with Q-Rex** on the active version. Attach a PDF, DOCX, Markdown, or text file in chat when importing. The agent explores the selected environment and requests review before marking observations validated. Documents have no draft or reviewed status. PRD edits do not become Git changes.
 
+Select **View flows** on a menu to read its `.flows.md` from the current checkout. Engineers with a Q-Rex draft can also view its flow document, including uncommitted draft changes. The draft and checkout can differ.
+
 Terminal agents access the same PRDs using the same configured database and the [database access procedure](.agents/skills/ask-qa/references/prd-database-access.md), including reading, writing and explicitly requested version deletion.
 
 The shared PRD migration stops if different browser identities have records for the same module and menu. Preserve and reconcile those records before retrying the migration. Non-conflicting legacy rows are retained in `automation_agent_prds_legacy_backup` when the migration succeeds.

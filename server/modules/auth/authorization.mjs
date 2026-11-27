@@ -7,7 +7,10 @@ export function mayUseApi(user, method, path) {
   if (user.role !== "viewer") return false;
   if (
     method === "GET" &&
-    (path === "/api/agent/prds" || path === "/api/agent/prd-versions" || path === "/api/agent/pull-requests")
+    (path === "/api/agent/checkout-flow-document" ||
+      path === "/api/agent/prds" ||
+      path === "/api/agent/prd-versions" ||
+      path === "/api/agent/pull-requests")
   )
     return true;
   if (path.startsWith("/api/agent/")) return false;
