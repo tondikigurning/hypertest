@@ -1690,7 +1690,8 @@ select:focus-visible {
   height: auto;
   max-height: none;
 }
-.live-dialog.expanded .live-screen img {
+.live-dialog.expanded .live-screen img,
+.exploration-preview.expanded .live-screen img {
   width: 100%;
   height: 100%;
   object-fit: contain;

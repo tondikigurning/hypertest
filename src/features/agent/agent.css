@@ -3285,9 +3285,10 @@ body:has(dialog[open]) .agent-widget:not(:has(.agent-confirm-dialog[open])) {
   box-shadow: 0 12px 36px #1c29403d;
 }
 .exploration-preview.expanded {
-  inset: 20px;
+  inset: 0;
   width: auto;
   height: auto;
+  border-radius: 0;
 }
 .exploration-preview .live-browser {
   height: 100%;
