@@ -1,6 +1,6 @@
 let principalId = "";
 let variableValues: Record<string, string> = {};
-const legacyKey = "automation-run-variables";
+const memoryValuesByPrincipal = new Map<string, Record<string, string>>();
 
 function storageKey() {
   return principalId ? `automation-run-variables:v2:${principalId}` : undefined;
@@ -20,8 +20,6 @@ function readStoredValues() {
     const oldLocalValues = JSON.parse(localStorage.getItem(oldLocalKey) || "{}");
     const migrated = { ...oldLocalValues, ...oldSessionValues };
     if (Object.keys(migrated).length) sessionStorage.setItem(key, JSON.stringify(migrated));
-    sessionStorage.removeItem(legacySecretKey);
-    localStorage.removeItem(oldLocalKey);
     return migrated;
   } catch {
     return {};
@@ -29,25 +27,9 @@ function readStoredValues() {
 }
 
 export function setVariablesPrincipal(id: string) {
-  if (principalId !== id) variableValues = {};
   principalId = id;
   variableValues = readStoredValues();
-  try {
-    sessionStorage.removeItem(legacyKey);
-  } catch {
-    /* Storage can be disabled. */
-  }
-}
-
-export function clearVariables() {
-  variableValues = {};
-  const key = storageKey();
-  if (!key) return;
-  try {
-    sessionStorage.removeItem(key);
-  } catch {
-    /* Keep the current tab usable when storage is unavailable. */
-  }
+  if (!Object.keys(variableValues).length) variableValues = memoryValuesByPrincipal.get(id) || {};
 }
 
 export function readVariables(defaults: Record<string, string> = {}): Record<string, string> {
@@ -56,6 +38,7 @@ export function readVariables(defaults: Record<string, string> = {}): Record<str
 
 export function writeVariables(values: Record<string, string>) {
   variableValues = values;
+  memoryValuesByPrincipal.set(principalId, values);
   const key = storageKey();
   try {
     if (key) sessionStorage.setItem(key, JSON.stringify(values));

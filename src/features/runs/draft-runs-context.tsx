@@ -4,7 +4,6 @@ import { readAgentVariables } from "../agent/agent-variables";
 import { useWorkspaceUser } from "../auth/auth-context";
 import { type DraftRunState, saveDraftRun } from "./draft-evidence-store";
 import { DraftRunsContext } from "./draft-runs-state";
-import { clearVariables } from "./run-variables";
 
 export function DraftRunsProvider({ children }: { children: ReactNode }) {
   const user = useWorkspaceUser();
@@ -128,7 +127,6 @@ export function DraftRunsProvider({ children }: { children: ReactNode }) {
       setRun(result);
       setError("");
     } finally {
-      clearVariables();
       setStarting(false);
     }
   }, []);

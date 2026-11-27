@@ -2,7 +2,7 @@ import "./auth.css";
 import { type FormEvent, type ReactNode, useEffect, useState } from "react";
 import { FormField, PrimaryButton, TextInput } from "../../components";
 import { setAgentPrincipal } from "../agent/agent-api";
-import { clearVariables, setVariablesPrincipal } from "../runs/run-variables";
+import { setVariablesPrincipal } from "../runs/run-variables";
 import { AuthActionsContext, UserContext, type WorkspaceUser } from "./auth-context";
 
 const sessionChangeKey = "automation-session-change";
@@ -51,7 +51,6 @@ export function AuthGate({ children }: { children: ReactNode }) {
   useEffect(() => {
     function onStorage(event: StorageEvent) {
       if (event.key !== sessionChangeKey) return;
-      clearVariables();
       setVariablesPrincipal("");
       setAgentPrincipal("");
       window.location.reload();
@@ -100,7 +99,6 @@ export function AuthGate({ children }: { children: ReactNode }) {
     try {
       const response = await fetch("/api/auth/logout", { method: "POST" });
       if (!response.ok) throw new Error("Could not sign out.");
-      clearVariables();
       setVariablesPrincipal("");
       setAgentPrincipal("");
       signalSessionChange();

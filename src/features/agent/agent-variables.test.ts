@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { clearVariables, readVariables, setVariablesPrincipal, writeVariables } from "../runs/run-variables";
+import { readVariables, setVariablesPrincipal, writeVariables } from "../runs/run-variables";
 import { readAgentVariables } from "./agent-variables";
 
-test("all variables survive refreshes in the tab and clear together after use", () => {
+test("all variables survive refreshes and remain available after use", () => {
   const originals = { localStorage: globalThis.localStorage, sessionStorage: globalThis.sessionStorage };
   const local = new Map<string, string>([
     ["automation-run-variables:v1:alice", JSON.stringify({ E2E_USERNAME: "old-user", E2E_CASE_CUSTOMER_ID: "old-id" })],
@@ -45,9 +45,8 @@ test("all variables survive refreshes in the tab and clear together after use", 
     setVariablesPrincipal("alice");
     assert.deepEqual(readVariables(), persisted);
 
-    clearVariables();
-    assert.deepEqual(readVariables(), {});
-    assert.equal(session.has("automation-run-variables:v2:alice"), false);
+    assert.deepEqual(readVariables(), persisted);
+    assert.equal(session.get("automation-run-variables:v2:alice"), JSON.stringify(persisted));
   } finally {
     Object.defineProperty(globalThis, "localStorage", { configurable: true, value: originals.localStorage });
     Object.defineProperty(globalThis, "sessionStorage", { configurable: true, value: originals.sessionStorage });

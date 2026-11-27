@@ -3,7 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { FormField, Modal, PrimaryButton, Spinner, TextInput } from "../../../components";
 import type { RunConfig } from "../run-environment-state";
-import { clearVariables, readVariables, writeVariables } from "../run-variables";
+import { readVariables, writeVariables } from "../run-variables";
 import type { Run, RunSelection } from "../types";
 import { activeRunKey, useActiveRun } from "../use-active-run";
 import { useRunEnvironment } from "../use-run-environment";
@@ -72,7 +72,7 @@ export function EnvironmentVariables({ disabled = false }: { disabled?: boolean 
           <RunDialogHeading
             titleId="environment-title"
             title="Variables"
-            description="Variables survive refreshes in this tab and are cleared after a run or agent request."
+            description="Variables stay available in this tab across refreshes, runs, and agent requests."
             closeLabel="Close environment variables"
             onClose={closeVariables}
           />
@@ -166,7 +166,6 @@ export function LocalRun({
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to start the run.");
     } finally {
-      clearVariables();
       setSubmitting(false);
     }
   };
