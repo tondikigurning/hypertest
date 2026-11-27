@@ -33,7 +33,7 @@ After confirmation, update the menu registry using the [template](references/flo
 
 ## 3. Establish testable branches
 
-Use the coverage checklist for every selected flow. Start with the whole confirmed scope as the candidate batch; include supported distinct success and consequential alternate outcomes. Existing coverage counts only when its assertions cover the condition and outcome. Continue independent branches when another is blocked. Split only for a concrete evidence, host or accuracy/review constraint; a scenario count, different setup or future implementation effort alone is insufficient. Account for every omitted branch and next action.
+Plan scenario authoring for every confirmed in-scope flow. For up to 12 flows, process the entire scope without splitting it into batches; for more, partition the flows into balanced batches targeting 8–12 flows each, following [coverage and batching](references/scenario-coverage.md). For every flow in the current scope, use the full coverage checklist and author all distinct supported outcomes and branches that existing assertions do not already cover. Scenario count does not limit a flow. Continue independent branches when another is blocked and record each unresolved branch and next action.
 
 Before authoring, apply [reliable scenario contracts](references/reliable-e2e.md#scenario-contracts). Connect shared setup and lifecycle transitions to existing evidence once. Identify missing preconditions, exact target, readiness and observable outcome rather than letting implementation guess them. Capture reusable locators while already inspecting relevant UI; temporary `eNN` refs or outcome text alone are not locator evidence. Keep technical detail in the handoff and business behavior in Gherkin.
 

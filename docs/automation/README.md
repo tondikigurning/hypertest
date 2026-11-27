@@ -78,9 +78,11 @@ The default workflow uses the review gates below. When an approval is pending, *
    Resume by reading this file, the active database PRD and the relevant features; recheck changed or
    unverified scope and obtain any host-required flow confirmation. The file is available only in the
    workspace or committed source that contains it; a separate draft does not automatically inherit it.
-   A full pass plans supported, important smoke and regression branches for each flow. Batches are
-   grouped by related outcomes and review/verification effort; deferred or blocked branches stay in
-   `.flows.md` gaps so later batches can resume them.
+   A full pass covers every confirmed in-scope flow and its supported, distinct smoke and regression
+   branches. Up to 12 flows are handled together without batching; larger inventories are divided into balanced batches
+   targeting 8–12 flows each. Flow count does not limit the number of scenarios per flow. The ordered
+   batch plan and blocked or deferred branches are recorded in `.exploration.md`; PRD/actual
+   discrepancies belong in `.flows.md` gaps.
 4. Q-Rex writes one scenario batch and stops for review. Review the request in **Chat**, inspect the preview and diff in **Changes**, then use
    **Approve scenario changes** in either view. Chat answers, PRD review and flow confirmation do not replace
    this approval. A changed scenario snapshot invalidates approval for implementation and execution.
@@ -104,7 +106,7 @@ For terminal agents, the [scenario review record](../../.agents/skills/write-e2e
 
 When Q-Rex finishes code without collection or standalone type checks, it reports an **implementation draft; checks pending**. It can run an approved implemented draft scenario through the isolated runner, but that result does not replace collection/type checks. An approved changed batch retains `approved`; an eligible unchanged baseline scenario retains its actual historical review status, which can be unknown. The flow registry remains `written` where applicable. The handoff identifies branch/base, current source revision and full Changes snapshot/patch, exact files and scenario IDs, baseline or approval evidence, locator gaps and pending commands. External verification must identify that same source and complete selection, actual commands/results and intended environment before advancing `implemented` or `verified`. Changed source invalidates affected evidence.
 
-After a scenario batch is approved, another scenario-only batch may be written on a later turn without waiting for implementation or verification. Q-Rex reviews the cumulative changed feature snapshot, so each new scenario edit requires a fresh review of the current snapshot. Plan and review the scenario batches before adding implementation changes: the current Q-Rex review blocks approval of changed scenarios while implementation edits are present. Preserve any existing implementation changes and use a properly based scenario-only draft if more scenario review is needed; never reset another draft implicitly.
+After a scenario batch is approved, continue the planned scenario-only batches until all confirmed flows are accounted for, without waiting for implementation or verification. In manual mode, resume the conversation on a later turn after the required review; Q-Rex carries forward the full requested scope. Explicitly enabled **Allow all agent approvals** follows the automatic gates. Q-Rex reviews the cumulative changed feature snapshot, so each new scenario edit requires a fresh review of the current snapshot. Plan and review the scenario batches before adding implementation changes: the current Q-Rex review blocks approval of changed scenarios while implementation edits are present. Preserve any existing implementation changes and use a properly based scenario-only draft if more scenario review is needed; never reset another draft implicitly.
 
 The shared skill contract is [workflow-contract.md](../../.agents/skills/ask-qa/references/workflow-contract.md). Its [exploration reuse contract](../../.agents/skills/ask-qa/references/exploration-context.md) applies before browser calls in all three authoring phases. PRD work starts one sanitized `e2e/tests/bdd/features/<module>/<menu>.exploration.md`, even before scenarios exist. It preserves the explored inventory, actual observation dates, target/role/state, verified locator expressions, supported request facts and precise remaining gaps. Scenario and code work consume and extend this record; PRDs and flow handoffs reference its evidence IDs. Save meaningful chunks before reviews, handoffs or stopping so a new conversation can resume from accessible files. Existing inline PRD/flow evidence remains usable.
 
