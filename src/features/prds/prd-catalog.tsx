@@ -108,10 +108,20 @@ function PrdState({
   );
 }
 
-function EditorActions({ busy, label, onCancel }: { busy: boolean; label: string; onCancel: () => void }) {
+function EditorActions({
+  busy,
+  canSave,
+  label,
+  onCancel,
+}: {
+  busy: boolean;
+  canSave: boolean;
+  label: string;
+  onCancel: () => void;
+}) {
   return (
     <div className="prd-version-actions">
-      <button type="submit" className="prd-action-button prd-action-primary" disabled={busy}>
+      <button type="submit" className="prd-action-button prd-action-primary" disabled={busy || !canSave}>
         {label}
       </button>
       <button type="button" className="prd-text-action" disabled={busy} onClick={onCancel}>
@@ -172,8 +182,7 @@ export function PrdCatalog({
     else proceed();
   }
   function closeDialog() {
-    if (busy) onClose();
-    else leaveEditor(onClose);
+    leaveEditor(onClose);
   }
   const documentContent = selectedContent === undefined ? "" : displayContent(selectedContent, menu);
   const noVersions = !versions.loading && !versions.error && versions.items.length === 0;
@@ -202,7 +211,7 @@ export function PrdCatalog({
     event.preventDefault();
     if (!selectedVersion) return;
     await runAction(async () => {
-      await versions.update(selectedVersion.id, name);
+      await versions.update(selectedVersion.id, name.trim());
     });
   }
 
@@ -435,6 +444,15 @@ export function PrdCatalog({
               )}
               {editingContent && selectedVersion ? (
                 <form className="prd-editor-form" onSubmit={(event) => void saveContent(event)}>
+                  <div className="prd-edit-heading">
+                    <div>
+                      <h4>Edit content</h4>
+                      <p>Edit the Markdown for this version and preview it before saving.</p>
+                    </div>
+                    <span className="prd-edit-status" role="status">
+                      {hasUnsavedChanges ? "Unsaved changes" : "No changes"}
+                    </span>
+                  </div>
                   <fieldset className="prd-editor-tabs">
                     <legend>Document view</legend>
                     <button type="button" aria-pressed={!showEditorPreview} onClick={() => setShowEditorPreview(false)}>
@@ -446,7 +464,11 @@ export function PrdCatalog({
                   </fieldset>
                   {showEditorPreview ? (
                     <div className="prd-editor-preview">
-                      <PrdMarkdown content={displayContent(contentDraft, menu)} />
+                      {contentDraft.trim() ? (
+                        <PrdMarkdown content={displayContent(contentDraft, menu)} />
+                      ) : (
+                        <p className="prd-preview-empty">Nothing to preview yet.</p>
+                      )}
                     </div>
                   ) : (
                     <FormField label="PRD Markdown" htmlFor="prd-version-content">
@@ -462,7 +484,8 @@ export function PrdCatalog({
                   )}
                   <EditorActions
                     busy={busy}
-                    label="Save changes"
+                    canSave={hasUnsavedChanges}
+                    label={busy ? "Saving…" : "Save changes"}
                     onCancel={() => {
                       leaveEditor(() => setEditingContent(false));
                     }}
@@ -470,6 +493,12 @@ export function PrdCatalog({
                 </form>
               ) : editingName && selectedVersion ? (
                 <form className="prd-rename-form" onSubmit={(event) => void saveName(event)}>
+                  <div className="prd-edit-heading">
+                    <div>
+                      <h4>Rename version</h4>
+                      <p>Choose a name that makes this version easy to identify.</p>
+                    </div>
+                  </div>
                   <FormField label="Version name" htmlFor="prd-version-name">
                     <TextInput
                       id="prd-version-name"
@@ -482,7 +511,8 @@ export function PrdCatalog({
                   </FormField>
                   <EditorActions
                     busy={busy}
-                    label="Save name"
+                    canSave={Boolean(name.trim()) && name.trim() !== selectedVersion.name}
+                    label={busy ? "Saving…" : "Save name"}
                     onCancel={() => {
                       leaveEditor(() => setEditingName(false));
                     }}
@@ -490,7 +520,7 @@ export function PrdCatalog({
                 </form>
               ) : null}
 
-              {!editingContent && <PrdMarkdown content={documentContent || ""} />}
+              {!editingContent && !editingName && <PrdMarkdown content={documentContent || ""} />}
             </div>
           )}
         </div>

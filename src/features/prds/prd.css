@@ -664,6 +664,7 @@
     padding: 20px 18px 36px;
   }
 }
+
 /* PRD workspace */
 .prd-dialog {
   width: min(1000px, calc(100vw - 40px));
@@ -1079,5 +1080,79 @@
   }
   .prd-management-layout {
     grid-template-rows: auto minmax(0, 1fr);
+  }
+}
+
+/* Editing surfaces */
+.prd-rename-form,
+.prd-editor-form {
+  display: block;
+  margin: 20px 0 0;
+  padding: 20px;
+  border: 1px solid #e4e0ec;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 4px 18px #25324d0a;
+}
+.prd-rename-form {
+  max-width: 520px;
+}
+.prd-edit-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.prd-edit-heading h4 {
+  margin: 0;
+  color: #354157;
+  font-size: 15px;
+}
+.prd-edit-heading p {
+  margin: 5px 0 0;
+  color: #69768a;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.prd-edit-status {
+  padding: 5px 8px;
+  border-radius: 6px;
+  background: #f5f2fa;
+  color: #67518f;
+  font-size: 11px;
+  font-weight: 700;
+}
+.prd-rename-form .form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.prd-editor-form .prd-editor-tabs {
+  margin: 0 0 14px;
+}
+.prd-editor-form textarea,
+.prd-editor-preview {
+  min-height: min(55vh, 560px);
+}
+.prd-editor-form textarea {
+  padding: 16px;
+  line-height: 1.7;
+}
+.prd-preview-empty {
+  margin: 0;
+  color: #8993a2;
+  font-size: 12px;
+}
+.prd-rename-form .prd-version-actions,
+.prd-editor-form .prd-version-actions {
+  justify-content: flex-end;
+  margin: 18px 0 0;
+}
+@media (max-width: 650px) {
+  .prd-rename-form,
+  .prd-editor-form {
+    padding: 16px;
   }
 }
