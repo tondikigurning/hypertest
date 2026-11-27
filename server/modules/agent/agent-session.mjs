@@ -1609,7 +1609,8 @@ export function createSession({
           requestedSkill = name;
           messages.push({ id: randomUUID(), role: "assistant", text: `Q-Rex is using /${name}.`, skill: name });
           save();
-          return { skill: name, instructions, workflow: agentWorkflowInstructions };
+          // systemForStep supplies the full active instructions on each step; avoid copying them into history.
+          return { skill: name };
         },
         confirmFlows: async ({ featurePath, prdPath, flows }) => {
           const approval = await confirmFlowReview({

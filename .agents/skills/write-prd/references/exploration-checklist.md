@@ -1,6 +1,6 @@
 # Exploration checklist
 
-What to check, and how to record it, during live exploration (Step 2B). Read this and the shared [playwright-cli exploration](../../write-e2e-scenarios/references/playwright-cli-exploration.md) and [data safety](../../write-e2e-scenarios/references/data-safety.md) references before the first interaction.
+Apply this checklist to recovered evidence, then fill only missing/affected facts in the skill's evidence-gap step. Before live interaction, apply the shared [playwright-cli exploration](../../write-e2e-scenarios/references/playwright-cli-exploration.md) and [data safety](../../write-e2e-scenarios/references/data-safety.md) references; reuse instructions already loaded.
 
 Exploration finds possible journeys. It does not prove the PRD is complete. Relevant findings recorded in the PRD are `observed`, never intent without review.
 
@@ -18,8 +18,8 @@ Exploration finds possible journeys. It does not prove the PRD is complete. Rele
 ## Before you start
 
 - [ ] Apply [exploration reuse](../../ask-qa/references/exploration-context.md): recover the menu record and prior context, mark applicable evidence, and list only missing or affected questions for live work. Existing observations count toward this checklist; skip browser setup when none are missing.
-- [ ] Scope is settled: module, menu, environment (Step 0).
-- [ ] Available context for roles, accounts, production restrictions and known issues has been gathered; gaps are recorded (Step 0b). Discover required data during exploration.
+- [ ] Scope is settled: module, menu, environment.
+- [ ] Available context for roles, accounts, production restrictions and known issues has been gathered; gaps are recorded. Discover required data during exploration.
 - [ ] Credentials come from the environment's configured variables. Never print or echo them.
 - [ ] E2E-owned operations are within the requested task and host approval rules; seed/shared data remains read-only without a scoped exception.
 - [ ] If live work remains, the host's managed Q-Rex browser or an owned terminal CLI session is ready. Identify it accurately in the log; do not invent an unavailable session name.

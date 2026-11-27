@@ -96,3 +96,48 @@ The agent workflow and review suites passed **28/28**, including a new scripted-
 The shared contract now explicitly describes loading skills and resuming saved uncommitted handoffs from the terminal agent's own checkout, independently of the Q-Rex runtime. Terminal flow confirmation records the pre-review PRD and feature digests, checks them again after the user's decision, and records the agent's verified post-authoring feature contents for later comparison. PRD source digests use exact bytes from the database CLI, not a virtual path treated as a local file. Browser configuration and prior exploration can be reused across skills, and an unavailable PRD does not independently block eligible technical repairs.
 
 The PRD database suite passed **3/3**, exercising the real terminal CLI with isolated generated test identities, shared database reads, stale-write checks and review-gated writes. The installed `playwright-cli.cmd --help` was checked without opening a browser. Local reference paths/anchors and `git diff --check` passed. This validates terminal CLI access and documentation links; it does not simulate an autonomous terminal agent completing a human review, perform tenant exploration or execute BDD scenarios. No user PRD identity or existing task workspace was modified by the database tests.
+
+## Continuation and instruction size — 2026-11-27
+
+The workflow now resolves `continue`/`lanjut` from actual phase progress, scope and decisions; uses the existing exploration record as a compact continuation/source index; and reads only changed or missing context. Terminal acceptance can continue an already authorized pipeline in the same turn. Q-Rex's manual native PRD turn boundary and separate flow/scenario/data decisions remain intact. Terminal handoffs can reference existing raw-byte feature digests rather than duplicating Gherkin. The PRD import procedure loads only for imports; repeated interview, exploration and review prose was consolidated. A conflicting flow-discovery pointer was corrected so scenario mappings live only in the exploration handoff.
+
+Q-Rex also returns only the activated skill name from `use_skill`. The active skill and workflow already enter `systemForStep` on every model request, so returning both complete documents again had duplicated instructions in persistent tool history. Activation, persistence and all existing approval guards remain in place.
+
+This follows the official guidance to [keep skill entrypoints concise and load supporting resources conditionally](https://developers.openai.com/plugins/build/skills), and to [evaluate observable decisions and efficiency separately](https://developers.openai.com/blog/eval-skills). The source of truth remains the local host and repository workflow.
+
+### Decision exercise
+
+One independent agent with no parent conversation applied an immutable snapshot to the eight [continuation requests](skill-evaluation/continuation-cases.md). It could read only the snapshot and write its response; no live repository, tenant, network, credentials, database or test execution was available. The [raw decisions](skill-evaluation/continuation-responses.md) retain its actual conclusions. Snapshot-relative links were converted to plain source identifiers for archival, without changing decision text. The agent inherited the session model; no exact model identifier was exposed, so none is inferred.
+
+The initial snapshot includes all skill Markdown, test organization and the continuation requests: **37 files**, SHA-256 `01270201b18366bb14d4f86b0f024c9ad0f481bde89a67c1680ef148bb60e7f9`. Fingerprinting sorts relative `/` paths, hashing each path, NUL, LF-normalized UTF-8 content, NUL. The main agent scored the decisions against the supplied facts:
+
+| Case | Observed decision | Assessment |
+| --- | --- | --- |
+| C1 | Completed PRD plus `lanjut` selects scenarios; reuse evidence and request flow confirmation without browser replay | Pass |
+| C2 | Pending PRD/scenario review needs explicit acceptance; continuation alone does not approve | Pass |
+| C3 | Check bytes and record actual terminal acceptance, then implement in the already authorized turn; changed files need review | Pass |
+| C4 | Preserve Q-Rex PRD turn boundary and native scenario approval; later continuation selects the right phase | Pass |
+| C5 | Author remaining scenario-only batch before code; review the new cumulative snapshot | Pass |
+| C6 | Recover source pointers after compaction; reassess changed PRD mapping separately from matching review and applicable locators | Pass |
+| C7 | Inspect only the missing Save locator, retain unchanged account blocker and unsupported capabilities | Pass |
+| C8 | Reuse successful checks, keep blocked/not-run execution truthful, preserve selected scope and PRD-only acceptance boundary | Pass |
+
+Observed decisions: **8/8** in one trial per case. This checks instruction interpretation, not autonomous tool execution or a statistical reliability rate. After freezing the first exercise, the shared contract was shortened further without changing its gates, the mapping pointer was corrected, and README wording was clarified. The final instruction/case snapshot has 37 files, SHA-256 `bc7505f76224b77b3aec714f75dbcb211d4aaf783af09741885ee4aaa4cb1bd7`; the first trial is not relabeled as a blind trial of that revision.
+
+The same evaluator's [follow-up review](skill-evaluation/continuation-follow-up.md) applied that final snapshot and retained all eight decisions. It kept unspecified artifact contents, runner exposure and the changed PRD rule as explicit uncertainties. This was a follow-up review, not a second blind comparison. The later `use_skill` transport change was verified by runtime tests, separately from the instruction-only exercise.
+
+### Size and validation
+
+Counts below compare LF-normalized text with committed baseline `e6a6c3e16b14180b4a86752f2be35d0b40e3b7eb`. They count characters, not model tokens; conditional references are excluded from entrypoint totals.
+
+| Document | Before | After | Reduction |
+| --- | ---: | ---: | ---: |
+| `write-prd/SKILL.md` | 27,314 | 9,176 | 66.4% |
+| `write-e2e-scenarios/SKILL.md` | 11,152 | 8,651 | 22.4% |
+| `write-e2e-code/SKILL.md` | 11,096 | 9,819 | 11.5% |
+| Three specialist entrypoints | 49,562 | 27,646 | 44.2% |
+| Shared workflow contract, including new continuation rules | 16,012 | 13,705 | 14.4% |
+
+The workflow, review, context and session suites passed **48/48**, covering scripted-provider tool transport, PRD/flow/scenario gates, cumulative review, source changes and evidence handoff without a browser. A new regression checks that switching skills updates the next system prompt, preserves active instructions after session reload and keeps complete instruction documents out of tool history. These tests do not prove that an autonomous model chooses the intended continuation. Typecheck and build passed. Biome passed with 19 warnings in unchanged files (18 stylesheet warnings and an unused `downloadPrd`); build retained its chunk-size warning. Local frontmatter/name/description/scaffold and Markdown path/anchor checks passed. The bundled Python validator could not run because the `python` command resolves to an unavailable Windows runtime alias; its success is not claimed, and no dependency was installed.
+
+No tenant exploration, BDD generation/execution, evidence upload, catalog sync, application restart, task reset, commit or publication occurred. Actual end-to-end duration and token savings remain unmeasured. A future comparison should keep target, requirements, assertions, host/model/effort and review decisions comparable, and separate active work, review wait and test duration using reported usage. Revised terminal instructions are usable in this checkout; Q-Rex still needs the skill revision in its own selected base/workspace and an API restart for the adapter changes, preserving unfinished drafts.

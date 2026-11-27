@@ -11,6 +11,8 @@ Use this template when creating `e2e/tests/bdd/features/<module>/<menu>.explorat
 - Target: <safe environment and tenant/entity alias>; role: <non-personal role or unknown>.
 - References: <active PRD identifier and version or safe content reference; relevant source sections and feature paths>.
 - Context: <answered business questions, priorities, restrictions, decisions and unresolved intent>.
+- Continuation: <requested endpoint; completed/current phase; next skill and first unfinished action; pending decision/blocker with a link to its record>.
+- Implementation map: <known relevant steps/POMs/COMs/fixtures, symbols and supported check commands; add only findings actually obtained, omit until useful>.
 - UI/build: <known change indicator or unknown>; observation dates are per evidence item.
 
 ## Exploration inventory

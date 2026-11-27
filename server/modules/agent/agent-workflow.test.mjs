@@ -230,6 +230,41 @@ test("a running tool reports its activity without exposing its input", async (t)
   assert.equal(done.activity, undefined);
 });
 
+test("skill handoffs supply current system instructions without copying documents into tool history", async (t) => {
+  const prdInstructions = "PRD fixture instruction. ".repeat(200);
+  const scenarioInstructions = "Scenario fixture instruction. ".repeat(200);
+  const { session, requests, resumeSession } = await workflow(
+    t,
+    [
+      { tool: "use_skill", input: { skill: "write-prd" } },
+      { tool: "use_skill", input: { skill: "write-e2e-scenarios" } },
+      { text: "Workflow loaded." },
+      { text: "Workflow restored." },
+    ],
+    {},
+    {
+      ".agents/skills/write-prd/SKILL.md": prdInstructions,
+      ".agents/skills/write-e2e-scenarios/SKILL.md": scenarioInstructions,
+    },
+  );
+  await session.send("Continue the workflow.");
+  await waitFor(session, (state) => !state.busy);
+  assert.ok(requests[1].messages[0].content.includes(prdInstructions));
+  assert.ok(requests[2].messages[0].content.includes(scenarioInstructions));
+  assert.ok(!requests[2].messages[0].content.includes(prdInstructions));
+
+  const resumed = resumeSession();
+  await resumed.send("Continue.");
+  await waitFor(resumed, (state) => !state.busy);
+  const restored = requests.at(-1);
+  assert.ok(restored.messages[0].content.includes(scenarioInstructions));
+  const results = restored.messages.filter((message) => message.role === "tool");
+  assert.deepEqual(
+    results.map((message) => JSON.parse(message.content)),
+    [{ skill: "write-prd" }, { skill: "write-e2e-scenarios" }],
+  );
+});
+
 test("the next turn is told that the previous turn was stopped", async (t) => {
   const responses = [
     { tool: "ask_user", input: { question: "Continue?", options: [], isSecret: false } },

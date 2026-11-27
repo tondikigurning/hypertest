@@ -196,7 +196,7 @@ export function createAgentTools({
       ? {
           use_skill: tool({
             description:
-              "Activate a QA specialist workflow and load its complete instructions. Preserve scope and all review gates; this does not grant approval or start the next batch.",
+              "Activate a QA specialist; its complete instructions enter the system prompt on the next step. Preserve scope and all review gates; activation grants no approval.",
             inputSchema: z.object({ skill: z.enum(agentSkillNames) }),
             execute: async ({ skill }) => useSkill(skill),
           }),
