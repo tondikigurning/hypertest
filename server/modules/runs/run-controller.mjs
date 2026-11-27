@@ -10,12 +10,12 @@ import { resolveSelection } from "./run-selection.mjs";
 const e2eWorkspace = resolve(import.meta.dirname, "../../../e2e");
 const service = createLocalRunService({ resultStore, safeProcessEnvironment: true });
 const variables = [
-  { name: "E2E_USERNAME", label: "E2E username", secret: false, required: true },
-  { name: "E2E_PASSWORD", label: "E2E password", secret: true, required: true },
+  { name: "E2E_USERNAME", label: "E2E username", hidden: false, required: true },
+  { name: "E2E_PASSWORD", label: "E2E password", hidden: true, required: true },
   {
     name: "E2E_CASE_CUSTOMER_ID",
     label: "E2E case customer ID",
-    secret: false,
+    hidden: false,
     required: false,
   },
 ];

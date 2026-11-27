@@ -34,9 +34,11 @@ of effort. Tests cover outgoing SDK request shapes and provider errors, but a su
 not prove that a gateway or upstream model actually honors the selected value.
 
 For tenant exploration, select the environment and enter `E2E_USERNAME` and `E2E_PASSWORD` in browser
-Variables. Chat sends these variables separately to the local API, including when starting from
-`ask-qa`; the runtime uses them for browser authentication and redacts their
-values from model messages and saved conversations. Do not paste credentials into chat.
+Variables. All Variables share the same tab-scoped persistence and are cleared after a run or agent
+request; the `hidden` setting only controls password masking in the input. Chat sends the credentials
+separately to the local API, including when starting from `ask-qa`; the runtime uses them for browser
+authentication and redacts their values from model messages and saved conversations. Do not paste
+credentials into chat.
 
 Exploration requires the installed `playwright-cli` and Playwright Chromium. Separate SSO, asset or API origins are blocked by the target-origin restriction.
 

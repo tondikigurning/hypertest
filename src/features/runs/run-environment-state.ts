@@ -6,7 +6,7 @@ export interface RunConfig {
   variables: Array<{
     name: string;
     label: string;
-    secret: boolean;
+    hidden: boolean;
     required: boolean;
     defaultValue?: string;
   }>;

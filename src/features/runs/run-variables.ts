@@ -1,63 +1,47 @@
 let principalId = "";
-let secretValues: Record<string, string> = {};
-let memoryPublicValues: Record<string, string> = {};
+let variableValues: Record<string, string> = {};
 const legacyKey = "automation-run-variables";
-const transientVariableNames = new Set(["E2E_CASE_CUSTOMER_ID"]);
 
-function secretStorageKey() {
-  return principalId ? `automation-run-variables:secrets:v1:${principalId}` : undefined;
+function storageKey() {
+  return principalId ? `automation-run-variables:v2:${principalId}` : undefined;
 }
 
-function readStoredSecrets() {
-  const key = secretStorageKey();
+function readStoredValues() {
+  const key = storageKey();
   if (!key) return {};
   try {
-    return JSON.parse(sessionStorage.getItem(key) || "{}");
+    const current = sessionStorage.getItem(key);
+    if (current) return JSON.parse(current);
+
+    // Migrate values saved by older versions into tab-scoped storage.
+    const legacySecretKey = `automation-run-variables:secrets:v1:${principalId}`;
+    const oldSessionValues = JSON.parse(sessionStorage.getItem(legacySecretKey) || "{}");
+    const oldLocalKey = `automation-run-variables:v1:${principalId}`;
+    const oldLocalValues = JSON.parse(localStorage.getItem(oldLocalKey) || "{}");
+    const migrated = { ...oldLocalValues, ...oldSessionValues };
+    if (Object.keys(migrated).length) sessionStorage.setItem(key, JSON.stringify(migrated));
+    sessionStorage.removeItem(legacySecretKey);
+    localStorage.removeItem(oldLocalKey);
+    return migrated;
   } catch {
     return {};
   }
 }
 
-function storageKey() {
-  return principalId ? `automation-run-variables:v1:${principalId}` : undefined;
-}
-
-function removeStoredTransientVariables() {
-  const key = storageKey();
-  if (!key) return;
-  try {
-    const saved = JSON.parse(localStorage.getItem(key) || "{}");
-    let changed = false;
-    for (const name of transientVariableNames) {
-      if (name in saved) {
-        delete saved[name];
-        changed = true;
-      }
-    }
-    if (changed) localStorage.setItem(key, JSON.stringify(saved));
-  } catch {
-    /* Storage can be disabled or contain invalid data. */
-  }
-}
-
 export function setVariablesPrincipal(id: string) {
-  if (principalId !== id) {
-    secretValues = {};
-    memoryPublicValues = {};
-  }
+  if (principalId !== id) variableValues = {};
   principalId = id;
-  secretValues = readStoredSecrets();
+  variableValues = readStoredValues();
   try {
     sessionStorage.removeItem(legacyKey);
   } catch {
     /* Storage can be disabled. */
   }
-  removeStoredTransientVariables();
 }
 
-export function clearVariableSecrets() {
-  secretValues = {};
-  const key = secretStorageKey();
+export function clearVariables() {
+  variableValues = {};
+  const key = storageKey();
   if (!key) return;
   try {
     sessionStorage.removeItem(key);
@@ -67,38 +51,15 @@ export function clearVariableSecrets() {
 }
 
 export function readVariables(defaults: Record<string, string> = {}): Record<string, string> {
-  try {
-    removeStoredTransientVariables();
-    const key = storageKey();
-    const saved = key ? JSON.parse(localStorage.getItem(key) || "{}") : {};
-    return { ...defaults, ...saved, ...memoryPublicValues, ...secretValues };
-  } catch {
-    return { ...defaults, ...memoryPublicValues, ...secretValues };
-  }
+  return { ...defaults, ...variableValues };
 }
 
-export function writeVariables(values: Record<string, string>, variables: Array<{ name: string; secret: boolean }>) {
-  const publicValues: Record<string, string> = {};
-  const secrets: Record<string, string> = {};
-  const persistentSecrets: Record<string, string> = {};
-  for (const variable of variables) {
-    if (variable.secret || transientVariableNames.has(variable.name)) {
-      secrets[variable.name] = values[variable.name] || "";
-      if (variable.secret) persistentSecrets[variable.name] = values[variable.name] || "";
-    } else publicValues[variable.name] = values[variable.name] || "";
-  }
-  secretValues = secrets;
-  memoryPublicValues = publicValues;
+export function writeVariables(values: Record<string, string>) {
+  variableValues = values;
   const key = storageKey();
   try {
-    if (key) localStorage.setItem(key, JSON.stringify(publicValues));
+    if (key) sessionStorage.setItem(key, JSON.stringify(values));
   } catch {
-    /* Keep public values in this tab when local storage is unavailable. */
-  }
-  const secretKey = secretStorageKey();
-  try {
-    if (secretKey) sessionStorage.setItem(secretKey, JSON.stringify(persistentSecrets));
-  } catch {
-    /* Keep secret values in memory when session storage is unavailable. */
+    /* Keep values in this tab when session storage is unavailable. */
   }
 }

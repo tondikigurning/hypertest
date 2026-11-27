@@ -2,7 +2,7 @@ import { Icon } from "@hyperscal/icons";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { Modal, TextAreaInput, TextInput } from "../../components";
-import { clearVariableSecrets } from "../runs/run-variables";
+import { clearVariables } from "../runs/run-variables";
 import { useActiveRun } from "../runs/use-active-run";
 import { useDraftRuns } from "../runs/use-draft-runs";
 import { useRunEnvironment } from "../runs/use-run-environment";
@@ -853,7 +853,7 @@ export function AgentWidget({
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Could not send message.");
     } finally {
-      clearVariableSecrets();
+      clearVariables();
       setSending(false);
     }
   };
@@ -1156,6 +1156,7 @@ export function AgentWidget({
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Could not send answer.");
     } finally {
+      clearVariables();
       setSending(false);
     }
   };

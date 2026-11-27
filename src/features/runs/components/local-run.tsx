@@ -3,7 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { FormField, Modal, PrimaryButton, Spinner, TextInput } from "../../../components";
 import type { RunConfig } from "../run-environment-state";
-import { clearVariableSecrets, readVariables, writeVariables } from "../run-variables";
+import { clearVariables, readVariables, writeVariables } from "../run-variables";
 import type { Run, RunSelection } from "../types";
 import { activeRunKey, useActiveRun } from "../use-active-run";
 import { useRunEnvironment } from "../use-run-environment";
@@ -72,14 +72,14 @@ export function EnvironmentVariables({ disabled = false }: { disabled?: boolean 
           <RunDialogHeading
             titleId="environment-title"
             title="Variables"
-            description="Passwords survive refreshes in this tab and are cleared after a run or agent request. Case customer IDs stay in memory."
+            description="Variables survive refreshes in this tab and are cleared after a run or agent request."
             closeLabel="Close environment variables"
             onClose={closeVariables}
           />
           <form
             onSubmit={(event) => {
               event.preventDefault();
-              writeVariables(values, config.variables);
+              writeVariables(values);
               setValues({});
               setVariablesOpen(false);
             }}
@@ -95,7 +95,7 @@ export function EnvironmentVariables({ disabled = false }: { disabled?: boolean 
                 <TextInput
                   id={variable.name}
                   required={variable.required}
-                  type={variable.secret ? "password" : "text"}
+                  type={variable.hidden ? "password" : "text"}
                   autoComplete="off"
                   value={values[variable.name] || ""}
                   onValueChange={(value) => setValues({ ...values, [variable.name]: value })}
@@ -166,7 +166,7 @@ export function LocalRun({
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to start the run.");
     } finally {
-      clearVariableSecrets();
+      clearVariables();
       setSubmitting(false);
     }
   };
