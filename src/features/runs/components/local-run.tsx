@@ -72,7 +72,7 @@ export function EnvironmentVariables({ disabled = false }: { disabled?: boolean 
           <RunDialogHeading
             titleId="environment-title"
             title="Variables"
-            description="Passwords and case customer IDs stay in this tab and are cleared after a run or agent request."
+            description="Passwords survive refreshes in this tab and are cleared after a run or agent request. Case customer IDs stay in memory."
             closeLabel="Close environment variables"
             onClose={closeVariables}
           />

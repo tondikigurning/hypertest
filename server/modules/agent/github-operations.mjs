@@ -69,7 +69,7 @@ function gitEnvironment(token) {
     if (key.startsWith("GIT_TRACE") || key.startsWith("GIT_CONFIG_") || key === "GIT_CURL_VERBOSE")
       delete environment[key];
   environment.GIT_CONFIG_NOSYSTEM = "1";
-  environment.GIT_CONFIG_GLOBAL = devNull;
+  environment.GIT_CONFIG_GLOBAL = process.platform === "win32" ? "NUL" : devNull;
   environment.GIT_TERMINAL_PROMPT = "0";
   environment.GIT_ASKPASS = "automation-disabled-askpass";
   environment.GIT_CONFIG_COUNT = token ? "5" : "4";

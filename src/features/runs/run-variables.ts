@@ -4,6 +4,20 @@ let memoryPublicValues: Record<string, string> = {};
 const legacyKey = "automation-run-variables";
 const transientVariableNames = new Set(["E2E_CASE_CUSTOMER_ID"]);
 
+function secretStorageKey() {
+  return principalId ? `automation-run-variables:secrets:v1:${principalId}` : undefined;
+}
+
+function readStoredSecrets() {
+  const key = secretStorageKey();
+  if (!key) return {};
+  try {
+    return JSON.parse(sessionStorage.getItem(key) || "{}");
+  } catch {
+    return {};
+  }
+}
+
 function storageKey() {
   return principalId ? `automation-run-variables:v1:${principalId}` : undefined;
 }
@@ -32,6 +46,7 @@ export function setVariablesPrincipal(id: string) {
     memoryPublicValues = {};
   }
   principalId = id;
+  secretValues = readStoredSecrets();
   try {
     sessionStorage.removeItem(legacyKey);
   } catch {
@@ -42,6 +57,13 @@ export function setVariablesPrincipal(id: string) {
 
 export function clearVariableSecrets() {
   secretValues = {};
+  const key = secretStorageKey();
+  if (!key) return;
+  try {
+    sessionStorage.removeItem(key);
+  } catch {
+    /* Keep the current tab usable when storage is unavailable. */
+  }
 }
 
 export function readVariables(defaults: Record<string, string> = {}): Record<string, string> {
@@ -58,17 +80,25 @@ export function readVariables(defaults: Record<string, string> = {}): Record<str
 export function writeVariables(values: Record<string, string>, variables: Array<{ name: string; secret: boolean }>) {
   const publicValues: Record<string, string> = {};
   const secrets: Record<string, string> = {};
+  const persistentSecrets: Record<string, string> = {};
   for (const variable of variables) {
-    if (variable.secret || transientVariableNames.has(variable.name))
+    if (variable.secret || transientVariableNames.has(variable.name)) {
       secrets[variable.name] = values[variable.name] || "";
-    else publicValues[variable.name] = values[variable.name] || "";
+      if (variable.secret) persistentSecrets[variable.name] = values[variable.name] || "";
+    } else publicValues[variable.name] = values[variable.name] || "";
   }
   secretValues = secrets;
   memoryPublicValues = publicValues;
+  const key = storageKey();
   try {
-    const key = storageKey();
     if (key) localStorage.setItem(key, JSON.stringify(publicValues));
   } catch {
-    /* Keep the values in this tab when storage is unavailable. */
+    /* Keep public values in this tab when local storage is unavailable. */
+  }
+  const secretKey = secretStorageKey();
+  try {
+    if (secretKey) sessionStorage.setItem(secretKey, JSON.stringify(persistentSecrets));
+  } catch {
+    /* Keep secret values in memory when session storage is unavailable. */
   }
 }
